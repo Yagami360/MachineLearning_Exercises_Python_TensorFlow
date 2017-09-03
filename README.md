@@ -1,0 +1,2 @@
+# MachineLearning_Exercises_Python_TensorFlow
+Python＆機械学習ライブラリ TensorFlow の使い方の練習コード集。
