@@ -12,12 +12,14 @@ https://www.tensorflow.org </br>
 > GitHub : 
 >> https://github.com/tensorflow/tensorflow </br>
 
+> チートシート： </br>
+>> https://github.com/louishenrifranc/Tensorflow-Cheatsheet </br>
+
 > API 集 : </br>
 >> https://www.tensorflow.org/api_docs/python/ </br>
 
-> チートシート： </br>
->> </br>
-
+> TensorBorad : </br>
+https://deepage.net/tensorflow/2017/04/25/tensorboard.html </br>
 
 ### 検証用データセット
 > 
