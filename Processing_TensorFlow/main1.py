@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 # Anaconda 4.3.0 環境 (TensorFlow インストール済み)
-#     <Anaconda Prompt>
+#     [Anaconda Prompt]
 #     conda create -n tensorflow python=3.5
 #     activate tensorflow
 #     pip install --ignore-installed --upgrade tensorflow
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 # TensorFlow ライブラリ
 import tensorflow as tf
-
+from tensorflow.python.framework import ops     # ?
 
 def main():
     """
