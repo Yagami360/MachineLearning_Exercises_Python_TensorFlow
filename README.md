@@ -12,8 +12,11 @@ https://www.tensorflow.org </br>
 > GitHub : 
 >> https://github.com/tensorflow/tensorflow </br>
 
-> チートシート：
->> 
+> API 集 : </br>
+>> https://www.tensorflow.org/api_docs/python/ </br>
+
+> チートシート： </br>
+>> </br>
 
 
 ### 検証用データセット
