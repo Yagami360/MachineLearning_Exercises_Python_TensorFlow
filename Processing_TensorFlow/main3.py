@@ -47,14 +47,40 @@ def main():
     print( "session.run( init_op ) :\n", output )
     
     # TensorBoard 用のファイル（フォルダ）を作成
-    merged = tf.summary.merge_all() # Add summaries to tensorboard
-    summary_writer = tf.summary.FileWriter( "./TensorBoard", graph = session.graph )    # tensorboard --logdir=${PWD}
+    #merged = tf.summary.merge_all() # Add summaries to tensorboard
+    #summary_writer = tf.summary.FileWriter( "./TensorBoard", graph = session.graph )    # tensorboard --logdir=${PWD}
 
-    #session.close()
+    session.close()
         
     #======================================================================
-    # 変数の設定からOpノード、計算グラフの構築
+    # プレースホルダの設定からOpノード、計算グラフの構築
     #======================================================================
+    # Reset graph
+    ops.reset_default_graph()
+
+    # Session の設定
+    session = tf.Session()
+
+    # プレースホルダの作成
+    holder = tf.placeholder( tf.float32, shape = [2, 2] )
+    print( "tf.placeholder( tf.float32, shape = [2, 2] ) :", holder)
+
+    # 演算を設定（Opノード）
+    identity_op = tf.identity( holder )
+
+    #  
+    random = numpy.random.rand( 2, 2 )
+    print( "random :", random)
+
+    # 構築した計算グラフを実行
+    output = session.run( identity_op, feed_dict = { holder : random } )
+    print( "session.run( identity_op, feed_dict = { holder : random } ) : \n", output )
+    
+    # TensorBoard 用のファイル（フォルダ）を作成
+    #merged = tf.summary.merge_all() # Add summaries to tensorboard
+    #summary_writer = tf.summary.FileWriter( "./TensorBoard", graph = session.graph )    # tensorboard --logdir=${PWD}
+    
+    session.close()
 
     print("Finish main()")
     return

@@ -6,9 +6,9 @@
 1. [使用するライブラリ](#使用するライブラリ)
 1. [使用するデータセット](#使用するデータセット)
 1. [コードの実行結果](#コードの実行結果)
-    1. [テンソルの設定、及び計算グラフとセッション](#テンソルの設定、及び計算グラフとセッション)
-    1. [変数とプレースホルダ、及び Op ノードと計算グラフ](#変数とプレースホルダ、及び計算グラフとセッション)
-    1. [計算グラフ](#計算グラフ)
+    1. [テンソルの設定、及び計算グラフとセッション](##テンソルの設定、及び計算グラフとセッション)
+    1. [変数とプレースホルダ、及び Op ノードと計算グラフ](##コードの実行結果２)
+    1. [計算グラフ](#コードの実行結果３)
     1. [](#)
 
 
@@ -40,7 +40,7 @@
     - ここまでの準備で, 実際に, 計算グラフ（有向グラフ）のオブジェクトを作成し,</br>プレースホルダを通じて, データを計算グラフ（有向グラフ）に供給する。</br>
     - そして、構築した計算グラフは　セッション [Session] により、その処理を実行する。</br>
     （例） 
-    ```
+    ```python
     with tf.Session( graph = graph ) as session:
         ...
         session.run(...)
@@ -102,7 +102,7 @@ https://www.tensorflow.org/api_docs/python/tf/ </br>
 
 ## コードの実行結果
 
-<a name="#テンソルの設定、及び計算グラフとセッション"></a>
+<a name="##テンソルの設定、及び計算グラフとセッション"></a>
 
 ## テンソルの設定、及び計算グラフとセッション : `main2.py`
 
@@ -124,7 +124,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     これは session を実行していないため。
     ```
     （例）Session を生成＆run() して、Tensor を print()　</br>
-    ```
+    ```python
     zero_tsr = tf.zeros( [3, 2] )
     session = tf.Session()
     print( session.run( zero_tsr ) )
@@ -136,7 +136,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     → 全ての要素が 0 からなるテンソル（この場合、２次配列）が出力されている。
     ```
     - `tf.ones(...)` : 全て 1 の要素からなる Tensor を作成する。</br>
-    ```
+    ```python
     ones_tsr = tf.ones( [3, 2] )
     print(  " tf.ones(...) の Tensor 型 : ", ones_tsr )
 
@@ -152,7 +152,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     [ 1.  1.]]
     ```
     - `tf.fill(...)` : 指定した定数で埋められた Tensor を作成する。
-    ```
+    ```python
     filled_tsr = tf.fill( [3, 2], "const" )
     print( "tf.fill(...) の Tensor 型 : ", filled_tsr )
 
@@ -169,7 +169,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     ```
 
     - `tf.constant(...)` : 指定した既存の定数から Tensor を作成する。
-    ```
+    ```python
     const_tsr = tf.constant( [1,2,3] )
     print( "tf.constant(...) の Tensor 型 : ", const_tsr )
 
@@ -187,7 +187,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     Numpy ライブラリでいうところの `range()` と似たような動作を行う。
 
     - `tf.linespace(...)` : stop 値のあるシーケンステンソルを作成する。
-    ```
+    ```python
     liner_tsr = tf.linspace( start = 0.0, stop = 1.0, num = 3 )
     print( "tf.linspace(...) の Tensor 型 : ", liner_tsr )
 
@@ -202,7 +202,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     ```
 
     - `tf.range(...)` : stop 値のないシーケンステンソルを作成する。
-    ```
+    ```python
     int_seq_tsr = tf.range( start = 1, limit = 15, delta = 3 )
     print( "tf.range(...) の Tensor 型 : ", int_seq_tsr )
     
@@ -222,7 +222,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
 </br>
 
 
-<a name="#変数とプレースホルダの設定、及び計算グラフとセッション"></a>
+<a name="#コードの実行結果２"></a>
 
 ## 変数とプレースホルダ、及び Op ノードと計算グラフ : `main3.py`
 
@@ -245,7 +245,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     `tf.summary.FileWriter( "./TensorBoard", graph = session.graph )`
 
 （抜粋コード）
-```
+```python
     # Reset graph
     ops.reset_default_graph()
 
@@ -267,34 +267,91 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     output = session.run( init_op )
     print( "session.run( init_op ) :\n", output )
     
-    # TensorBoard 用のファイル（フォルダ）を作成
-    merged = tf.summary.merge_all() # Add summaries to tensorboard
-    summary_writer = tf.summary.FileWriter( "./TensorBoard", graph = session.graph )
-
     session.close()
+
+    <出力>
+    tf.Variable() : 
+    <tf.Variable 'Variable:0' shape=(3, 2) dtype=float32_ref>
+
+    tf.global_variables_initializer() :
+    name: "init"
+    op: "NoOp"
+    input: "^Variable/Assign"
+
+    session.run( init_op ) : 
+    None
+    → Variable の初期化演算（オペレーション）の結果、計算グラフから None 値が Output されている。
 ```
 
-> 構築した計算グラフを TensorBoard を用いた描写した結果
+> 構築した計算グラフを TensorBoard を用いた描写
+![tensorboard_graph_variable-zero](https://user-images.githubusercontent.com/25688193/30039823-663e1be0-9211-11e7-989c-3766957b56fa.png)
 
-
-### ② プレースホルダの設定と、Op ノード、計算グラフ 
-
-TensorFlow におけるプレースホルダー [placeholder] は、計算グラフに供給するためのデータの位置情報のみを保有しており、一時保管庫の役割を果たす。</br>
-利用法としては、データは未定のまま計算グラフを構築し、具体的な値を実行するときに与えたいケースに利用する。
-
-
-- プレースホルダは、Session の オペレーションの実行時に、`run(...)` で指定した引数 feed_dict を通じて具体的なデータを与える。</br>
-この引数 `feed_dict` で指定するオブジェクトは、ディクショナリ構造 `{Key: value}` のオブジェクトとなる。
-- プレースホルダを、実際に計算グラフに配置するには、</br>
-  プレースホルダで少なくとも１つの演算を実行する必要がある。</br>
-  - ここでは、この演算の１つの例として、`tf.identity(...)` を使用する。
 - TensorBoard を用いて、構築した計算グラフの表示する。コード側の処理は以下の通り。
     - `tf.summary.merge_all()` で Session の summary を TensorBoard に加える。
     - その後、`tf.summary.FileWriter(...)` で指定したフォルダに </br>
     Session の計算グラフ `session.graph` を書き込む。</br>
     `tf.summary.FileWriter( "./TensorBoard", graph = session.graph )`
 
+</br>
+
+### ② プレースホルダの設定と、Op ノード、計算グラフ 
+
+TensorFlow におけるプレースホルダー [placeholder] は、計算グラフに供給するためのデータの位置情報のみを保有しており、一時保管庫の役割を果たす。</br>
+利用法としては、データは未定のまま計算グラフを構築し、具体的な値を実行するときに与えたいケースに利用する。
+
+- プレースホルダの作成は、`tf.placeholder` で行う。</br>
+  （例）tf.float32 型のプレースホルダ : `holder = tf.placeholder( tf.float32, shape = [3, 2] )`
+- プレースホルダを、実際に計算グラフに配置するには、</br>
+  プレースホルダで少なくとも１つの演算（Op ノード）を実行（設定）する必要がある。</br>
+  - ここでは、この演算の１つの例として、`tf.identity(...)` を使用する。</br>
+    `identity_op = tf.identity( holder )`
+- プレースホルダは、Session の オペレーションの実行時に、`run(...)` で指定した引数 feed_dict を通じて具体的なデータを与える。</br>
+この引数 `feed_dict` で指定するオブジェクトは、ディクショナリ構造 `{Key: value}` のオブジェクトとなる。
+
+
 （抜粋コード）
+```python
+    # Reset graph
+    ops.reset_default_graph()
+
+    # Session の設定
+    session = tf.Session()
+
+    # プレースホルダの作成
+    holder = tf.placeholder( tf.float32, shape = [2, 2] )
+    print( "tf.placeholder( tf.float32, shape = [2, 2] ) :", holder)
+
+    # 演算を設定（Opノード）
+    identity_op = tf.identity( holder )
+
+    #  
+    random = numpy.random.rand( 2, 2 )
+    print( "random :\n", random)
+
+    # 構築した計算グラフを実行
+    output = session.run( identity_op, feed_dict = { holder : random } )
+    print( "session.run( identity_op, feed_dict = { holder : random } ) : \n", output )
+    
+    session.close()
+    
+    <出力>
+    Tensor("Placeholder:0", shape=(2, 2), dtype=float32)
+    
+    random :
+    [[ 0.84719631  0.53525849]
+    [ 0.52465215  0.6306719 ]]
+    
+    session.run( identity_op, feed_dict = { holder : random } ) : 
+     [[ 0.84719634  0.53525847]
+    [ 0.52465212  0.63067192]]
+    → Iditity 演算（オペレーション）の結果、計算グラフから等しい値が Output させている。
 ```
 
-```
+
+- TensorBoard を用いて、構築した計算グラフの表示する。コード側の処理は以下の通り。
+    - `tf.summary.merge_all()` で Session の summary を TensorBoard に加える。
+    - その後、`tf.summary.FileWriter(...)` で指定したフォルダに </br>
+    Session の計算グラフ `session.graph` を書き込む。</br>
+    `tf.summary.FileWriter( "./TensorBoard", graph = session.graph )`
+
+<a name="#コードの実行結果３"></a>
