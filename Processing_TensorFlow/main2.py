@@ -14,9 +14,10 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.python.framework import ops     # ?
 
+
 def main():
     """
-    TensorFlow を用いた基本的な処理のフレームワーク
+    テンソルの設定、及び計算グラフとセッション 
     """
     print("Enter main()")
 
@@ -50,7 +51,7 @@ def main():
     # tf.ones(...) : 全ての要素が 1 からなる Tensor を作成する
     ones_tsr = tf.ones( [3, 2] )
     # Session を生成せず、そのまま Tensor を print()
-    print(  " tf.ones(...) の Tensor 型 : \n", ones_tsr )
+    print(  " tf.ones(...) の Tensor 型 : ", ones_tsr )
 
     # Session を生成＆run() して、Tensor を print()
     session = tf.Session()
@@ -62,7 +63,7 @@ def main():
 
 
     # tf.fill(...) : 指定した定数で埋められた Tensor を作成する。
-    filled_tsr = tf.fill( [3, 2], "Const" )
+    filled_tsr = tf.fill( [3, 2], "const" )
     print( "tf.fill(...) の Tensor 型 : ", filled_tsr )
 
     session = tf.Session()
@@ -75,27 +76,35 @@ def main():
     print( "tf.constant(...) の Tensor 型 : ", const_tsr )
 
     session = tf.Session()
-    print( "tf.constant(...) の value : ", session.run( const_tsr ) )
+    print( "tf.constant(...) の value \n: ", session.run( const_tsr ) )
     session.close()
 
 
     #--------------------------------------
     # シーケンステンソルを作成
     #--------------------------------------
-    # tf.linspace(...) : 
+    # tf.linspace(...) : stop 値のあるシーケンステンソル
     liner_tsr = tf.linspace( start = 0.0, stop = 1.0, num = 3 )
     print( "tf.linspace(...) の Tensor 型 : ", liner_tsr )
     
     session = tf.Session()
-    print( "tf.linspace(...) の value : ", session.run( liner_tsr ) )
+    print( "tf.linspace(...) の value : \n", session.run( liner_tsr ) )
     session.close()
 
-    # 
-    #======================================================================
-    # 変数とプレースホルダを設定
-    #======================================================================
+    # tf.range(...) : stop 値のないシーケンステンソル
+    int_seq_tsr = tf.range( start = 1, limit = 15, delta = 3 )
+    print( "tf.range(...) の Tensor 型 : ", int_seq_tsr )
     
-    
+    session = tf.Session()
+    print( "tf.range(...) の value : \n", session.run( int_seq_tsr ) )
+    session.close()
+
+    #--------------------------------------
+    # ランダムテンソルを作成
+    #--------------------------------------
+
+
+
     print("Finish main()")
     return
     

@@ -12,17 +12,14 @@ import matplotlib.pyplot as plt
 
 # TensorFlow ライブラリ
 import tensorflow as tf
-from tensorflow.python.framework import ops     # ?
+from tensorflow.python.framework import ops
+
 
 def main():
     """
-    TensorFlow を用いた基本的な処理のフレームワーク
+    TensorFlow を用いた基本的な処理のフレームワーク（テンプレート）
     """
     print("Enter main()")
-
-    # テンソルを作成
-    # tf.constant() : 既存の定数からテンソルを作成
-    hello_tsr = tf.constant( "Hello, TensorFlow!" )
 
     #======================================================================
     # データセットを読み込み or 生成
@@ -50,7 +47,7 @@ def main():
 
 
     #======================================================================
-    # ? 変数とプレースホルダを設定
+    # 変数とプレースホルダを設定
     # Initialize variables and placeholders.
     # TensorFlow は, 損失関数を最小化するための最適化において,
     # 変数と重みベクトルを変更 or 調整する。
@@ -61,6 +58,9 @@ def main():
     #     x_input = tf.placeholder(tf.float32, [None, input_size])
     #     y_input = tf.placeholder(tf.fload32, [None, num_classes])
     #======================================================================
+    # テンソルを作成
+    # tf.constant() : 既存の定数からテンソルを作成
+    hello_tsr = tf.constant( "Hello, TensorFlow!" )
 
 
     #======================================================================
