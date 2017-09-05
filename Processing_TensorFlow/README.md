@@ -143,7 +143,9 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session = tf.Session()
     print( "tf.ones(...) の value : \n", session.run( ones_tsr ) )
     session.close()
-
+    ```
+    ---
+    ```python
     <出力>
     tf.ones(...) の Tensor 型 : Tensor("ones:0", shape=(3, 2), dtype=float32)
     tf.ones(...) の value :
@@ -151,6 +153,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     [ 1.  1.]
     [ 1.  1.]]
     ```
+
     - `tf.fill(...)` : 指定した定数で埋められた Tensor を作成する。
     ```python
     filled_tsr = tf.fill( [3, 2], "const" )
@@ -159,7 +162,8 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session = tf.Session()
     print( "tf.fill(...) の value : ", session.run( filled_tsr ) )
     session.close()
-
+    ```
+    ```python
     <出力>
     tf.fill(...) の Tensor 型 :  Tensor("Fill:0", shape=(3, 2), dtype=string)
     tf.fill(...) の value :  
@@ -176,7 +180,8 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session = tf.Session()
     print( "tf.constant(...) の value \n: ", session.run( const_tsr ) )
     session.close()
-
+    ```
+    ```python
     <出力>
     tf.constant(...) の Tensor 型 :  Tensor("Const:0", shape=(3,), dtype=int32)
     tf.constant(...) の value :  [1 2 3]
@@ -194,7 +199,8 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session = tf.Session()
     print( "tf.linspace(...) の value : \n", session.run( liner_tsr ) )
     session.close()
-
+    ```
+    ```python
     <出力>
     tf.linspace(...) の Tensor 型 :  Tensor("LinSpace:0", shape=(3,), dtype=float32)
     tf.linspace(...) の value : 
@@ -209,7 +215,8 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session = tf.Session()
     print( "tf.range(...) の value : \n", session.run( int_seq_tsr ) )
     session.close()
-
+    ```
+    ```python
     [出力]
     tf.range(...) の Tensor 型 :  Tensor("range:0", shape=(5,), dtype=int32)
     tf.range(...) の value : [ 1  4  7 10 13]
@@ -263,7 +270,8 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     print( "session.run( init_op ) :\n", output )
     
     session.close()
-
+```
+```python
     <出力>
     tf.Variable() : 
     <tf.Variable 'Variable:0' shape=(3, 2) dtype=float32_ref>
@@ -335,7 +343,8 @@ TensorFlow におけるプレースホルダー [placeholder] は、計算グラ
     print( "session.run( identity_op, feed_dict = { holder : random } ) : \n", output )
     
     session.close()
-    
+```
+```python
     <出力>
     Tensor("Placeholder:0", shape=(2, 2), dtype=float32)
     
@@ -426,7 +435,8 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
             tf.matmul( B_matrix, Identity_matrix ) 
         ) 
     )
-
+```
+```python
     <出力>
     Identity_matrix <Tensor型> :  Tensor("Diag:0", shape=(3, 3), dtype=float32)
     A_matrix <Tensor型> :  Tensor("truncated_normal:0", shape=(2, 3), dtype=float32)
