@@ -9,7 +9,11 @@
     1. [テンソルの設定、及び計算グラフとセッション](##テンソルの設定、及び計算グラフとセッション)
     1. [変数とプレースホルダ、及び Op ノードと計算グラフ](##コードの実行結果２)
     1. [行列の操作](#行列の操作)
-    1. [](#)
+    1. [演算（オペレーション、Opノード）を設定](#演算（オペレーション、Opノード）を設定)
+    1. [データソースの操作](#)
+    1. [計算グラフでの演算](#)
+    1. [入れ子の演算の階層化](#)
+    1. [複数の層の追加、操作](#)
 
 
 <a name="#全体ワークフロー"></a>
@@ -362,6 +366,7 @@ TensorFlow におけるプレースホルダー [placeholder] は、計算グラ
 ![tensorboard_graph_placeholder-identity](https://user-images.githubusercontent.com/25688193/30051670-dd5da28a-925d-11e7-9de5-954376cde1ad.png)
 >> Placeholder : `tf.placeholder( tf.float32, shape = [2, 2] )` を、オペレーション（Opノード）`identity_op = tf.identity( holder )` に矢印（オペレーション間のデータフロー）で設定している。 
 
+</br>
 
 <a name="#行列の操作"></a>
 
@@ -479,3 +484,163 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
     [[ 5.  5.  5.]
     [ 5.  5.  5.]]
 ```
+
+</br>
+
+
+### 演算（オペレーション、Opノード）の設定、実行 : `main5.py`
+ここでは、ここまでに取り上げた TensorFlow における演算（オペレーション、Opノード）の他に、</br>
+よく使うオペレーションを取り上げる。
+
+- TensorFlow では、`tf.add(...)`, `tf.sub(...)`, `tf.mul(...)`, `tf.div(...)` を用いて、
+  Opノードを作成し、</br>
+  それらを Session で `session.run(...)` させることにより、四則演算を行うことが出来る。
+- TensorFlow には、割り算演算である div に何種類かの div が用意されている。</br>
+  これらの `div(...)` は、基本的に引数と戻り値の型が同じとなる。
+    - `tf.div(x,y)` : 整数に対しての div（オペレーション、Op ノード）</br>
+        ```python
+        div_op = tf.div( 3, 4 )
+        print( "session.run( div_op ) :\n", session.run( div_op ) )
+        ```
+        ```python
+        <出力>
+        session.run( div_op ) : 0
+        ➞ 整数での演算なので、小数点以下切り捨てにより3/4 ➞ 0 になっている。
+        ```
+    - `tf.truediv(x,y)` : 浮動小数点数に対しての div（オペレーション、Op ノード）
+        ```python
+        truediv_op = tf.truediv( 3, 4 )
+        print( "session.run( truediv_op ) :\n", session.run( truediv_op ) )
+        ```
+        ```python
+        [出力]
+        session.run( truediv_op ) : 0.75
+        ```
+    - `tf.floordiv(x,y)` : 浮動小数点数であるが、整数での演算を行いたい場合の div（オペレーション、Op ノード）
+        ```python
+
+        ```
+        ```python
+        [出力]
+
+        ```
+- 割り算の余り `mod(...)`
+- 外積 `cross(...)`
+- 数学関数 `abs(x)`, `cos(x)`等
+- 統計、機械学習関連の基本演算 `erf()`等
+- そして、これらの関数を組み合わせて、独自の関数を生成＆処理することが出来る。
+    - その為には、Session の `run(...)` に複数のオペレーション（Opノード）を設定すれば良い。
+        ```python
+        comb_tan_op = tf.div( 
+                          tf.sin( 3.1416/4. ), 
+                          tf.cos( 3.1416/4. ) 
+                       )
+        
+        output1 = session.run( comb_tan_op )
+        print( "session.run( comb_tan_op ) : ", output1 )
+        ```
+        ```python
+        [出力]
+        session.run( comb_tan_op ) : 1.0
+        ```
+    - 更に複雑な関数を実現したい場合は、オペレーションを返す関数を def すれば良い。
+        ```python
+        def cusmom_polynormal( x ):
+            ''' f(x) = 3 * x^2 - x + 10 '''
+            cusmom_polynormal_op = ( tf.subtract( 3*) +10 )
+            return cusmom_polynormal_op
+
+        def main():
+            ...
+            cusmom_polynormal_op = cusmom_polynormal( x = 100 )
+            output2 = session.run( cusmom_polynormal_op )
+            print( "session.run( "cusmom_polynormal( x = 100 )", output2 )
+        ```
+        ```python
+        [出力]
+        session.run( cusmom_polynormal_op ) : 300
+        ```
+
+抜粋コード
+
+```python
+def main():
+    ...
+    #======================================================================
+    # 演算（オペレーション、Opノード）の設定、実行
+    #======================================================================
+    #----------------------------------------------------------------------
+    # 単一の演算（オペレーション、Opノード）
+    #----------------------------------------------------------------------
+    # Reset graph
+    ops.reset_default_graph()
+
+    # Session の設定
+    session = tf.Session()
+
+    # オペレーション div 
+    # 何種類かの 割り算演算 div の動作を確認する。
+    div_op      = tf.div( 3, 4 )        # tf.div(x,y) : 整数演算での div
+    truediv_op  = tf.truediv( 3, 4 )    # tf.truediv(x,y) : 浮動小数点数に対しての div
+    floordiv_op = tf.floordiv( 3, 4 )   # 浮動小数点数であるが、整数での演算を行いたい場合の div
+
+    # Session を run してオペレーションを実行後 print 出力
+    # 何種類かの 割り算演算 div の動作を確認する。
+    print( "session.run( div_op ) :\n", session.run( div_op ) )
+    print( "session.run( truediv_op ) :\n", session.run( truediv_op ) )
+    print( "session.run( truediv_op ) :\n", session.run( floordiv_op ) )
+    
+
+    # TensorBoard 用のファイル（フォルダ）を作成
+    #merged = tf.summary.merge_all() # Add summaries to tensorboard
+    #summary_writer = tf.summary.FileWriter( "./TensorBoard", graph = session.graph )    # tensorboard --logdir=${PWD}
+
+    session.close()
+    
+    #----------------------------------------------------------------------
+    # 複数の演算（オペレーション、Opノード）の組み合わせ
+    #----------------------------------------------------------------------
+    # Reset graph
+    ops.reset_default_graph()
+
+    # Session の設定
+    session = tf.Session()
+
+    # オペレーションの組み合わせ 
+    comb_tan_op = tf.div( 
+                      tf.sin( 3.1416/4. ), 
+                      tf.cos( 3.1416/4. ) 
+                  )
+
+    cusmom_polynormal_op = cusmom_polynormal( x = 10 )
+    
+    # Session を run してオペレーションを実行後 print 出力
+    output1 = session.run( comb_tan_op )
+    output2 = session.run( cusmom_polynormal_op )
+
+    print( "session.run( comb_tan_op ) : ", output1 )
+    print( "session.run( cusmom_polynormal_op ) : ", output2 )
+
+    session.close()
+
+def cusmom_polynormal( x ):
+    '''
+    f(x) = 3 * x^2 - x + 10
+    '''
+    cusmom_polynormal_op = ( tf.subtract( 3*tf.square(x), x) + 10 )
+    return cusmom_polynormal_op
+```
+
+```python
+<出力>
+session.run( div_op ) :
+ 0
+session.run( truediv_op ) :
+ 0.75
+session.run( truediv_op ) :
+ 0
+session.run( comb_tan_op ) :  1.0
+session.run( cusmom_polynormal_op ) :  300
+```
+
+</br>
