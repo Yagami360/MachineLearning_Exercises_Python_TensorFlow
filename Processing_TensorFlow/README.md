@@ -11,7 +11,7 @@
     1. [行列の操作](#行列の操作)
     1. [演算（オペレーション、Opノード）を設定](#演算（オペレーション、Opノード）を設定)
     1. [データソースの操作](#)
-    1. [計算グラフでの演算](#)
+    1. [計算グラフでの演算の設定、実行](#)
     1. [入れ子の演算の階層化](#)
     1. [複数の層の追加、操作](#)
 
@@ -121,8 +121,9 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     ```python
     zero_tsr = tf.zeros( [3, 2] )
     print( zero_tsr )
-    
-    <出力>
+    ```
+    ```python
+    [出力]
     Tensor("zeros:0", shape=(3, 2), dtype=float32)
     → Tensor オブジェクト（Tensor 型）がそのまま出力されている。
     これは session を実行していないため。
@@ -132,8 +133,9 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     zero_tsr = tf.zeros( [3, 2] )
     session = tf.Session()
     print( session.run( zero_tsr ) )
-    
-    <出力>
+    ```
+    ```python    
+    [出力]
     [[ 0.  0.]
     [ 0.  0.]
     [ 0.  0.]]
@@ -150,7 +152,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     ```
 
     ```python
-    <出力>
+    [出力]
     tf.ones(...) の Tensor 型 : Tensor("ones:0", shape=(3, 2), dtype=float32)
     tf.ones(...) の value :
     [[ 1.  1.]
@@ -168,7 +170,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session.close()
     ```
     ```python
-    <出力>
+    [出力]
     tf.fill(...) の Tensor 型 :  Tensor("Fill:0", shape=(3, 2), dtype=string)
     tf.fill(...) の value :  
     [[b'const' b'const']
@@ -186,7 +188,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session.close()
     ```
     ```python
-    <出力>
+    [出力]
     tf.constant(...) の Tensor 型 :  Tensor("Const:0", shape=(3,), dtype=int32)
     tf.constant(...) の value :  [1 2 3]
     ```
@@ -205,7 +207,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session.close()
     ```
     ```python
-    <出力>
+    [出力]
     tf.linspace(...) の Tensor 型 :  Tensor("LinSpace:0", shape=(3,), dtype=float32)
     tf.linspace(...) の value : 
     [ 0.   0.5  1. ]
@@ -250,7 +252,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
 - 変数に値が代入されるタイミングは、</br>
   Session の `run(...)` に指定したオペレーションがすべて完了した後になる。
 
-（抜粋コード）
+<抜粋コード : `main2.py`>
 ```python
     # Reset graph
     ops.reset_default_graph()
@@ -276,7 +278,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     session.close()
 ```
 ```python
-    <出力>
+    [出力]
     tf.Variable() : 
     <tf.Variable 'Variable:0' shape=(3, 2) dtype=float32_ref>
 
@@ -323,7 +325,7 @@ TensorFlow におけるプレースホルダー [placeholder] は、計算グラ
 この引数 `feed_dict` で指定するオブジェクトは、ディクショナリ構造 `{Key: value}` のオブジェクトとなる。
 
 
-（抜粋コード）
+<抜粋コード : `main3.py`>
 ```python
     # Reset graph
     ops.reset_default_graph()
@@ -349,7 +351,7 @@ TensorFlow におけるプレースホルダー [placeholder] は、計算グラ
     session.close()
 ```
 ```python
-    <出力>
+    [出力]
     Tensor("Placeholder:0", shape=(2, 2), dtype=float32)
     
     random :
@@ -395,9 +397,10 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
     - 行列の減算 ( `-` ) : `session.run( A_matrix - B_matrix )`
 - 行列の乗算には、Session の `run(...)` 内のオペレーション `tf.matmul(...)` を使用する。</br>
   `session.run( tf.matmul( B_matrix, Identity_matrix ) )`
-- 行列の転置には、
+- 行列の転置には、`...`
 
-＜抜粋コード＞
+
+<抜粋コード : `main4.py`> 
 ```python
     # Reset graph
     ops.reset_default_graph()
@@ -442,7 +445,7 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
     )
 ```
 ```python
-    <出力>
+    [出力]
     Identity_matrix <Tensor型> :  Tensor("Diag:0", shape=(3, 3), dtype=float32)
     A_matrix <Tensor型> :  Tensor("truncated_normal:0", shape=(2, 3), dtype=float32)
     B_matrix <Tensor型> :  Tensor("Fill:0", shape=(2, 3), dtype=float32)
@@ -503,7 +506,7 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
         print( "session.run( div_op ) :\n", session.run( div_op ) )
         ```
         ```python
-        <出力>
+        [出力]
         session.run( div_op ) : 0
         ➞ 整数での演算なので、小数点以下切り捨てにより3/4 ➞ 0 になっている。
         ```
@@ -561,8 +564,8 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
         session.run( cusmom_polynormal_op ) : 300
         ```
 
-抜粋コード
 
+<抜粋コード : `main5.py`>
 ```python
 def main():
     ...
@@ -590,11 +593,6 @@ def main():
     print( "session.run( truediv_op ) :\n", session.run( truediv_op ) )
     print( "session.run( truediv_op ) :\n", session.run( floordiv_op ) )
     
-
-    # TensorBoard 用のファイル（フォルダ）を作成
-    #merged = tf.summary.merge_all() # Add summaries to tensorboard
-    #summary_writer = tf.summary.FileWriter( "./TensorBoard", graph = session.graph )    # tensorboard --logdir=${PWD}
-
     session.close()
     
     #----------------------------------------------------------------------
@@ -632,7 +630,7 @@ def cusmom_polynormal( x ):
 ```
 
 ```python
-<出力>
+[出力]
 session.run( div_op ) :
  0
 session.run( truediv_op ) :
@@ -642,5 +640,16 @@ session.run( truediv_op ) :
 session.run( comb_tan_op ) :  1.0
 session.run( cusmom_polynormal_op ) :  300
 ```
+
+</br>
+
+### データソースの操作 : `main6.py`
+> コード実装中...
+
+</br>
+
+
+### 計算グラフでの演算（オペレーション、Opノード）の設定、実行 : `main7.py`
+> コード実装中...
 
 </br>
