@@ -40,11 +40,11 @@
     - ここまでの準備で, 実際に, 計算グラフ（有向グラフ）のオブジェクトを作成し,</br>プレースホルダを通じて, データを計算グラフ（有向グラフ）に供給する。</br>
     - そして、構築した計算グラフは　セッション [Session] により、その処理を実行する。</br>
     （例） 
-    ```python
-    with tf.Session( graph = graph ) as session:
-        ...
-        session.run(...)
-    ```
+        ```python
+        with tf.Session( graph = graph ) as session:
+            ...
+            session.run(...)
+        ```
 - モデルの評価 (Optional)
 - ハイパーパラメータのチューニング (Optional)
 - デプロイと新しい成果指標の予想 (Optional)
@@ -144,7 +144,7 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
     print( "tf.ones(...) の value : \n", session.run( ones_tsr ) )
     session.close()
     ```
-    ---
+
     ```python
     <出力>
     tf.ones(...) の Tensor 型 : Tensor("ones:0", shape=(3, 2), dtype=float32)
