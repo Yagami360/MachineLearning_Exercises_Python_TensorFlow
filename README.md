@@ -1,5 +1,7 @@
 # MachineLearning_Exercises_Python_TensorFlow
-Python＆機械学習ライブラリ TensorFlow の使い方の練習コード集。機械学習の理論解説付き（予定）。</br>
+Python＆機械学習ライブラリ TensorFlow の使い方の練習コード集。
+機械学習の中でも、特にニューラルネットワークに重点的に取り扱います（予定）。</br>
+機械学習の理論解説付き（予定）。</br>
 
 分かりやすいように、各フォルダ毎で完結したコード一式になっています。</br>
 又、各フォルダにある README.md ファイルに、コード実行結果の解説と合わせて関連する機械学習の背景理論の解説も記載していきます。（予定）
@@ -20,6 +22,7 @@ https://www.tensorflow.org </br>
 
 > TensorBorad : </br>
 https://deepage.net/tensorflow/2017/04/25/tensorboard.html </br>
+http://tensorflow.classcat.com/2016/02/13/tensorflow-how-tos-graph-visualization/</br>
 
 ### 検証用データセット
 > 
@@ -27,4 +30,5 @@ https://deepage.net/tensorflow/2017/04/25/tensorboard.html </br>
 ## 項目（フォルダ別）
 
 1. [./Processing_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/Processing_TensorFlow)
+1. [./ProcessingForMachineLearning_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/ProcessingForMachineLearning_TensorFlow)
 1. [./]()
