@@ -287,18 +287,18 @@ def main():
     session.close()
 ```
 ```python
-    [出力]
-    tf.Variable() : 
-    <tf.Variable 'Variable:0' shape=(3, 2) dtype=float32_ref>
+[出力]
+tf.Variable() : 
+<tf.Variable 'Variable:0' shape=(3, 2) dtype=float32_ref>
 
-    tf.global_variables_initializer() :
-    name: "init"
-    op: "NoOp"
-    input: "^Variable/Assign"
+tf.global_variables_initializer() :
+name: "init"
+op: "NoOp"
+input: "^Variable/Assign"
 
-    session.run( init_op ) : 
-    None
-    → Variable の初期化演算（オペレーション）の結果、計算グラフから None 値が Output されている。
+session.run( init_op ) : 
+None
+→ Variable の初期化演算（オペレーション）の結果、計算グラフから None 値が Output されている。
 ```
 
 > 構築した計算グラフを TensorBoard を用いた描写
@@ -363,17 +363,17 @@ def main():
     session.close()
 ```
 ```python
-    [出力]
-    Tensor("Placeholder:0", shape=(2, 2), dtype=float32)
+[出力]
+Tensor("Placeholder:0", shape=(2, 2), dtype=float32)
     
-    random :
-    [[ 0.84719631  0.53525849]
-    [ 0.52465215  0.6306719 ]]
+random :
+[[ 0.84719631  0.53525849]
+[ 0.52465215  0.6306719 ]]
     
-    session.run( identity_op, feed_dict = { holder : random } ) : 
-     [[ 0.84719634  0.53525847]
-    [ 0.52465212  0.63067192]]
-    → Iditity 演算（オペレーション）の結果、計算グラフから等しい値が Output させている。
+session.run( identity_op, feed_dict = { holder : random } ) : 
+[[ 0.84719634  0.53525847]
+[ 0.52465212  0.63067192]]
+→ Iditity 演算（オペレーション）の結果、計算グラフから等しい値が Output させている。
 ```
 
 > 構築した計算グラフを TensorBoard で描写</br>
@@ -538,13 +538,6 @@ tf.matmul( B_matrix, Identity_matrix ) :
         session.run( truediv_op ) : 0.75
         ```
     - `tf.floordiv(x,y)` : 浮動小数点数であるが、整数での演算を行いたい場合の div（オペレーション、Op ノード）
-        ```python
-
-        ```
-        ```python
-        [出力]
-
-        ```
 - 割り算の余り `mod(...)`
 - 外積 `cross(...)`
 - 数学関数 `abs(x)`, `cos(x)`等
@@ -877,12 +870,11 @@ tf.add( matmul_op2, const1 ) :  Tensor("Add:0", shape=(3, 1), dtype=float32)
 <a id="ID_4-8"></a>
 
 ## 計算グラフでの複数の層の追加、操作 : `main9.py`
-> コード実装中...
 
 ニューラルネットワークでは、一般的に複数の層を扱う。</br>
 その為にも、ここではその基本として、計算グラフへの複数の層の追加、操作、及びカスタマイズした層の操作を取り上げる。
 
-- 4×4 pixel の画像データをフィルタリング＆移動平均して、4×4 pixel の画像データとして、Output する計算グラフを考える。
+- 4×4 pixel の画像データをフィルタリング＆移動平均して、2×2 pixel の画像データとして、Output する計算グラフを考える。
 - まず、データを供給するための Placeholder として、画像の数、画像の height、画像の width、画像の Channel 数からなる Placeholder : `image_holder` を設定する</br>
 ```python
 # 画像のデータを供給するための placeholder
@@ -902,26 +894,16 @@ random_value = numpy.random.uniform( size = image_shape )
 print( "random_value : ", random_value )
 ```
 ```python
-[出力]
-[[[[ 0.15416284]    ← １つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
-   [ 0.7400497 ]
-   [ 0.26331502]
-   [ 0.53373939]]
-
-  [[ 0.01457496]    ← ２つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
-   [ 0.91874701]
-   [ 0.90071485]
-   [ 0.03342143]]
-
-  [[ 0.95694934]
-   [ 0.13720932]
-   [ 0.28382835]
-   [ 0.60608318]]
-
-  [[ 0.94422514]
-   [ 0.85273554]
-   [ 0.00225923]
-   [ 0.52122603]]]]
+[出力] 4×4 の画像データ（各ピクセル値はランダムに生成）
+[
+    [
+             
+        [ [ 0.15416284] [ 0.7400497 ] [ 0.26331502] [ 0.53373939] ]  
+        [ [ 0.01457496] [ 0.91874701] [ 0.90071485] [ 0.03342143] ]
+        [ [ 0.95694934] [ 0.13720932] [ 0.28382835] [ 0.60608318] ]
+        [ [ 0.94422514] [ 0.85273554] [ 0.00225923] [ 0.52122603] ]
+    ]
+]
 ```
 - このランダムに生成した 4×4 pixel の画像データをフィルタリングして、
   上下左右の移動平均を算出することを考える。
@@ -1003,7 +985,7 @@ with tf.name_scope('Custom_Layer') as scope:
 ```
 
 > TensorBorad で描写した計算グラフ
-![image](https://user-images.githubusercontent.com/25688193/30134290-9d6befbc-9391-11e7-95c7-83f7222585cb.png)
+![image](https://user-images.githubusercontent.com/25688193/30134860-95fd2546-9393-11e7-8790-ac501ed587dc.png)
 >> 
 
 <抜粋コード : `main9.py`>
@@ -1154,4 +1136,5 @@ session.run( custom_layer_sigmoid_op, feed_dict = { image_holder : random_value 
 session.run( custom_layer_op, feed_dict = { image_holder : random_value } ) : 
  [[ 0.94796705  0.89468312]
  [ 0.93769926  0.8357926 ]]
+ ➞ 目的である 4×4 の画像をフィルタリング＆移動平均等をした後の、2×2 の画像の pixcel 値が出力されている。
 ```
