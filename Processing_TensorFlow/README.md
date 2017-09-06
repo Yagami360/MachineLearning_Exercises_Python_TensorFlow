@@ -896,31 +896,32 @@ image_holder = tf.placeholder( tf.float32, shape = image_shape )
 ```
 - 4×4 pixel の各 pixel 値がランダムな値からなるデータ `random_value` を作成する。
 ```python
-    # ランダムな画像を生成するためのランダム変数
-    random_value = numpy.random.uniform( size = image_shape )
-    print( "random_value : ", random_value )
+# ランダムな画像を生成するためのランダム変数
+numpy.random.seed(12)
+random_value = numpy.random.uniform( size = image_shape )
+print( "random_value : ", random_value )
 ```
 ```python
 [出力]
-[[[[ 0.25216785]    ← １つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
-   [ 0.71828018]
-   [ 0.15853776]
-   [ 0.6248522 ]]
+[[[[ 0.15416284]    ← １つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
+   [ 0.7400497 ]
+   [ 0.26331502]
+   [ 0.53373939]]
 
-  [[ 0.87136305]    ← ２つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
-   [ 0.10282739]
-   [ 0.50720163]
-   [ 0.76858234]]
+  [[ 0.01457496]    ← ２つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
+   [ 0.91874701]
+   [ 0.90071485]
+   [ 0.03342143]]
 
-  [[ 0.22039948]
-   [ 0.24073715]
-   [ 0.73961462]
-   [ 0.28113754]]
+  [[ 0.95694934]
+   [ 0.13720932]
+   [ 0.28382835]
+   [ 0.60608318]]
 
-  [[ 0.54076614]
-   [ 0.8072484 ]
-   [ 0.95869305]
-   [ 0.26412463]]]]
+  [[ 0.94422514]
+   [ 0.85273554]
+   [ 0.00225923]
+   [ 0.52122603]]]]
 ```
 - このランダムに生成した 4×4 pixel の画像データをフィルタリングして、
   上下左右の移動平均を算出することを考える。
@@ -955,25 +956,202 @@ print( "session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value
 ```python
 [出力]
 session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) : 
- [[[[ 0.48615962]
-   [ 0.51479352]]
+[[[[ 0.45688361]
+   [ 0.43279767]]
 
-  [[ 0.45228779]
-   [ 0.56089246]]]]
+  [[ 0.72277981]
+   [ 0.35334921]]]]
 ```
-- 上記の layer : `Moving_Ave_Window` で Output されるデータは、2×2のデータなので、</br>
+- 上記の layer : `Moving_Ave_Window` で Output されるデータは、1×2×2×1 のデータなので、</br>
 次に、このデータを 4×4 のデータに変換するカスタマイズした layer を考える。
-    - 
+    - まず、オペレーション Squeeze : `tf.squeeze(...)` を使用して、</br>
+    入力された 1×2×2×1 のデータの１次元要素を削除し、2×2 のデータに変換する。</br>
+    `custom_layer_sqeezed_op = tf.squeeze( input_tsr )`
+    - 次に、これにオペレーション Matmul : `tf.matmul(...)` を作成＆結合する。
+    `custom_layer_matmul_op = tf.matmul( A_matrix_const, custom_layer_sqeezed_op )`
+    - 更に、これにオペレーション Matmul : `tf.matmul(...)` を作成＆結合する。
+    `custom_layer_matmul_op = tf.matmul( A_matrix_const, custom_layer_sqeezed_op )`
+    - 更に、これにオペレーション Add : `tf.add(...)` を作成＆結合する。
+    `custom_layer_add_op = tf.add( custom_layer_matmul_op, B_matrix_const )`
+    - 最後に、オペレーション Sigmoid : `tf.sigmoid(...)` を使用して、値を 0~1 の範囲に変換する。</br>
+    `custom_layer_sigmoid_op = tf.sigmoid( custom_layer_add_op )`
+    - これらの処理を関数 `def custom_layer( input_tsr ):` で実現する。
+        - この時の引数である Tensor値 : `input_tsr` で、</br>
+          カスタム層の初めのオペレーション Squeeze との接続が出来る。
+    -  そして、`tf.name_scope('Custom_Layer')` で、このカスタム層の名前を設定出来る
+```python
+# 画像のウインドウの移動平均の２×２出力を行うカスタム層を作成する。
+# 練習用コードの可読性のため、main() 関数内にて関数定義する。
+def custom_layer( input_tsr ):
+    # tf.squeeze(...) : sizeが 1 の次元の要素を削除し次元数を減らす
+    custom_layer_sqeezed_op = tf.squeeze( input_tsr )
+
+    A_matrix_const = tf.constant( [ [1., 2.], [-1., 3.] ] )
+    B_matrix_const = tf.constant( 1., shape = [2, 2] )
+        
+    # オペレーション
+    custom_layer_matmul_op = tf.matmul( A_matrix_const, custom_layer_sqeezed_op )
+    custom_layer_add_op = tf.add( custom_layer_matmul_op, B_matrix_const )
+    # シグモイド関数で 0 ~ 1 の範囲値に変換
+    custom_layer_sigmoid_op = tf.sigmoid( custom_layer_add_op )
+        
+    return custom_layer_sigmoid_op
+
+# Add custom layer to graph
+with tf.name_scope('Custom_Layer') as scope:
+    custom_layer_op = custom_layer( mov_avg_layer_op )
+```
 
 > TensorBorad で描写した計算グラフ
-![image](https://user-images.githubusercontent.com/25688193/30124587-98e90838-9370-11e7-8bd8-4fb9a80bf10a.png)
+![image](https://user-images.githubusercontent.com/25688193/30134290-9d6befbc-9391-11e7-95c7-83f7222585cb.png)
 >> 
 
 <抜粋コード : `main9.py`>
 ```python
+def main():
+    ...
+    # Reset graph
+    ops.reset_default_graph()
 
+    # Session の設定
+    session = tf.Session()
+
+    #-------------------------------------------------
+    # 各種 通常の変数、Tensor、placeholder の作成
+    #--------------------------------------------------
+
+    # 画像のデータを供給するための placeholder
+    # 画像の形状 
+    # shape[0] : 画像の数
+    # shape[1] : 画像の height
+    # shape[2] : 画像の width
+    # shape[3] : 画像の Channel 数
+    image_shape = [ 1, 4, 4, 1 ] 
+    image_holder = tf.placeholder( tf.float32, shape = image_shape )
+    print( "image_holder :", image_holder )
+    
+    # ランダムな画像を生成するためのランダム変数
+    numpy.random.seed(12)
+    random_value = numpy.random.uniform( size = image_shape )
+    print( "random_value : ", random_value )
+    
+    # 画像のウインドウのフィルタ値、スライド値
+    filer_const = tf.constant( 0.25, shape = [2, 2, 1, 1] )
+    stride_value = [1, 2, 2, 1]
+
+    #----------------------------------------------------------------------
+    # layer（Opノード）の作成  
+    #----------------------------------------------------------------------
+    # 画像のウインドウに定数を "畳み込む"（） 関数
+    # 画像のウインドウの要素（ピクセル）毎に、指定したフィルタで積を求め、
+    # 又、画像のウインドウを上下左右方向にスライドさせる。
+    mov_avg_layer_op = tf.nn.conv2d(
+                           input = image_holder,       #
+                           filter = filer_const,       #
+                           strides = stride_value,     #
+                           padding = "SAME",           #
+                           name = "Moving_Ave_Window"  # 層の名前
+                       )
+    
+    print( "filer_const : ", filer_const )
+    print( "mov_avg_layer_op : ", mov_avg_layer_op )
+
+    # 画像のウインドウの移動平均の２×２出力を行うカスタム層を作成する。
+    # 練習用コードの可読性のため、main() 関数内にて関数定義する。
+    def custom_layer( input_tsr ):
+        # tf.squeeze(...) : sizeが 1 の次元の要素を削除し次元数を減らす
+        custom_layer_sqeezed_op = tf.squeeze( input_tsr )
+
+        A_matrix_const = tf.constant( [ [1., 2.], [-1., 3.] ] )
+        B_matrix_const = tf.constant( 1., shape = [2, 2] )
+        
+        # オペレーション
+        custom_layer_matmul_op = tf.matmul( A_matrix_const, custom_layer_sqeezed_op )
+        custom_layer_add_op = tf.add( custom_layer_matmul_op, B_matrix_const )
+        custom_layer_sigmoid_op = tf.sigmoid( custom_layer_add_op )     # シグモイド関数で 0 ~ 1 の範囲値に変換
+
+        # オペレーションの output 値を確認
+        output2 = session.run( custom_layer_sqeezed_op, feed_dict = { image_holder : random_value } )
+        output3 = session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } )
+        output4 = session.run( custom_layer_add_op, feed_dict = { image_holder : random_value } )
+        output5 = session.run( custom_layer_sigmoid_op, feed_dict = { image_holder : random_value } )
+
+        print( "session.run( custom_layer_sqeezed_op, feed_dict = { image_holder : random_value } ) : \n", output2 )
+        print( "session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } ) : \n", output2 )
+        print( "session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } ) : \n", output3 )
+        print( "session.run( custom_layer_add_op, feed_dict = { image_holder : random_value } ) : \n", output4 )
+        print( "session.run( custom_layer_sigmoid_op, feed_dict = { image_holder : random_value } ) : \n", output5 )
+        
+        return custom_layer_sigmoid_op
+
+    # Add custom layer to graph
+    with tf.name_scope('Custom_Layer') as scope:
+        custom_layer_op = custom_layer( mov_avg_layer_op )
+    
+    #----------------------------------------------------------------------
+    # 計算グラフの実行
+    #----------------------------------------------------------------------
+    output1 = session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } )
+    output = session.run( custom_layer_op, feed_dict = { image_holder : random_value } )
+
+    print( "session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) : \n", output1 )
+    print( "session.run( custom_layer_op, feed_dict = { image_holder : random_value } ) : \n", output )
+    ...
 ```
 ```python
 [出力]
+image_holder : Tensor("Placeholder:0", shape=(1, 4, 4, 1), dtype=float32)
+random_value :  [[[[ 0.15416284]
+   [ 0.7400497 ]
+   [ 0.26331502]
+   [ 0.53373939]]
 
+  [[ 0.01457496]
+   [ 0.91874701]
+   [ 0.90071485]
+   [ 0.03342143]]
+
+  [[ 0.95694934]
+   [ 0.13720932]
+   [ 0.28382835]
+   [ 0.60608318]]
+
+  [[ 0.94422514]
+   [ 0.85273554]
+   [ 0.00225923]
+   [ 0.52122603]]]]
+
+filer_const :  Tensor("Const:0", shape=(2, 2, 1, 1), dtype=float32)
+mov_avg_layer_op :  Tensor("Moving_Ave_Window:0", shape=(1, 2, 2, 1), dtype=float32)
+
+session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) : 
+ [[[[ 0.45688361]
+   [ 0.43279767]]
+
+  [[ 0.72277981]
+   [ 0.35334921]]]]
+
+session.run( custom_layer_sqeezed_op, feed_dict = { image_holder : random_value } ) : 
+ [[ 0.45688361  0.43279767]
+ [ 0.72277981  0.35334921]]
+
+session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } ) : 
+ [[ 0.45688361  0.43279767]
+ [ 0.72277981  0.35334921]]
+
+session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } ) : 
+ [[ 1.90244317  1.13949609]
+ [ 1.71145582  0.62724996]]
+
+session.run( custom_layer_add_op, feed_dict = { image_holder : random_value } ) : 
+ [[ 2.90244317  2.13949609]
+ [ 2.71145582  1.62724996]]
+
+session.run( custom_layer_sigmoid_op, feed_dict = { image_holder : random_value } ) : 
+ [[ 0.94796705  0.89468312]
+ [ 0.93769926  0.8357926 ]]
+
+session.run( custom_layer_op, feed_dict = { image_holder : random_value } ) : 
+ [[ 0.94796705  0.89468312]
+ [ 0.93769926  0.8357926 ]]
 ```

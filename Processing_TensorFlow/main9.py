@@ -45,6 +45,7 @@ def main():
     print( "image_holder :", image_holder )
     
     # ランダムな画像を生成するためのランダム変数
+    numpy.random.seed(12)
     random_value = numpy.random.uniform( size = image_shape )
     print( "random_value : ", random_value )
     
@@ -71,15 +72,44 @@ def main():
 
     # 画像のウインドウの移動平均の２×２出力を行うカスタム層を作成する。
     # 練習用コードの可読性のため、main() 関数内にて関数定義する。
-    def costom_layer( input_matrix ):
-        retun
+    def custom_layer( input_tsr ):
+        # tf.squeeze(...) : sizeが 1 の次元の要素を削除し次元数を減らす
+        custom_layer_sqeezed_op = tf.squeeze( input_tsr )
+
+        A_matrix_const = tf.constant( [ [1., 2.], [-1., 3.] ] )
+        B_matrix_const = tf.constant( 1., shape = [2, 2] )
+        
+        # オペレーション
+        custom_layer_matmul_op = tf.matmul( A_matrix_const, custom_layer_sqeezed_op )
+        custom_layer_add_op = tf.add( custom_layer_matmul_op, B_matrix_const )
+        custom_layer_sigmoid_op = tf.sigmoid( custom_layer_add_op )     # シグモイド関数で 0 ~ 1 の範囲値に変換
+
+        # オペレーションの output 値を確認
+        output2 = session.run( custom_layer_sqeezed_op, feed_dict = { image_holder : random_value } )
+        output3 = session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } )
+        output4 = session.run( custom_layer_add_op, feed_dict = { image_holder : random_value } )
+        output5 = session.run( custom_layer_sigmoid_op, feed_dict = { image_holder : random_value } )
+
+        print( "session.run( custom_layer_sqeezed_op, feed_dict = { image_holder : random_value } ) : \n", output2 )
+        print( "session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } ) : \n", output2 )
+        print( "session.run( custom_layer_matmul_op, feed_dict = { image_holder : random_value } ) : \n", output3 )
+        print( "session.run( custom_layer_add_op, feed_dict = { image_holder : random_value } ) : \n", output4 )
+        print( "session.run( custom_layer_sigmoid_op, feed_dict = { image_holder : random_value } ) : \n", output5 )
+        
+        return custom_layer_sigmoid_op
+
+    # Add custom layer to graph
+    with tf.name_scope('Custom_Layer') as scope:
+        custom_layer_op = custom_layer( mov_avg_layer_op )
     
     #----------------------------------------------------------------------
     # 計算グラフの実行
     #----------------------------------------------------------------------
     output1 = session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } )
+    output = session.run( custom_layer_op, feed_dict = { image_holder : random_value } )
 
-    print( "session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) : \n", output1 )   
+    print( "session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) : \n", output1 )
+    print( "session.run( custom_layer_op, feed_dict = { image_holder : random_value } ) : \n", output )
 
 
     # TensorBoard 用のファイル（フォルダ）を作成
