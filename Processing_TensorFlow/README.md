@@ -12,8 +12,8 @@
     1. [演算（オペレーション、Opノード）を設定](#演算（オペレーション、Opノード）を設定)
     1. [データソースの操作](#)
     1. [計算グラフでの演算の設定、実行](#)
-    1. [入れ子の演算の階層化](#)
-    1. [複数の層の追加、操作](#)
+    1. [計算グラフでの入れ子の演算の階層化](#)
+    1. [計算グラフでの複数の層の追加、操作](#)
 
 
 <a name="#全体ワークフロー"></a>
@@ -96,11 +96,13 @@ https://www.tensorflow.org/api_docs/python/tf/ </br>
 > その他ライブラリ
 >> scikit-learn ライブラリ
 
+</br>
 
 <a name="#使用するデータセット"></a>
 
 ### 使用するデータセット
 
+</br>
 
 <a name="#コードの実行結果"></a>
 
@@ -252,8 +254,11 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
 - 変数に値が代入されるタイミングは、</br>
   Session の `run(...)` に指定したオペレーションがすべて完了した後になる。
 
-<抜粋コード : `main2.py`>
+<抜粋コード : `main3.py`>
 ```python
+def main():
+    ...
+
     # Reset graph
     ops.reset_default_graph()
 
@@ -293,10 +298,10 @@ TensorFlow が計算グラフに何かを追加するのは Tensor が作成さ�
 ```
 
 > 構築した計算グラフを TensorBoard を用いた描写
-![tensorboard_graph_variable-zero](https://user-images.githubusercontent.com/25688193/30039823-663e1be0-9211-11e7-989c-3766957b56fa.png)
+![image](https://user-images.githubusercontent.com/25688193/30104276-15c4f632-9330-11e7-9481-5b433ee4424a.png)
 >> Variable ( `zeros_var = tf.Variable( zeros_tsr )` )に対し、</br>
 zero テンソル( `zeros_var = tf.Variable( zeros_tsr )` )が、Assign （割り当て）られて、</br>
-初期化の オペレーション（Opノード）`( init_op = tf.global_variables_initializer() )` にフローされている。
+初期化の オペレーション（Opノード）`( init_op = tf.global_variables_initializer() )` に制御フローされている。
 
 - TensorBoard での計算グラフの記号の意味
     - 単方向矢印（➞）: オペレーション間のデータフロー </br>
@@ -327,6 +332,8 @@ TensorFlow におけるプレースホルダー [placeholder] は、計算グラ
 
 <抜粋コード : `main3.py`>
 ```python
+def main():
+    ...
     # Reset graph
     ops.reset_default_graph()
 
@@ -364,8 +371,8 @@ TensorFlow におけるプレースホルダー [placeholder] は、計算グラ
     → Iditity 演算（オペレーション）の結果、計算グラフから等しい値が Output させている。
 ```
 
-> 構築した計算グラフを TensorBoard を用いた描写</br>
-![tensorboard_graph_placeholder-identity](https://user-images.githubusercontent.com/25688193/30051670-dd5da28a-925d-11e7-9de5-954376cde1ad.png)
+> 構築した計算グラフを TensorBoard で描写</br>
+![image](https://user-images.githubusercontent.com/25688193/30103640-3411ab1e-932e-11e7-8f42-0584700ea4a8.png)
 >> Placeholder : `tf.placeholder( tf.float32, shape = [2, 2] )` を、オペレーション（Opノード）`identity_op = tf.identity( holder )` に矢印（オペレーション間のデータフロー）で設定している。 
 
 </br>
@@ -402,6 +409,8 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
 
 <抜粋コード : `main4.py`> 
 ```python
+def main():
+    ...
     # Reset graph
     ops.reset_default_graph()
 
@@ -445,47 +454,47 @@ TensorFlow の用途的に行列は多用されるため、TensorFlow ではそ�
     )
 ```
 ```python
-    [出力]
-    Identity_matrix <Tensor型> :  Tensor("Diag:0", shape=(3, 3), dtype=float32)
-    A_matrix <Tensor型> :  Tensor("truncated_normal:0", shape=(2, 3), dtype=float32)
-    B_matrix <Tensor型> :  Tensor("Fill:0", shape=(2, 3), dtype=float32)
-    C_matrix <Tensor型> :  Tensor("random_uniform:0", shape=(3, 2), dtype=float32)
-    D_matrix <Tensor型> :  Tensor("Const:0", shape=(3, 3), dtype=float64)
+[出力]
+Identity_matrix <Tensor型> :  Tensor("Diag:0", shape=(3, 3), dtype=float32)
+A_matrix <Tensor型> :  Tensor("truncated_normal:0", shape=(2, 3), dtype=float32)
+B_matrix <Tensor型> :  Tensor("Fill:0", shape=(2, 3), dtype=float32)
+C_matrix <Tensor型> :  Tensor("random_uniform:0", shape=(3, 2), dtype=float32)
+D_matrix <Tensor型> :  Tensor("Const:0", shape=(3, 3), dtype=float64)
     
-    session.run( Identity_matrix ) :
-    [[ 1.  0.  0.]
-    [ 0.  1.  0.]
-    [ 0.  0.  1.]]
+session.run( Identity_matrix ) :
+[[ 1.  0.  0.]
+[ 0.  1.  0.]
+[ 0.  0.  1.]]
     
-    session.run( A_matrix ) :
-    [[-1.09035075 -0.32866415  1.57157266]
-    [ 1.44946873 -0.15195866  1.64530897]]
+session.run( A_matrix ) :
+[[-1.09035075 -0.32866415  1.57157266]
+[ 1.44946873 -0.15195866  1.64530897]]
     
-    session.run( B_matrix ) :
-    [[ 5.  5.  5.]
-    [ 5.  5.  5.]]
+session.run( B_matrix ) :
+[[ 5.  5.  5.]
+[ 5.  5.  5.]]
 
-    session.run( C_matrix ) :
-    [[ 0.20161021  0.62964642]
-     [ 0.10564721  0.49840438]
-    [ 0.44993746  0.30875087]]
+session.run( C_matrix ) :
+[[ 0.20161021  0.62964642]
+[ 0.10564721  0.49840438]
+[ 0.44993746  0.30875087]]
 
-    session.run( D_matrix ) :
-    [[ 1.  2.  3.]
-    [-3. -7. -1.]
-    [ 0.  5. -2.]]
+session.run( D_matrix ) :
+[[ 1.  2.  3.]
+[-3. -7. -1.]
+[ 0.  5. -2.]]
     
-    A_matrix + B_marix : 
-    [[ 5.64082575  5.76026011  5.32105875]
-    [ 5.50101185  5.78847122  3.64809322]]
+A_matrix + B_marix : 
+[[ 5.64082575  5.76026011  5.32105875]
+[ 5.50101185  5.78847122  3.64809322]]
 
-    A_matrix - B_marix : 
-    [[-5.78341341 -5.21996593 -5.4638133 ]
-    [-4.55047417 -4.764575   -5.60554838]]
+A_matrix - B_marix : 
+[[-5.78341341 -5.21996593 -5.4638133 ]
+[-4.55047417 -4.764575   -5.60554838]]
 
-    tf.matmul( B_matrix, Identity_matrix ) : 
-    [[ 5.  5.  5.]
-    [ 5.  5.  5.]]
+tf.matmul( B_matrix, Identity_matrix ) : 
+[[ 5.  5.  5.]
+[ 5.  5.  5.]]
 ```
 
 </br>
@@ -650,6 +659,63 @@ session.run( cusmom_polynormal_op ) :  300
 
 
 ### 計算グラフでの演算（オペレーション、Opノード）の設定、実行 : `main7.py`
-> コード実装中...
+
+ここまでの主に各種 TensorFlow オブジェクトの計算グラフへの配置に続き、</br>
+より実践的な、計算グラフでの演算を簡単な例で行なってみる。
+
+> TensorBoard で描写した計算グラフ</br>
+![image](https://user-images.githubusercontent.com/25688193/30103459-ab12a11a-932d-11e7-8e33-02c0dea84b9c.png)
+>> Const 値 `float_const = tf.constant( 3. )` を Opノード : Mul にデータフローしながら、</br>
+Placeholer で指定した、`session.run(...)` の `feed_dict = { float_holer, value }` を、</br>
+オペレーション Mul : `tf.multiply( float_holder, float_const )` で実行し続けている。
+
+
+
+<抜粋コード : `main7.py`>
+```python
+def main():
+    ...
+    # Reset graph
+    ops.reset_default_graph()
+
+    # Session の設定
+    session = tf.Session()
+
+    # 各種 通常の変数、Tensor、placeholder の作成
+    float_list = numpy.array( [1., 3., 5, 7, 9.] )
+    float_holder = tf.placeholder( tf.float32 )
+    float_const = tf.constant( 3. )
+
+    # オペレーション（Opノード）の作成
+    multipy_op = tf.multiply( float_holder, float_const )
+
+    # 入力値の list を for ループして、list の各値に対し、オペレーション実行
+    for value in float_list:
+        # Session を run して、
+        # 計算グラフに追加した placeholder をfeed_dict を通じて、オペレーション実行
+        output = session.run( multipy_op, feed_dict = { float_holder: value } )
+        
+        # Session を run した結果（Output）を print 出力
+        print( output )
+    
+    # TensorBoard 用のファイル（フォルダ）を作成
+    # Add summaries to tensorboard
+    merged = tf.summary.merge_all()
+    # tensorboard --logdir=${PWD}
+    summary_writer = tf.summary.FileWriter( "./TensorBoard", graph = session.graph )
+
+    session.close()
+```
+```python
+[出力]
+3.0
+9.0
+15.0
+21.0
+27.0
+```
 
 </br>
+
+### 計算グラフでの入れ子の演算の階層化 : `main7.py`
+> コード実装中...
