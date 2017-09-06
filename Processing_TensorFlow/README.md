@@ -912,7 +912,7 @@ print( "random_value : ", random_value )
       フィルタ値 : `filter = filer_const`、スライド値 : `strides = stride_value` で、</br>
       データをフィルタリングして、上下左右の移動平均を算出する。
     - ここで、この Layer : `mov_avg_layer_op` の名前を `name = "Moving_Ave_Window"` としておく。
-    - そして、この関数で作成した層の Output は、2×2 のデータになる。</br>
+    - そして、この関数で作成した層の Output は、1×2×2×1 のデータになる。</br>
     `session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } )`
 ```python
 # 画像のウインドウのフィルタ値、スライド値
@@ -945,9 +945,9 @@ session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) :
    [ 0.35334921]]]]
 ```
 - 上記の layer : `Moving_Ave_Window` で Output されるデータは、1×2×2×1 のデータなので、</br>
-次に、このデータを 4×4 のデータに変換するカスタマイズした layer を考える。
+次に、このデータを 2×2 のデータに変換して、更に幾つかの変換処理を施すカスタマイズした layer を考える。
     - まず、オペレーション Squeeze : `tf.squeeze(...)` を使用して、</br>
-    入力された 1×2×2×1 のデータの１次元要素を削除し、2×2 のデータに変換する。</br>
+    入力された 1×2×2×1 のデータの１次元要素を削除し、2×2 のデータに変換するオペレーションを作成する。</br>
     `custom_layer_sqeezed_op = tf.squeeze( input_tsr )`
     - 次に、これにオペレーション Matmul : `tf.matmul(...)` を作成＆結合する。
     `custom_layer_matmul_op = tf.matmul( A_matrix_const, custom_layer_sqeezed_op )`
@@ -955,12 +955,13 @@ session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) :
     `custom_layer_matmul_op = tf.matmul( A_matrix_const, custom_layer_sqeezed_op )`
     - 更に、これにオペレーション Add : `tf.add(...)` を作成＆結合する。
     `custom_layer_add_op = tf.add( custom_layer_matmul_op, B_matrix_const )`
-    - 最後に、オペレーション Sigmoid : `tf.sigmoid(...)` を使用して、値を 0~1 の範囲に変換する。</br>
+    - 最後に、オペレーション Sigmoid : `tf.sigmoid(...)` を使用して、値を 0~1 の範囲に変換するオペレーションを作成＆結合する。</br>
     `custom_layer_sigmoid_op = tf.sigmoid( custom_layer_add_op )`
     - これらの処理を関数 `def custom_layer( input_tsr ):` で実現する。
         - この時の引数である Tensor値 : `input_tsr` で、</br>
           カスタム層の初めのオペレーション Squeeze との接続が出来る。
     -  そして、`tf.name_scope('Custom_Layer')` で、このカスタム層の名前を設定出来る
+- 最後に、構築した計算グラフに対し、Session を `session.run(...)`して、この計算グラフでの処理を行う。
 ```python
 # 画像のウインドウの移動平均の２×２出力を行うカスタム層を作成する。
 # 練習用コードの可読性のため、main() 関数内にて関数定義する。
