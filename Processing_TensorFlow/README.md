@@ -373,8 +373,9 @@ def main():
 ```
 
 > 構築した計算グラフを TensorBoard で描写</br>
-![image](https://user-images.githubusercontent.com/25688193/30103640-3411ab1e-932e-11e7-8f42-0584700ea4a8.png)
->> Placeholder : `tf.placeholder( tf.float32, shape = [2, 2] )` を、オペレーション（Opノード）`identity_op = tf.identity( holder )` に矢印（オペレーション間のデータフロー）で設定している。 
+![image](https://user-images.githubusercontent.com/25688193/30107847-f562ff3c-933a-11e7-91fc-89b130ec2a99.png)
+>> Placeholder : `tf.placeholder( tf.float32, shape = [2, 2] )` が、オペレーション（Opノード）`identity_op = tf.identity( holder )` に矢印（オペレーション間のデータフロー）で設定されており、</br>
+Placeholder から `session.run(...)` の引数 `feed_dict = { holder : random }` を通じて、Identity ノードにデータを供給していることがビジュアル的に分かる。
 
 </br>
 
@@ -674,10 +675,10 @@ session.run( cusmom_polynormal_op ) :  300
 より実践的な、計算グラフでの演算を簡単な例で行なってみる。
 
 > TensorBoard で描写した計算グラフ</br>
-![image](https://user-images.githubusercontent.com/25688193/30103459-ab12a11a-932d-11e7-8e33-02c0dea84b9c.png)
+![image](https://user-images.githubusercontent.com/25688193/30108008-8ea882ca-933b-11e7-880d-ecb26e37870f.png)
 >> Const 値 `float_const = tf.constant( 3. )` を Opノード : Mul にデータフローしながら、</br>
-Placeholer で指定した、`session.run(...)` の `feed_dict = { float_holer, value }` を、</br>
-オペレーション Mul : `tf.multiply( float_holder, float_const )` で実行し続けている。
+又、Placeholer から、`session.run(...)` の引数 `feed_dict = { float_holer, value }` を通じて、</br>
+オペレーション Mul : `tf.multiply( float_holder, float_const )` にデータを供給して、`session.run(...)` でオペレーション Mul を実行し続けている。
 
 
 
@@ -729,12 +730,12 @@ def main():
 
 <a id="ID_4-7"></a>
 
-### 計算グラフでの入れ子の演算の階層化 : `main7.py`
+###      : `main8.py`
 > コード実装中...
 
 </br>
 
 <a id="ID_4-8"></a>
 
-### 計算グラフでの複数の層の追加、操作 : `main7.py`
+### 計算グラフでの複数の層の追加、操作 : `main9.py`
 > コード実装中...
