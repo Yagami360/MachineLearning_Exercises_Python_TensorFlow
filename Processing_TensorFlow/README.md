@@ -878,3 +878,102 @@ tf.add( matmul_op2, const1 ) :  Tensor("Add:0", shape=(3, 1), dtype=float32)
 
 ## 計算グラフでの複数の層の追加、操作 : `main9.py`
 > コード実装中...
+
+ニューラルネットワークでは、一般的に複数の層を扱う。</br>
+その為にも、ここではその基本として、計算グラフへの複数の層の追加、操作、及びカスタマイズした層の操作を取り上げる。
+
+- 4×4 pixel の画像データをフィルタリング＆移動平均して、4×4 pixel の画像データとして、Output する計算グラフを考える。
+- まず、データを供給するための Placeholder として、画像の数、画像の height、画像の width、画像の Channel 数からなる Placeholder : `image_holder` を設定する</br>
+```python
+# 画像のデータを供給するための placeholder
+# 画像の形状 
+# shape[0] : 画像の数
+# shape[1] : 画像の height
+# shape[2] : 画像の width
+# shape[3] : 画像の Channel 数
+image_shape = [ 1, 4, 4, 1 ] 
+image_holder = tf.placeholder( tf.float32, shape = image_shape )
+```
+- 4×4 pixel の各 pixel 値がランダムな値からなるデータ `random_value` を作成する。
+```python
+    # ランダムな画像を生成するためのランダム変数
+    random_value = numpy.random.uniform( size = image_shape )
+    print( "random_value : ", random_value )
+```
+```python
+[出力]
+[[[[ 0.25216785]    ← １つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
+   [ 0.71828018]
+   [ 0.15853776]
+   [ 0.6248522 ]]
+
+  [[ 0.87136305]    ← ２つ目の 4×4 の画像データ（各ピクセル値はランダムに生成）
+   [ 0.10282739]
+   [ 0.50720163]
+   [ 0.76858234]]
+
+  [[ 0.22039948]
+   [ 0.24073715]
+   [ 0.73961462]
+   [ 0.28113754]]
+
+  [[ 0.54076614]
+   [ 0.8072484 ]
+   [ 0.95869305]
+   [ 0.26412463]]]]
+```
+- このランダムに生成した 4×4 pixel の画像データをフィルタリングして、
+  上下左右の移動平均を算出することを考える。
+    - その為には、`tf.nn.conv2d(...)` 関数を使用する。</br>
+      この関数は、入力として placeholder : `input = image_holder` を受けとり、</br>
+      フィルタ値 : `filter = filer_const`、スライド値 : `strides = stride_value` で、</br>
+      データをフィルタリングして、上下左右の移動平均を算出する。
+    - ここで、この Layer : `mov_avg_layer_op` の名前を `name = "Moving_Ave_Window"` としておく。
+    - そして、この関数で作成した層の Output は、2×2 のデータになる。</br>
+    `session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } )`
+```python
+# 画像のウインドウのフィルタ値、スライド値
+filer_const = tf.constant( 0.25, shape = [2, 2, 1, 1] )
+stride_value = [1, 2, 2, 1]
+
+# layer（Opノード）の作成
+# 画像のウインドウに定数を "畳み込む"（） 関数
+# 画像のウインドウの要素（ピクセル）毎に、指定したフィルタで積を求め、
+# 又、画像のウインドウを上下左右方向にスライドさせる。
+mov_avg_layer_op = tf.nn.conv2d(
+                       input = image_holder,       # 入力として Placeholder を指定
+                       filter = filer_const,       # フィルタ値
+                       strides = stride_value,     # スライド値
+                       padding = "SAME",           #
+                       name = "Moving_Ave_Window"  # 層の名前
+                    )
+
+# 計算グラフの実行
+output1 = session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } )
+print( "session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) : \n", output1 )
+```
+```python
+[出力]
+session.run( mov_avg_layer_op, feed_dict = { image_holder : random_value } ) : 
+ [[[[ 0.48615962]
+   [ 0.51479352]]
+
+  [[ 0.45228779]
+   [ 0.56089246]]]]
+```
+- 上記の layer : `Moving_Ave_Window` で Output されるデータは、2×2のデータなので、</br>
+次に、このデータを 4×4 のデータに変換するカスタマイズした layer を考える。
+    - 
+
+> TensorBorad で描写した計算グラフ
+![image](https://user-images.githubusercontent.com/25688193/30124587-98e90838-9370-11e7-8bd8-4fb9a80bf10a.png)
+>> 
+
+<抜粋コード : `main9.py`>
+```python
+
+```
+```python
+[出力]
+
+```
