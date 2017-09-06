@@ -25,7 +25,7 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
     1. [](#)
 
 
-<a id="#ID_1"></a>
+<a id="ID_1"></a>
 
 ## 使用するライブラリ
 
@@ -38,18 +38,18 @@ https://www.tensorflow.org/api_docs/python/ </br>
 > scikit-learn ライブラリ </br>
 
 
-<a id="#ID_2"></a>
+<a id="ID_2"></a>
 
 ## 使用するデータセット
 
 > Iris データセット : `datasets.load_iris()`
 
 
-<a id="#ID_3"></a>
+<a id="ID_3"></a>
 
 ## コードの実行結果
 
-<a id="#ID_3-1"></a>
+<a id="ID_3-1"></a>
 
 ## ニューラルネットにおける活性化関数の実装 : `main1.py`
 > コード実行中...
@@ -62,25 +62,25 @@ https://www.tensorflow.org/api_docs/python/ </br>
 
 </br>
 
-<a id="#ID_3-2"></a>
+<a id="ID_3-2"></a>
 
 ## 損失関数の実装 : `main2.py`
 > コード実装中...
 
 </br>
 
-<a id="#ID_3-3"></a>
+<a id="ID_3-3"></a>
 
 ## 誤差逆伝播法（バックプロパゲーション）の実装 : `main3.py`
 > コード実装中...
 
 ---
 
-<a id="#ID_4"></a>
+<a id="ID_4"></a>
 
 ## 背景理論
 
-<a id="#ID_4-1"></a>
+<a id="ID_4-1"></a>
 
 ## ニューラルネットの概要
 ![twitter_nn1_1_160825](https://user-images.githubusercontent.com/25688193/30112643-09c7ef7a-934d-11e7-91d2-fcc93505baa0.png)
@@ -88,18 +88,18 @@ https://www.tensorflow.org/api_docs/python/ </br>
 ![twitter_nn3 -1_160827](https://user-images.githubusercontent.com/25688193/30112645-09c8e42a-934d-11e7-95f9-87e0ca316b2f.png)
 
 
-<a id="#ID_4-2"></a>
+<a id="ID_4-2"></a>
 
 ## 活性化関数
 ![twitter_nn2-1_160826](https://user-images.githubusercontent.com/25688193/30112640-09b4803e-934d-11e7-993d-4e35263cda81.png)
 ![twitter_nn2-2_160826](https://user-images.githubusercontent.com/25688193/30112641-09b5d6d2-934d-11e7-861d-06792890d2f9.png)
 
-<a id="#ID_4-3"></a>
+<a id="ID_4-3"></a>
 
 ## 単純パーセプトロン
 ![twitter_nn4 -1_160829](https://user-images.githubusercontent.com/25688193/30112642-09b65e90-934d-11e7-9cac-2472c4add901.png)
 
-<a id="#ID_4-4"></a>
+<a id="ID_4-4"></a>
 
 ## パーセプトロンによる論理演算
 ![twitter_nn6-1_160829](https://user-images.githubusercontent.com/25688193/30112770-703f5f68-934d-11e7-845d-be2240ef4d17.png)
@@ -108,13 +108,13 @@ https://www.tensorflow.org/api_docs/python/ </br>
 ![twitter_nn10-1_160903](https://user-images.githubusercontent.com/25688193/30112972-1a64417a-934e-11e7-96f1-775f232a2767.png)
 
 
-<a id="#ID_4-5"></a>
+<a id="ID_4-5"></a>
 
 ## 最急降下法による学習
 ![twitter_nn8-2 _160902](https://user-images.githubusercontent.com/25688193/30112771-7041b13c-934d-11e7-88c7-8692f42b5799.png)
 ![twitter_nn8-3 _160902](https://user-images.githubusercontent.com/25688193/30112769-703f3cb8-934d-11e7-81f0-f78ef37cb2b2.png)
 
-<a id="#ID_4-6"></a>
+<a id="ID_4-6"></a>
 
 ## 誤差逆伝播法
 ![twitter_nn9-2_160902](https://user-images.githubusercontent.com/25688193/30112776-70665816-934d-11e7-95d5-fbe5e349b94c.png)
@@ -122,15 +122,16 @@ https://www.tensorflow.org/api_docs/python/ </br>
 ![twitter_nn9-3_160903](https://user-images.githubusercontent.com/25688193/30112774-706594d0-934d-11e7-89a7-50814730aafe.png)
 
 
-<a id="#ID_4-7"></a>
+<a id="ID_4-7"></a>
 
 ## 多層パーセプトロン
 ![twitter_nn5 -1_160829](https://user-images.githubusercontent.com/25688193/30112646-09d7f8fc-934d-11e7-81fa-4cc74b1e3e39.png)
 ![twitter_nn5-1_160829](https://user-images.githubusercontent.com/25688193/30112647-09da02d2-934d-11e7-96a1-a8c4592993cc.png)
 ![twitter_nn9-1_160902](https://user-images.githubusercontent.com/25688193/30112773-7050f1c4-934d-11e7-9343-398900bd8a2d.png)
 
+<a id="ID_4-8"></a>
 
-## 
+## 連想記憶ニューラルネットワーク
 ![twitter_nn11-1_160904](https://user-images.githubusercontent.com/25688193/30112974-1a8ff1b2-934e-11e7-81de-933019772299.png)
 ![twitter_nn11-2_160904](https://user-images.githubusercontent.com/25688193/30112976-1a965e58-934e-11e7-98a7-f80bdee26b35.png)
 ![twitter_nn12-1_160904](https://user-images.githubusercontent.com/25688193/30112977-1aa3d1aa-934e-11e7-98fd-626e1a46fc30.png)
