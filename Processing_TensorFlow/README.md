@@ -299,7 +299,8 @@ def main():
 ```
 
 > 構築した計算グラフを TensorBoard を用いた描写
-![image](https://user-images.githubusercontent.com/25688193/30104276-15c4f632-9330-11e7-9481-5b433ee4424a.png)
+![image](https://user-images.githubusercontent.com/25688193/30110476-2a6acf66-9345-11e7-9585-cd5296851f18.png)
+
 >> Variable ( `zeros_var = tf.Variable( zeros_tsr )` )に対し、</br>
 zero テンソル( `zeros_var = tf.Variable( zeros_tsr )` )が、Assign （割り当て）られて、</br>
 初期化の オペレーション（Opノード）`( init_op = tf.global_variables_initializer() )` に制御フローされている。
@@ -373,7 +374,7 @@ def main():
 ```
 
 > 構築した計算グラフを TensorBoard で描写</br>
-![image](https://user-images.githubusercontent.com/25688193/30107847-f562ff3c-933a-11e7-91fc-89b130ec2a99.png)
+![image](https://user-images.githubusercontent.com/25688193/30110498-40ae91ea-9345-11e7-8cf7-f187577d45d3.png)
 >> Placeholder : `tf.placeholder( tf.float32, shape = [2, 2] )` が、オペレーション（Opノード）`identity_op = tf.identity( holder )` に矢印（オペレーション間のデータフロー）で設定されており、</br>
 Placeholder から `session.run(...)` の引数 `feed_dict = { holder : random }` を通じて、Identity ノードにデータを供給していることがビジュアル的に分かる。
 
@@ -505,7 +506,7 @@ tf.matmul( B_matrix, Identity_matrix ) :
 
 <a id="ID_4-4"></a>
 
-### 演算（オペレーション、Opノード）の設定、実行 : `main5.py`
+## 演算（オペレーション、Opノード）の設定、実行 : `main5.py`
 ここでは、ここまでに取り上げた TensorFlow における演算（オペレーション、Opノード）の他に、</br>
 よく使うオペレーションを取り上げる。
 
@@ -669,18 +670,39 @@ session.run( cusmom_polynormal_op ) :  300
 
 <a id="ID_4-6"></a>
 
-### 計算グラフでの演算（オペレーション、Opノード）の設定、実行 : `main7.py`
+## 計算グラフでの演算（オペレーション、Opノード）の設定、実行 : `main7.py`
 
 ここまでの主に各種 TensorFlow オブジェクトの計算グラフへの配置に続き、</br>
 より実践的な、計算グラフでの演算を簡単な例で行なってみる。
 
+- 計算グラフに各種オブジェクト（Placeholder : `tf.placeholder(...)`、const : `tf.constant(...)`）を紐付ける。
+- 計算グラフに１つのオペレーション Mul : `tf.multiply(...)` を追加する。
+- 構築した計算グラフに対して、for ループ内で `session.run(...)` させ、計算グラフの Output を計算し続け、一連の値を取得する。
+    ```python
+    # 入力値の list を for ループして、list の各値に対し、オペレーション実行
+    for value in float_list:
+        # Session を run して、
+        # Placeholder から feed_dict を通じて、データを供給しながら、オペレーション実行
+        output = session.run( multipy_op, feed_dict = { float_holder: value } )
+        
+        # Session を run した結果（Output）を print 出力
+        print( output )
+    ```
+    ```python
+    [出力]
+    3.0     ← 構築した計算グラフから Output される 1 回目の値
+    9.0     ← 構築した計算グラフから Output される 2 回目の値
+    15.0    ...
+    21.0    
+    27.0
+    ```
+
 > TensorBoard で描写した計算グラフ</br>
-![image](https://user-images.githubusercontent.com/25688193/30108008-8ea882ca-933b-11e7-880d-ecb26e37870f.png)
+![image](https://user-images.githubusercontent.com/25688193/30110536-5b8159d0-9345-11e7-91aa-c4014e6d33fb.png)
+
 >> Const 値 `float_const = tf.constant( 3. )` を Opノード : Mul にデータフローしながら、</br>
 又、Placeholer から、`session.run(...)` の引数 `feed_dict = { float_holer, value }` を通じて、</br>
 オペレーション Mul : `tf.multiply( float_holder, float_const )` にデータを供給して、`session.run(...)` でオペレーション Mul を実行し続けている。
-
-
 
 <抜粋コード : `main7.py`>
 ```python
@@ -703,7 +725,7 @@ def main():
     # 入力値の list を for ループして、list の各値に対し、オペレーション実行
     for value in float_list:
         # Session を run して、
-        # 計算グラフに追加した placeholder をfeed_dict を通じて、オペレーション実行
+        # Placeholder から feed_dict を通じて、データを供給しながら、オペレーション実行
         output = session.run( multipy_op, feed_dict = { float_holder: value } )
         
         # Session を run した結果（Output）を print 出力
@@ -730,12 +752,126 @@ def main():
 
 <a id="ID_4-7"></a>
 
-###      : `main8.py`
-> コード実装中...
+## 計算グラフでの入れ子の演算の階層化 : `main8.py`
+ここまでの計算グラフは、単一の演算（オペレーション）のみであったが、</br>
+ここでは、複数のオペレーション（演算）からなる計算グラフを構築し、その処理を行う。</br>
+この際、各オペレーション（演算）ノードを連結しながら計算グラフを構築していくことになる。
+
+- 計算グラフに各種オブジェクト（Placeholder : `tf.placeholder(...)`、３つの const : `tf.constant(...)`）を紐付ける。
+- 計算グラフに複数の演算（オペレーション）を追加し、それらを連結していく。
+    - １つ目のオペレーション MatMul を作成する。</br>
+    `matmul_op1 = tf.matmul( dim3_holder, const1 )`
+    - ２つ目のオペレーション MatMul を作成し、先の１つ目のオペレーション MatMul を連結する。</br>
+    具体的には、`tf.matmul(...)` の第１引数に、</br>
+    先の１つ目のオペレーション MatMul を指定することで、連結することが出来る。</br>
+    `matmul_op2 = tf.matmul( matmul_op1, const2 )` : 第１引数に `matmul_op1` を指定
+    - ３つ目オペレーション Add を作成＆連結する。</br>
+    同様にして、先の２つ目のオペレーション MatMul を指定することで、連結することが出来る。</br>
+    `add_op3 = tf.add( matmul_op2, const3 )` : 第１引数に `matmul_op2` を指定
+    - これらの３つの処理で、３つのオペレーションが作成＆連結される。
+- 構築した計算グラフに対して, for ループで `session.run(...)` させ、計算グラフの Output を計算し続け、一連の値を取得する。
+    ```python
+    # 入力値の list を for ループして、list の各値に対し、
+    # 構築した計算グラフのオペレーション実行
+    for value in values:
+        # Session を run して、
+        # Placeholder から feed_dict を通じて、データを供給しながら、オペレーション実行
+        output = session.run( add_op3, feed_dict = { dim3_holder : value } )
+        
+        # Session を run した結果（Output）を print 出力
+        print( output )
+    ```
+    ```python
+    [出力]
+    [[ 102.]    ← 構築した計算グラフから Output される 1 回目の値
+    [  66.]
+    [  58.]]    
+
+    [[ 114.]    ← 構築した計算グラフから Output される 2 回目の値
+     [  78.]
+    [  70.]]
+    ```
+
+> TensorBorad で描写した計算グラフ
+![image](https://user-images.githubusercontent.com/25688193/30110959-eafe3bfe-9346-11e7-9522-a2517297cc19.png)
+>> 
+
+<抜粋コード : `main8.py`>
+```python
+def main():
+    ...
+    # Reset graph
+    ops.reset_default_graph()
+
+    # Session の設定
+    session = tf.Session()
+
+    # 各種 通常の変数、Tensor、placeholder の作成
+    dim3_list = numpy.array( 
+                    [
+                        [ 1.,  3., 5,  7,  9.], 
+                        [-2.,  0., 2., 4., 6.],
+                        [-6., -3., 0., 3., 6.]
+                    ]
+                )
+    
+    # 後の for ループでの処理のため、
+    # 入力を２つ（２回ループ）にするため、配列を複製
+    values = numpy.array( [dim3_list, dim3_list + 1] )
+
+    # 3*5 のデータを供給するための placeholder
+    dim3_holder = tf.placeholder( tf.float32, shape = (3,5) )
+    
+    # 行列の演算用のConst 値
+    const1 = tf.constant( [ [1.],[0.],[-1.],[2.],[4.] ] )
+    const2 = tf.constant( [ [2.] ] )
+    const3 = tf.constant( [ [10.] ] )
+
+    print( "const1 : ", const1 )
+    print( "const2 : ", const2 )
+    print( "const3 : ", const3 )
+
+    # オペレーション（Opノード）の作成＆連結
+    matmul_op1 = tf.matmul( dim3_holder, const1 )
+    matmul_op2 = tf.matmul( matmul_op1, const2 )
+    add_op3 = tf.add( matmul_op2, const3 )
+
+    print( "tf.matmul( dim3_holder, const1 ) : ", matmul_op1 )
+    print( "tf.matmul( matmul_op1, const2 ) : ", matmul_op2 )
+    print( "tf.add( matmul_op2, const1 ) : ", add_op3 )
+
+    # 入力値の list を for ループして、list の各値に対し、
+    # 構築した計算グラフのオペレーション実行
+    for value in values:
+        # Session を run して、
+        # Placeholder から feed_dict を通じて、データを供給しながら、オペレーション実行
+        output = session.run( add_op3, feed_dict = { dim3_holder : value } )
+        
+        # Session を run した結果（Output）を print 出力
+        print( output )    
+```
+```python
+[出力]
+const1 :  Tensor("Const:0", shape=(5, 1), dtype=float32)
+const2 :  Tensor("Const_1:0", shape=(1, 1), dtype=float32)
+const3 :  Tensor("Const_2:0", shape=(1, 1), dtype=float32)
+
+tf.matmul( dim3_holder, const1 ) :  Tensor("MatMul:0", shape=(3, 1), dtype=float32)
+tf.matmul( matmul_op1, const2 ) :  Tensor("MatMul_1:0", shape=(3, 1), dtype=float32)
+tf.add( matmul_op2, const1 ) :  Tensor("Add:0", shape=(3, 1), dtype=float32)
+
+[[ 102.]
+ [  66.]
+ [  58.]]
+
+[[ 114.]
+ [  78.]
+ [  70.]]
+```
 
 </br>
 
 <a id="ID_4-8"></a>
 
-### 計算グラフでの複数の層の追加、操作 : `main9.py`
+## 計算グラフでの複数の層の追加、操作 : `main9.py`
 > コード実装中...
