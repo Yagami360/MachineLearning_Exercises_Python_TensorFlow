@@ -10,9 +10,9 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
 1. [使用するライブラリ](#ID_1)
 1. [使用するデータセット](#ID_2)
 1. [コードの実行結果](#ID_3)
-    1. [ニューラルネットにおける活性化関数の実装](#ID_3-1)
-    1. [損失関数の実装](#ID_3-2)
-    1. [誤差逆伝播法の実装](#ID3-3)
+    1. [ニューラルネットにおける活性化関数の実装 : `main1.py`](#ID_3-1)
+    1. [損失関数の実装 : `main2.py`](#ID_3-2)
+    1. [誤差逆伝播法の実装 : `main3.py`](#ID3-3)
     1. [](#)
 1. [背景理論](#ID_4)
     1. [ニューラルネットワークの概要](#ID_4-1)
@@ -33,8 +33,25 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
 >> API 集 </br>
 https://www.tensorflow.org/api_docs/python/ </br>
 
+>> ニューラルネットワーク :</br>
+https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/</br>
+>>> 活性化関数 </br>
+https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/activation_functions_
+>>>> ReLu 関数 : `tf.nn.relu(...)` </br>
+https://www.tensorflow.org/versions/r1.1/api_docs/python/tf/nn/relu</br>
+>>>> ReLu6 関数 : `tf.nn.relu6(...)` </br>
+https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/activation_functions_#relu6</br>
+>>>> ソフトプラス関数 : `tf.nn.softplus(...)`</br>
+https://www.tensorflow.org/api_docs/python/tf/nn/softplus </br>
+>>>> ELU 関数 : `tf.nn.elu(...)` </br>
+https://www.tensorflow.org/api_docs/python/tf/nn/elu </br>
+>>>> シグモイド関数 : ``</br>
+</br>
+>>>> tanh 関数 : `` </br>
+</br>
 
-> その他ライブラリ
+> その他ライブラリ </br>
+
 > scikit-learn ライブラリ </br>
 
 
@@ -42,8 +59,7 @@ https://www.tensorflow.org/api_docs/python/ </br>
 
 ## 使用するデータセット
 
-> Iris データセット : `datasets.load_iris()`
-
+- 
 
 <a id="ID_3"></a>
 
@@ -52,15 +68,48 @@ https://www.tensorflow.org/api_docs/python/ </br>
 <a id="ID_3-1"></a>
 
 ## ニューラルネットにおける活性化関数の実装 : `main1.py`
-> コード実行中...
 
-- xxx データセットを使用
-- 特徴行列 `X_features` は、特徴数 x 個 × サンプル数 x 個 :</br> `X_features = `
-- 教師データ `y_labels` は、サンプル数 x 個 : </br >`y_labels = `
-- トレーニングデータ xx% 、テストデータ xx% の割合で分割 : </br>`sklearn.cross_validation.train_test_split( test_size = , random_state =  )`
-- 正規化処理を実施して検証する。</br> 
-
+ニューラルネットワークにおいて、各ニューロンが情報を取得する時、それぞれの入力信号に対し結合状態に応じた重み付け（結合荷重）を行うが、ニューロンの出力は、重み付けされた入力の和であるに対し、非線形関数で変換した値となる。</br>
+この関数を活性化関数といい、多くの場合に飽和的性質をもつ関数となる。</br>
+これは、生体のニューロンがパルスを発火するときに、入力を増やして出力パルスの時間密度を上げていくと密度が飽和する特性を持つ。この特性を真似たものである。</br>
 </br>
+ここでは、代表的な幾つかの活性化関数（ReLu 関数、シグモイド関数、tanh 関数等）の図を plot するサンプルコードを実装する。
+
+- 活性化関数は、TensorFlow のニューラルネットワークライブラリ : `tensorflow.nn` でサポートされている。
+    - 標準的な活性化関数を使用したい場合は、</br>
+      このライブラリでサポートされている組み込み関数を使用すればよい。
+    - 独自のカスタムな活性化関数を使用したい場合は、</br>
+      TensorFlow の各種オペレーションを応用することで、これを実現できる。
+- まず初めに、活性化関数の１つである ReLu [Rectified Liner Unit] 関数の実装 & 描写を行う。</br>
+  この活性化関数は、出力値が 0 の範囲が存在するため、出力に過疎生を作るのが特徴である。
+    - 具体的には、以下の TensorFlow の組み込み関数を使用する。
+    - `tf.nn.Relu( features )` : Relu オペレーション（Opノード）を返す。
+        - x < 0 の範囲では値が 0、x > 0 の範囲では x に比例した単調増加値となる関数。 ( = `max(0,x)` )
+        - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
+    - `tf.nn.Relu6( features )` : Relu6 オペレーション（Opノード）を返す。
+        - 上記の Relu 関数の上限値を 6 にした関数。 ( = `min( max(0,x), 6 )` )
+        - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
+- ソフトプラス関数は、Relu 関数の x=0 における非連続性を滑らかにした関数であり、微分可能な関数である。
+    - ソフトプラス関数の TensorFlow における組み込み関数は、以下のようになる。
+    - `tf.nn.softplus( features )` : Softplus オペレーション（Opノード）を返す。
+        - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
+- ELU [Exponetial Liner Unit] 関数は、ソフトプラス関数に似た特徴を持つが、下の漸近線が 0 ではなく -1 となる。
+    - ELU 関数の TensorFlow における組み込み関数は、以下のようになる。
+    - `tf.nn.elu( features )` : Elu オペレーション（Opノード）を返す。
+        - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
+- 
+</br>
+
+> 活性化関数のグラフ１
+>> 活性化関数の内、Relu, Relu6, softplus, ELU 関数の図
+![processingformachinelearning_tensorflow_1-1](https://user-images.githubusercontent.com/25688193/30203903-ac94e5ec-94be-11e7-867f-fc78b059ef44.png)
+[拡大図]
+![processingformachinelearning_tensorflow_1-1](https://user-images.githubusercontent.com/25688193/30203883-9ac00c48-94be-11e7-888d-fff494e5d1f7.png)
+
+
+> 活性化関数のグラフ２
+>> 活性化関数の内、sigmoid, tanh, softsign 関数の図
+
 
 <a id="ID_3-2"></a>
 
