@@ -24,6 +24,10 @@ https://www.tensorflow.org </br>
 https://deepage.net/tensorflow/2017/04/25/tensorboard.html </br>
 http://tensorflow.classcat.com/2016/02/13/tensorflow-how-tos-graph-visualization/</br>
 
+> ニューラルネットワーク :</br>
+>> 概要 :</br>
+https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/</br>
+
 ### 検証用データセット
 > 
 
