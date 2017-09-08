@@ -56,11 +56,13 @@ https://www.tensorflow.org/api_docs/python/tf/zeros </br>
 https://www.tensorflow.org/api_docs/python/tf/ones </br>
 >>>> `tf.fill(...)` : 指定した定数で埋められた Tensor を作成する。</br>
 https://www.tensorflow.org/api_docs/python/tf/fill </br>
+
 >>> シーケンステンソル </br>
 >>>> `tf.linespace(...)` : stop 値のあるシーケンステンソルを作成する。</br>
 https://www.tensorflow.org/api_docs/python/tf/lin_space </br>
 >>>> `tf.range(...)` : stop 値のないシーケンステンソルを作成する。</br>
 https://www.tensorflow.org/api_docs/python/tf/range </br>
+
 >>> ランダムテンソル
 
 </br>
