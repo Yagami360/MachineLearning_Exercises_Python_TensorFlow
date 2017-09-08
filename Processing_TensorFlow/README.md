@@ -30,30 +30,40 @@ https://www.tensorflow.org/api_docs/python/ </br>
 >> Session 関連 </br>
 >>> `tf.Session` : A class for running TensorFlow operations. </br>
 https://www.tensorflow.org/api_docs/python/tf/Session </br>
+>>> `tf.Session.run(...)` : Session を run して、オペレーション、計算グラフを実行する。</br>
+https://www.tensorflow.org/api_docs/python/tf/Session#run </br>
 >>> `tf.Session.close()` : Session を close する。</br>
 https://www.tensorflow.org/api_docs/python/tf/Session#close </br>
 
->> Variable関連 </br>
->>> `tf.Variable` : </br>
-https://www.tensorflow.org/api_docs/python/tf/Variable </br>
-
->> Op ノード </br>
->>> `tf.global_variables_initializer` : </br>
+>> オペレーション（Op ノード）関連 </br>
+>>> `tf.global_variables_initializer` : Variable の初期化を行うオペレーション</br>
 https://www.tensorflow.org/api_docs/python/tf/global_variables_initializer </br>
 
+>> Variable関連 </br>
+>>> `tf.Variable` : Variable を作成する。</br>
+https://www.tensorflow.org/api_docs/python/tf/Variable </br>
+
+>> Placeholder 関連</br>
+>>> `tf.placeholder` : Placeholder を作成する。</br>
+https://www.tensorflow.org/api_docs/python/tf/placeholder </br>
+
 >> Tensor の生成関連 </br>
+https://www.tensorflow.org/api_guides/python/constant_op </br>
 >>> 固定のテンソル </br>
 >>>> `tf.zeros(...)` : 全ての要素が 0 からなる Tensor を作成する。</br>
 https://www.tensorflow.org/api_docs/python/tf/zeros </br>
 >>>> `tf.ones(...)` : 全ての要素が 1 からなる Tensor を作成する。</br>
 https://www.tensorflow.org/api_docs/python/tf/ones </br>
->>>> `tf.fill(...)` : </br>
+>>>> `tf.fill(...)` : 指定した定数で埋められた Tensor を作成する。</br>
 https://www.tensorflow.org/api_docs/python/tf/fill </br>
->>>> `tf.(...)` : </br>
-https://www.tensorflow.org/api_docs/python/tf/ </br>
 >>> シーケンステンソル </br>
->>>> `` : </br>
+>>>> `tf.linespace(...)` : stop 値のあるシーケンステンソルを作成する。</br>
+https://www.tensorflow.org/api_docs/python/tf/lin_space </br>
+>>>> `tf.range(...)` : stop 値のないシーケンステンソルを作成する。</br>
+https://www.tensorflow.org/api_docs/python/tf/range </br>
+>>> ランダムテンソル
 
+</br>
 
 <a id="ID_2"></a>
 
@@ -69,7 +79,7 @@ https://www.tensorflow.org/api_docs/python/tf/ </br>
 これは、MATLAB Simulink とよく似たモデルベースな設計手法。</br>
 但し、MATLAB Simulink とは異なりモデル作成のための GUI ツールはないので、頭の中（コード）で計算グラフを考えながら設計していくスタイルになる。</br>
 （TensorBoard でコードの結果の計算グラフを可視化することは可能。）</br>
-以下、コードの実行結果と共に、TensorFlow 特有の概念である、Tensor, Variable, Session, オペレーション（Opノード）等を記述する。
+以下、コードの実行結果と共に、TensorFlow 特有の概念である、Tensor, Variable, Placeholder, Session, オペレーション（Opノード）等を記述する。
 
 </br>
 <a name="#ID_4"></a>
@@ -82,7 +92,7 @@ https://www.tensorflow.org/api_docs/python/tf/ </br>
 
 TensorFlow におけるテンソルとは、単に多次元配列であるが、計算グラフに対して何かしらのグラフ構造を与えると言う点で、他の多次元配列とは異なる。</br>
 但し、ここで注意すべきことは、Tensor を設定したからといって、TensorFlow が計算グラフに何かしらを追加するわけではないということである。</br>
-TensorFlow が計算グラフに何かを追加するのは Tensor が作成されて、利用可能になった後に限られる。
+TensorFlow が計算グラフに何かを追加するのは Tensor が作成されて、利用可能（ `session.run(...)` された後）になった後に限られる。
 
 - 固定のテンソル
     - `tf.zeros(...)` : 全ての要素が 0 からなる Tensor を作成する。</br>
