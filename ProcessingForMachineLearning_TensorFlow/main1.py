@@ -46,16 +46,28 @@ def main():
     softplus_op = tf.nn.softplus( features = axis_x_list )
     elu_op = tf.nn.elu( features = axis_x_list )
 
+    sigmoid_op = tf.nn.sigmoid( x = axis_x_list )
+    tanh_op = tf.nn.tanh( x = axis_x_list )
+    softsign_op = tf.nn.softsign( features = axis_x_list )
+
     print( "tf.nn.relu(...) :\n", relu_op )
     print( "tf.nn.relu6(...) :\n", relu6_op )
     print( "tf.nn.softplus(...) :\n", softplus_op )
     print( "tf.nn.elu(...) :\n", elu_op )
+    
+    print( "tf.nn.sigmoid(...) :\n", sigmoid_op )
+    print( "tf.nn.tanh(...) :\n", tanh_op )
+    print( "tf.nn.softsign((...) :\n", softsign_op )
 
     # Session を run してオペレーションを実行
     output_relu = session.run( relu_op )
     output_relu6 = session.run( relu6_op )
     output_softplus = session.run( softplus_op )
     output_elu = session.run( elu_op )
+
+    output_sigmoid = session.run( sigmoid_op )
+    output_tanh = session.run( tanh_op )
+    output_softsign = session.run( softsign_op )
 
     #print( "session.run( relu_op ) :\n", output_relu )
     
@@ -84,7 +96,7 @@ def main():
     plt.title( "Relu [Rectified Liner Unit] \n activate function" )
     plt.legend( loc = 'best' )
     plt.ylim( [-1.50, 10.0] )
-    #plt.tight_layout()
+    plt.tight_layout()
 
     # plot Relu6 function
     plt.subplot( 2, 2, 2 )
@@ -98,7 +110,7 @@ def main():
     plt.title( "Relu6 \n activate function" )
     plt.legend( loc = 'best' )
     plt.ylim( [-1.50, 10.0] )
-    #plt.tight_layout()
+    plt.tight_layout()
 
     # plot softplus function
     plt.subplot( 2, 2, 3 )
@@ -112,7 +124,7 @@ def main():
     plt.title( "softplus \n activate function" )
     plt.legend( loc = 'best' )
     plt.ylim( [-1.50, 10.0] )
-    #plt.tight_layout()
+    plt.tight_layout()
 
     # plot ELU function
     plt.subplot( 2, 2, 4 )
@@ -126,10 +138,8 @@ def main():
     plt.title( "ELU [Exponetial Liner Unit] \n activate function" )
     plt.legend( loc = 'best' )
     plt.ylim( [-1.50, 10.0] )
-    #plt.tight_layout()
-
-
-
+    plt.tight_layout()
+    
     MLPlot.saveFigure( fileName = "ProcessingForMachineLearning_TensorFlow_1-1.png" )
     plt.show()
 
@@ -140,9 +150,48 @@ def main():
 
     # plot sigmoid function
     plt.subplot( 2, 2, 1 )
+    plt.plot( 
+        axis_x_list, output_sigmoid, 
+        label='sigmoid' 
+        #linestyle = ':',
+        #linewidth = 2,
+        #color = 'red'
+    )
+    plt.title( "sigmiod = 1/( 1+exp(-x) ) \n activate function" )
+    plt.legend( loc = 'best' )
+    plt.ylim( [-1.10, 1.10] )
+    plt.tight_layout()
+    
+    # plot tanh function
+    plt.subplot( 2, 2, 2 )
+    plt.plot( 
+        axis_x_list, output_tanh, 
+        label='sigmoid' 
+        #linestyle = ':',
+        #linewidth = 2,
+        #color = 'red'
+    )
+    plt.title( "tanh = ( exp(x) - exp(-x) )/( exp(x) + exp(-x) ) \n activate function" )
+    plt.legend( loc = 'best' )
+    plt.ylim( [-1.10, 1.10] )
+    plt.tight_layout()
+
+    # plot softsign function
+    plt.subplot( 2, 2, 3 )
+    plt.plot( 
+        axis_x_list, output_softsign, 
+        label='softsign'
+        #linestyle = '--',
+        #linewidth = 2,
+        #color = 'blue'
+    )
+    plt.title( "softsign = x/(|x|+ 1 ) \n activate function" )
+    plt.legend( loc = 'best' )
+    plt.ylim( [-1.10, 1.10] )
+    plt.tight_layout()
 
     MLPlot.saveFigure( fileName = "ProcessingForMachineLearning_TensorFlow_1-2.png" )
-    #plt.show()
+    plt.show()
 
 
     print("Finish main()")

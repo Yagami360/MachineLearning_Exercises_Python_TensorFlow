@@ -124,34 +124,36 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
   この活性化関数は、出力値が 0 の範囲が存在するため、出力に過疎生を作るのが特徴である。
     - 具体的には、以下の TensorFlow の組み込み関数を使用する。
     - `tf.nn.Relu( features )` : Relu オペレーション（Opノード）を返す。
-        - x < 0 の範囲では値が 0、x > 0 の範囲では x に比例した単調増加値となる関数。 ( = `max(0,x)` )
+        - x < 0 の範囲では値域が 0、</br>
+          x > 0 の範囲では値域が x に比例した単調増加値となる関数。 ( = `max(0,x)` )
         - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
     - `tf.nn.Relu6( features )` : Relu6 オペレーション（Opノード）を返す。
-        - 上記の Relu 関数の上限値を 6 にした関数。 ( = `min( max(0,x), 6 )` )
+        - 上記の Relu 関数の値域の上限値を 6 にした関数。 ( = `min( max(0,x), 6 )` )
         - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
 - ソフトプラス関数は、Relu 関数の x=0 における非連続性を滑らかにした関数であり、微分可能な関数である。
+    - softplus(x) = log( exp(x) + 1 ) で与えられる関数。
     - ソフトプラス関数の TensorFlow における組み込み関数は、以下のようになる。
     - `tf.nn.softplus( features )` : Softplus オペレーション（Opノード）を返す。
         - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
-- ELU [Exponetial Liner Unit] 関数は、ソフトプラス関数に似た特徴を持つが、下の漸近線が 0 ではなく -1 となる。
+- ELU [Exponetial Liner Unit] 関数は、ソフトプラス関数に似た特徴を持つが、値域の下の漸近線が 0 ではなく -1 となる。
+    - elu = exp(x) - 1 ( x < 0 ), elu = x ( x > 0 ) で与えられる関数
     - ELU 関数の TensorFlow における組み込み関数は、以下のようになる。
     - `tf.nn.elu( features )` : Elu オペレーション（Opノード）を返す。
         - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
-- シグモイド関数は、以下のような式で与えられる関数で、値域が[0,1]となる。
-    ```math
-    \sigma(x)=\frac{1}{1+\exp(-x)}
-    ```
+- シグモイド関数は、以下のような式で与えられる関数で、値域が [0, 1] となる。
+    - sigmoid(x) = 1 / { 1 + exp(-x) } で与えられる関数
     - シグモイド関数の、TensorFlow における組み込み関数は、以下のようになる。
     - `tf.nn.sigmoid( x )` or `tf.sigmoid( x )`
         - 引数の `x` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
     - 値域が [0,1] となるが、都合に合わせてオフセットして [-1,1] などにすれば良い。
 - ハイパブリックタンジェントは、以下のような式で与えられる関数で、値域が [-1,1] となる。
-    ```math
-    \tanh(x)=\frac{\exp(x)-\exp(-x)}{\exp(x)+\exp(-x)}
-    ```
+    - tanh(x) = { exp(x)-exp(-x) }/{ exp(x)+exp(-x) }
     - ハイパブリックタンジェントの TensorFlow における組み込み関数は、以下のようになる。
     - `tf.nn.tanh( x )` or `tf.tanh( x) `
         - 引数の `x` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
+- ソフトサイン関数は、
+    - `tf.nn.softsign( features )` : Softsign オペレーション（Opノード）を返す。
+        - 引数の `features` は Tensor 型。但し、`numpy.ndarray` オブジェクトに限り、直接渡すことが可能。
 </br>
 
 > 活性化関数のグラフ１
@@ -163,6 +165,9 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 
 > 活性化関数のグラフ２
 >> 活性化関数の内、sigmoid, tanh, softsign 関数の図
+![processingformachinelearning_tensorflow_1-2](https://user-images.githubusercontent.com/25688193/30211949-e16ce07a-94dd-11e7-9562-6d121aeeb59e.png)
+[拡大]
+![processingformachinelearning_tensorflow_1-2](https://user-images.githubusercontent.com/25688193/30211950-e16e1922-94dd-11e7-9320-7b16dd6006f6.png)
 
 
 <a id="ID_3-2"></a>
