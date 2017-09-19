@@ -231,7 +231,7 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 
 ### ② クラスの分類問題の為の損失関数（評価関数、誤差関数）
 
-クラスの分類問題の為の損失関数は、クラスのカテゴリの成果指標を予測する際の分類誤差の評価に使用できる。<br>
+クラスの分類問題の為の損失関数は、現在の学習結果が与えられたデータに対してどの程度「良い感じなのか」を定量化するために使われる。（誤差逆伝播法時の計算等）<br>
 分類問題でのニューラルネットワークの最終結果は、例えば２クラスの分類問題の場合、正解は -1 or 1（又は 0 or 1）の負例と正例となる。従って、損失関数による損失は、連続な値ではなく sign 化したもの 、即ち正解ラベルと、ニューラルネットワークの出力の符号が一致しているならば損失は 0（＝分類が成功）であり、符号が一致していなければ損失は 1 となる。
 
 - クラスの分類問題の為の損失関数の TensorFlow での実装として、<br>
@@ -249,9 +249,10 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
         - `hinge_loss_op = tf.maximum( 0., 1. - tf.multiply( target_tsr, x_predicts_tsr ) )` : ヒンジ損失関数のオペレーション 
         - `output_hinge_loss = session.run( hinge_loss_op )` : ヒンジ損失関数の値（グラフの y 軸値の list）
         - 尚、ここでは、目的値が 1 のケースのグラフを描写する。
-    - クロス・エントロピー損失関数（２クラスの場合）は、２つのクラス 0 or 1 を予想する場合に使用される。（※ -1 or 1 のクラス分類ではないことに注意）<br>
+    - クロス・エントロピー損失関数 [cross-entropy loss funtion]（２クラスの場合）は、２つのクラス 0 or 1 を予想する場合に使用される。<br>
+    （※ -1 or 1 のクラス分類ではないことに注意）<br>
     この関数は、シャノンの情報理論でいうところの２つの確率分布 P,Q の相互情報量であり、<br>
-    H ( P, Q ) = P_1 * log( 1/Q_1 ) + P_2 * log( 1/Q_2 ) = - P_1 * log( Q_1 ) - P_2 * log( Q_2 ) とう式で書ける。<br>
+    H ( P, Q ) = P_1 * log( 1/Q_1 ) + P_2 * log( 1/Q_2 ) = - P_1 * log( Q_1 ) - P_2 * log( Q_2 ) という式で書ける。<br>
     （ここでは、目的値を 1 とするので、P_1 = 1, P_2 = 0 ）<br>
     そして TensorFlow による関数値の算出＆グラフ化のための実装は、以下のように書ける。<br>
         - `cross_entopy_loss_op =`<br>
@@ -261,13 +262,52 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
         - `output_cross_entopy_loss = session.run( cross_entopy_loss_op )` <br>
           クロス・エントロピー関数の値（グラフの y 軸値の list）
         - 尚、ここでは、目的値が 1 のケースのグラフを描写する。
-<br>
+    - シグモイド・クロス・エントロピー損失関数は、クロス・エントロピー関数とよく似ているが、<br>
+        x 値をシグモイド変換してからクロス・エントロピー関数を計算するという違いがあり、<br>
+        loss = z * - log( sigmoid(x) ) + (1 - z) * -log( 1 - sigmoid(x) ) とい式で書ける。<br>
+        そして TensorFlow による関数値の算出＆グラフ化のための実装は、以下のように書ける。<br>
+        ```python
+        # シグモイド・クロス・エントロピー関数のオペレーション
+        # x = logits, z = labels. 
+        # z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
+        # tf.nn.softmax_cross_entropy_with_logits(...) : 
+        # 推計結果の softmax 値を計算して、cross-entropy を計算。
+        sigmoid_cross_entropy_loss_op \
+        = tf.nn.softmax_cross_entropy_with_logits( 
+              logits = x_expanded_predicts_tsr,   # 最終的な推計値。softmax はする必要ない
+              labels = expaned_targets_tsr        # 教師データ
+        )
+
+        # シグモイド・クロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+        output_sigmoid_cross_entropy_loss = session.run( sigmoid_cross_entropy_loss_op )
+        ```
+    - 重み付きクロス・エントロピー損失関数は、重み付きのシグモイド・クロスエントロピー損失関数のことである。<br>
+    ここでは、正の目的値 1 を 0.5 で重み付けするようにする。<br>
+    そして TensorFlow による関数値の算出＆グラフ化のための実装は、以下のように書ける。<br>
+    ```python
+    # 重み付けクロス・エントロピー損失関数
+    # loss = targets * -log(sigmoid(logits)) * pos_weight + (1 - targets) * -log(1 - sigmoid(logits))
+    weight_tsr = tf.constant( 0.5 )      # 重み付けの値の定数 Tensor
+    weighted_cross_entropy_loss_op = tf.nn.weighted_cross_entropy_with_logits(
+                                         logits = x_predicts_tsr, 
+                                         targets = targets_tsr,
+                                         pos_weight = weight_tsr
+                                     )
+    
+    # 重み付けクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+    output_weighted_cross_entropy_loss = session.run( weighted_cross_entropy_loss_op )
+    ```
+    - ソフトマックスクロス・エントロピー損失関数 [softmax cross-entrpy loss function]は、正規化されていない出力を操作する。
+    - ...
 
 #### ◎ 分類の為の、損失関数のグラフ
-![processingformachinelearning_tensorflow_2-2](https://user-images.githubusercontent.com/25688193/30562465-77f470d0-9cf9-11e7-879d-dd81f6cc4679.png)
+![processingformachinelearning_tensorflow_2-2](https://user-images.githubusercontent.com/25688193/30594195-2d46c742-9d88-11e7-8989-585977c7865b.png)
 
 - ヒンジ損失関数は、...
 - クロス・エントロピー交差関数（２クラスの場合）は、
+- シグモイド・クロスエントロピー損失関数は、
+- 重み付きクロス・エントロピー損失関数は、
+
 
 <a id="ID_3-3"></a>
 

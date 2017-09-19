@@ -95,7 +95,7 @@ def main():
 
     
     MLPlot.saveFigure( fileName = "ProcessingForMachineLearning_TensorFlow_2-1.png" )
-    plt.show()
+    #plt.show()
 
     #-------------------------------------------------------------------
     # 分類問題の為の損失関数
@@ -111,23 +111,55 @@ def main():
     print( "x_predicts_tsr :\n", x_predicts_tsr )
 
     # 目的値
-    target_tsr = tf.constant( 1. )          #  定数 Tensor で値（目的値）を10 としている。
-    targets_tsr = tf.fill( [500,], 1 )     #  定数 Tensor で値（目的値）を10 としている。
-    print( "target_tsr :\n", target_tsr )
-    print( "targets_tsr :\n", targets_tsr )
+    target_tsr = tf.constant( 1. )          #  定数 Tensor で値（目的値）を 1.0 としている。
+    targets_tsr = tf.fill( [500,], 1. )     #  定数 Tensor で値（目的値）を 1.0 としている。
+    
     
     # 回帰問題の為の損失関数のオペレーション作成
     hinge_loss_op = tf.maximum( 0., 1. - tf.multiply( target_tsr, x_predicts_tsr ) )   # ヒンジ損失関数のオペレーション
-    cross_entopy_loss_op = - tf.multiply( target_tsr, tf.log( x_predicts_tsr ) ) - tf.multiply( 1 - target_tsr, tf.log( 1 - x_predicts_tsr ) ) # L1 正則化の損失関数のオペレーション
+    cross_entopy_loss_op = - tf.multiply( target_tsr, tf.log( x_predicts_tsr ) ) \
+                           - tf.multiply( 1 - target_tsr, tf.log( 1 - x_predicts_tsr ) ) # L1 正則化の損失関数のオペレーション
     
+
+    # シグモイド・クロス・エントロピー関数
+    # dim で指定された次元(Rank)分を input に追加
+    x_expanded_predicts_tsr = tf.expand_dims( input = x_predicts_tsr, dim = 1 )
+    expaned_targets_tsr = tf.expand_dims( input = targets_tsr, dim = 1 )
+    
+    #print( "session.run( x_predicts_tsr ) : \n", session.run( x_predicts_tsr ) )
+    #print( "session.run( x_expanded_predicts_tsr ) : \n", session.run( x_expanded_predicts_tsr ) )
+    #print( "session.run( targets_tsr ) :\n", session.run( targets_tsr ) )    
+    #print( "session.run( expaned_targets_tsr ) : \n", session.run( expaned_targets_tsr ) )
+
+    # シグモイド・クロス・エントロピー関数のオペレーション
+    # x = logits, z = labels. 
+    # z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
+    # tf.nn.softmax_cross_entropy_with_logits(...) : 推計結果のsoftmax値を計算して、cross-entropyを計算します。
+    sigmoid_cross_entropy_loss_op = tf.nn.softmax_cross_entropy_with_logits( 
+                                        logits = x_expanded_predicts_tsr,   # 最終的な推計値。softmax はする必要ない
+                                        labels = expaned_targets_tsr        # 教師データ
+                                    )
+
+    # 重み付けクロス・エントロピー損失関数
+    # loss = targets * -log(sigmoid(logits)) * pos_weight + (1 - targets) * -log(1 - sigmoid(logits))
+    weight_tsr = tf.constant( 0.5 )      # 重み付けの値の定数 Tensor
+    weighted_cross_entropy_loss_op = tf.nn.weighted_cross_entropy_with_logits(                                        
+                                         logits = x_predicts_tsr, 
+                                         targets = targets_tsr,
+                                         pos_weight = weight_tsr
+                                     )
+
     print( "hinge_loss_op :\n", hinge_loss_op )
-    print( "cross_entopy_loss_op :\n", l1_loss_op )
+    print( "cross_entopy_loss_op :\n", cross_entopy_loss_op )
+    print( "sigmoid_cross_entropy_loss_op :\n", sigmoid_cross_entropy_loss_op )
+    print( "weighted_cross_entropy_loss_op :\n", weighted_cross_entropy_loss_op )
 
     # Session を run してオペレーションを実行
-    axis_x_list = session.run( x_predicts_tsr )                         # 損失関数のグラフ化のためのグラフ化のための x 軸の値のリスト 
-    output_hinge_loss = session.run( hinge_loss_op )                    # ヒンジ損失関数の値 （グラフの y 軸値の list）
-    output_cross_entropy_loss = session.run( cross_entopy_loss_op )     # クロスエントロピー損失関数の値 （グラフの y 軸値の list）
-
+    axis_x_list = session.run( x_predicts_tsr )                                         # 損失関数のグラフ化のためのグラフ化のための x 軸の値のリスト 
+    output_hinge_loss = session.run( hinge_loss_op )                                    # ヒンジ損失関数の値 （グラフの y 軸値の list）
+    output_cross_entropy_loss = session.run( cross_entopy_loss_op )                     # クロスエントロピー損失関数の値 （グラフの y 軸値の list）
+    output_sigmoid_cross_entropy_loss = session.run( sigmoid_cross_entropy_loss_op )    # シグモイド・クロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+    output_weighted_cross_entropy_loss = session.run( weighted_cross_entropy_loss_op )  # 重み付けクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
 
     #---------------------------------------
     # plot loss functions
@@ -137,7 +169,7 @@ def main():
     # plot hinge function
     plt.plot( 
         axis_x_list, output_hinge_loss, 
-        label='hinge loss ( target = 1 )',
+        label = 'hinge loss ( target = 1 )',
         linestyle = ':',
         #linewidth = 2,
         color = 'red'
@@ -146,10 +178,28 @@ def main():
     # plot cross-entropy
     plt.plot( 
         axis_x_list, output_cross_entropy_loss, 
-        label='cross-entropy loss ( target = 1 )',
+        label = 'cross-entropy loss ( target = 1 )',
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'
+    )
+
+    # plot sigmoid cross-entropy
+    plt.plot( 
+        axis_x_list, output_sigmoid_cross_entropy_loss, 
+        label = 'sigmoid cross-entropy loss ( target = 1 )',
+        linestyle = '-.',
+        linewidth = 1,
+        color = 'lightgreen'
+    )
+
+    # plot weigted cross-entropy
+    plt.plot( 
+        axis_x_list, output_weighted_cross_entropy_loss, 
+        label = 'weigted cross-entropy loss ( target = 1 )',
+        linestyle = '-.',
+        #linewidth = 2,
+        color = 'mediumpurple'
     )
 
     plt.title( "loss functions ( for classification )" )
