@@ -297,8 +297,52 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
     # 重み付けクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
     output_weighted_cross_entropy_loss = session.run( weighted_cross_entropy_loss_op )
     ```
-    - ソフトマックスクロス・エントロピー損失関数 [softmax cross-entrpy loss function]は、正規化されていない出力を操作する。
-    - ...
+    - ソフトマックスクロス・エントロピー損失関数 [softmax cross-entrpy loss function] は、正規化されていない出力を操作する。
+        - この関数は、ソフトマックス関数を用いて、出力を確率分布に変換して、真の確率分布から損失関数を計算する。
+        ```python
+        # ソフトマックスクロス・エントロピー損失関数 [softmax cross-entrpy loss function] 
+        # L = -actual * (log(softmax(pred))) - (1-actual)(log(1-softmax(pred)))
+        unscaled_logits = tf.constant( [[1., -3., 10.]] )   # 正規化されていない予測値
+        target_dist = tf.constant( [[0.1, 0.02, 0.88]] )    # 目的値の確率分布
+        softmax_entropy_op = \
+        tf.nn.softmax_cross_entropy_with_logits(
+            logits = unscaled_logits,   # 最終的な推計値。softmax はする必要ない
+            labels = target_dist        # 教師データ（目的値の確率分布）
+        )
+
+        # ソフトマックスクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+        output_softmax_entropy_loss = session.run( softmax_entropy_op )
+
+        print( "output_softmax_entropy_loss : ", output_softmax_entropy_loss )
+        ```
+        ```python
+        [出力]
+        output_softmax_entropy_loss :  [ 1.16012561] 
+        ↑ 分類クラス{-1, 1} の内、クラス 1 に分類される値となっている。
+        ```
+    - 疎なソフトマックスクロス・エントロピー損失関数 [sparse softmax cross-entrpy loss function] は、ソフトマックスクロス・エントロピー損失関数とよく似ているが、目的値が確率分布ではなく、分類クラス {-1 or 1} が真となるクラスのインデックス（ここでは、インデックス 0, 1 が存在）である。
+        - ここでは、教師データ : `labels` として、（この関数の一般的な使われ方である 1 の値が 1 つ含まれている以外は、すべて 0 の疎なベクトルではなく）分類が真の値（正解クラス）であるクラスのインデックスを渡す。
+        ```python
+        # 疎なソフトマックスクロス・エントロピー損失関数 [sparse softmax cross-entrpy loss function]
+        # 正規化されていない予測値
+        unscaled_logits = tf.constant( [[1., -3., 10.]] )
+        # 分類クラス {-1 or 1} が真となるクラスのインデックス
+        sparse_target_dist = tf.constant( [2] )
+
+        sparse_entropy_op = \
+        tf.nn.sparse_softmax_cross_entropy_with_logits(
+            logits=unscaled_logits,     # 最終的な推計値。softmax はする必要ない
+            labels=sparse_target_dist   # 教師データ（ここでは、クラスラベルを渡す）
+        )
+
+        # 疎なソフトマックスクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+        output_sparse_entropy_loss = session.run( sparse_entropy_op )
+        print( "output_sparse_entropy_loss : ", output_sparse_entropy_loss )
+        ```
+        ```python
+        [出力]
+        output_sparse_entropy_loss :  [ 0.00012564]
+        ```
 
 #### ◎ 分類の為の、損失関数のグラフ
 ![processingformachinelearning_tensorflow_2-2](https://user-images.githubusercontent.com/25688193/30594195-2d46c742-9d88-11e7-8989-585977c7865b.png)

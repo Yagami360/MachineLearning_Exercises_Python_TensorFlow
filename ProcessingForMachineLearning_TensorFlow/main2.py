@@ -154,12 +154,35 @@ def main():
     print( "sigmoid_cross_entropy_loss_op :\n", sigmoid_cross_entropy_loss_op )
     print( "weighted_cross_entropy_loss_op :\n", weighted_cross_entropy_loss_op )
 
+    # ソフトマックスクロス・エントロピー損失関数 [softmax cross-entrpy loss function] 
+    # L = -actual * (log(softmax(pred))) - (1-actual)(log(1-softmax(pred)))
+    unscaled_logits = tf.constant( [[1., -3., 10.]] )   # 正規化されていない予測値
+    target_dist = tf.constant( [[0.1, 0.02, 0.88]] )    # 目的値の確率分布
+    softmax_entropy_op = tf.nn.softmax_cross_entropy_with_logits(
+                            logits = unscaled_logits,   # 最終的な推計値。softmax はする必要ない
+                            labels = target_dist        # 教師データ（ここでは、目的値の確率分布）
+                         )
+
+    # 疎なソフトマックスクロス・エントロピー損失関数 [ sparse softmax cross-entrpy loss function] 
+    unscaled_logits = tf.constant( [[1., -3., 10.]] )   # 正規化されていない予測値
+    sparse_target_dist = tf.constant( [2] )             # 分類クラス {-1 or 1} が真となるクラスのインデックス
+    sparse_entropy_op = tf.nn.sparse_softmax_cross_entropy_with_logits(
+                            logits=unscaled_logits,     # 最終的な推計値。softmax はする必要ない
+                            labels=sparse_target_dist   # 教師データ（ここでは、クラスラベル）
+                        )
+    
     # Session を run してオペレーションを実行
     axis_x_list = session.run( x_predicts_tsr )                                         # 損失関数のグラフ化のためのグラフ化のための x 軸の値のリスト 
     output_hinge_loss = session.run( hinge_loss_op )                                    # ヒンジ損失関数の値 （グラフの y 軸値の list）
     output_cross_entropy_loss = session.run( cross_entopy_loss_op )                     # クロスエントロピー損失関数の値 （グラフの y 軸値の list）
     output_sigmoid_cross_entropy_loss = session.run( sigmoid_cross_entropy_loss_op )    # シグモイド・クロス・エントロピー損失関数の値 （グラフの y 軸値の list）
     output_weighted_cross_entropy_loss = session.run( weighted_cross_entropy_loss_op )  # 重み付けクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+    
+    output_softmax_entropy_loss = session.run( softmax_entropy_op )                     # ソフトマックスクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+    print( "output_softmax_entropy_loss : ", output_softmax_entropy_loss )
+    
+    output_sparse_entropy_loss = session.run( sparse_entropy_op )                       # 疎なソフトマックスクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+    print( "output_sparse_entropy_loss : ", output_sparse_entropy_loss )
 
     #---------------------------------------
     # plot loss functions
