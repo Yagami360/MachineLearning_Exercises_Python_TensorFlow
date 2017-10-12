@@ -30,7 +30,7 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
     1. [](#)
 
 
-</br>
+<br>
 <a id="ID_0"></a>
 
 ## TensorFlow での機械学習処理の全体ワークフロー
@@ -64,7 +64,7 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
 - ハイパーパラメータのチューニング (Optional)
 - デプロイと新しい成果指標の予想 (Optional)
 
-</br>
+<br>
 <a id="ID_1"></a>
 
 ## 使用するライブラリ
@@ -356,7 +356,56 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 <a id="ID_3-3"></a>
 
 ## 誤差逆伝播法（バックプロパゲーション）の実装 : `main3.py`
-> コード実装中...
+誤差逆伝播法（バックプロパゲーション）は、多層パーセプトロンの学習等、ニューラルネットワークによる学習（重みの更新）で広く使われる学習手法である。<br>
+ここでは、TensorFlow で誤差逆伝播法を簡単な例（回帰問題、分類問題）で実装する。<br>
+尚、ここでの誤差逆伝播法の実装例は、ニューラルネットワークに対して適用したものではないが、一般的には、誤差逆伝播法は多層パーセプトロン等のニューラルネットワークの学習として使われる手法である。<br>
+
+誤差逆伝播法は、誤差関数（コスト関数、損失関数）に対しての、最急降下法で最適なパラメータ（ニューラルネットワークの場合、重みベクトル）を求め、又の誤差項を順方向（ニューラルネットワークの場合、入力層→隠れ層→出力層）とは逆方向に逆伝播で伝播させる手法であるが、<br>
+この最急降下法を TensorFlow で実装する場合は、TensorFlow の組み込み関数 `tf.tf.train.GradientDescentOptimizer( learning_rate )` を使用すれば良い。
+
+### ① 回帰問題での誤差逆伝播法
+単純な回帰モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する
+
+- 平均値 1, 標準偏差 0,1 の正規分布 N(1, 0.1) に従う乱数を 100 個生成する。
+    - `x_rnorms = numpy.random.normal( 1.0, 0.1, 100 )`
+- そして、この乱数値に対し、Variable（モデルのパラメータで、最適値は 10 になる）を乗算する演算を行う。
+    - `a_var = tf.Variable( tf.random_normal( shape = [1] ) )` : 乗算する Variable
+    - `x_rnorms_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
+    オペレーター mul_op での x_rnorm にデータを供給する placeholder
+    - `mul_op = tf.multiply( x_rnorms_holder, a_var )` : 計算グラフに乗算追加 
+- 教師データ（目的値）として、 10 の値の list を設定する。
+    - `y_targets = numpy.repeat( 10., 100 )` : 教師データ（目的値）の list
+    - `y_targets_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
+    L2 損失関数（オペレーター）loss = y_targets - x_rnorms = 10 - N(1.0, 0.1) での `y_targets` に教師データを供給する placeholder
+- 損失関数として、この教師データと正規分布からの乱数に Variable を乗算した結果の出力の差からなる L2 ノルムの損失関数を設定する。（変数 a が 10 のとき誤差関数の値が 0 になるようなモデルにする。）
+    - `l2_loss_op = tf.square( mul_op - y_targets_holder )` : 目的値と乗算の出力の差
+- 最急降下法によるパラメータの最適化を行う。（学習プロセスは、損失関数の最小化）
+    - `optGD_op = tf.train.GradientDescentOptimizer( learning_rate = 0.01 )`
+    - `train_step = optGD_op.minimize( l2_loss_op )`
+- 各エポックに対し、オンライン学習を行い、パラメータを最適化していく。
+    ```python
+    # for ループでオンライン学習
+    for i in range( num_train ):
+        # RNorm のイテレータ : ランダムサンプリング
+        it = numpy.random.choice( num_train )
+
+        x_rnorm = [ x_rnorms[ it ] ]    # shape を [1] にするため [...] で囲む
+        y_target = [ y_targets[ it ] ]  # ↑
+
+        session.run( 
+            train_step,                     # 学習プロセス（オペレーター）
+            feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } 
+        )
+
+        print( "epoc :", i )
+    ```
+
+以下、最急降下法での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数の値の過程のグラフ
+> ![processingformachinelearning_tensorflow_3-1](https://user-images.githubusercontent.com/25688193/31498382-bdca09f2-af9c-11e7-8688-d7cc707f2d8c.png)
+>> エポック数（学習回数）が増えるにつれ、パラメータ a → 10 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
+
+
+### ② 分類問題での誤差逆伝播法
 
 
 ---
