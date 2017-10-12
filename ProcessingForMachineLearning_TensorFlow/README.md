@@ -446,7 +446,7 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
     - `y_targets_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
     `y_targets` にデータを供給する placeholder
 - このモデルのパラメータとなる Variable として、シグモイド関数の平行移動分 sigmoid( x + a_var ) となる変数 `a_var` を設定する。<br>
-この平行移動したシグモイド関数が、クラスラベル {0,1} を識別するモデルとなる。<br>
+この平行移動したシグモイド関数が、クラスラベル {0,1} を識別するモデルとなる。つまり、ロジスティクス回帰による２クラス識別モデル（※ロジスティクス回帰は、回帰という名前であるが、実際には分類問題のための手法である。）<br>
 そして、最適化アルゴリズムの実行過程で、この Variable の値が TensorFlow によって、適切に変更されていることを確認するのが、このサンプルコードでの目的の１つである。
     - `a_var = tf.Variable( tf.random_normal(mean=10, shape=[1]) )`<br>
     値を 10 で初期化しているが、これは、最適値である -1 に学習の過程で収束する様子を明示することを意図しての値である。
