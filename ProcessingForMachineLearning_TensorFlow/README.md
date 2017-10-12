@@ -17,17 +17,27 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
 1. [コードの実行結果](#ID_3)
     1. [ニューラルネットにおける活性化関数の実装 : `main1.py`](#ID_3-1)
     1. [損失関数（評価関数、誤差関数）の実装 : `main2.py`](#ID_3-2)
-    1. [誤差逆伝播法の実装 : `main3.py`](#ID3-3)
+    1. [誤差逆伝播法の実装 : `main3.py`](#ID_3-3)
     1. [](#)
 1. [背景理論](#ID_4)
     1. [ニューラルネットワークの概要](#ID_4-1)
     1. [活性化関数](#ID_4-2)
-    1. [単純パーセプトロン](#ID_4-3)
-    1. [パーセプトロンによる論理演算](#ID_4-4) 
-    1. [最急降下法による学習](#ID_4-5)
-    1. [誤差逆伝播法](#ID_4-6)
-    1. [多層パーセプトロン](#ID_4-7)
-    1. [](#)
+    1. [学習方法の分類](#ID_4-3)
+        1. [教師あり学習 [supervised learning] と教師なし学習 [Unsupervised learning]](#ID_4-3-1)
+        1. [バッチ学習 [batch learning] とオンライン学習 [online learning]](#ID_4-3-2)
+        1. [強化学習 [reinforcement learning]](#ID_4-3-3)
+        1. [転移学習 [transfer learning]](#ID_4-3-4)
+    1. [単純パーセプトロン [Simple perceptron]](#ID_4-4)
+        1. [単層パーセプトロンのアーキテクチャ [architecture]](#ID_4-4-1)
+        1. [誤り訂正学習 [error correction learning rule]（パーセプトロンの学習規則 [perceptron learing rule] ）<br>＜教師あり学習、オンライン学習＞](#ID_4-4-2)
+        1. [最急降下法 [gradient descent method] による学習（重みの更新）</br>＜教師あり学習、パッチ学習＞](#ID_4-4-3)
+        1. [確率的勾配降下法 [stochastic gradient descent method]](#ID_4-4-4)
+     1. [多層パーセプトロン [ MLP : Multilayer perceptron]](#ID_4-5)
+        1. [多層パーセプトロンのアーキテクチャ [architecture]](#ID_4-5-1)
+        1. [最急降下法 [gradient descent method] による学習（重みの更新）<br>＜教師あり学習、パッチ学習＞](#ID_4-5-2)
+        1. [確率的勾配降下法 [stochastic gradient descent method] <br>＜教師あり学習、オンライン学習＞](#ID_4-5-3)
+        1. [誤差逆伝播法（バックプロパゲーション）[Backpropagation]<br>＜教師あり学習、バッチ学習 or オンライン学習＞](#ID_4-5-4)
+    1. [パーセプトロンによる論理演算](#ID_4-7) 
 
 
 <br>
@@ -419,7 +429,15 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 ## ニューラルネットの概要
 ![twitter_nn1_1_160825](https://user-images.githubusercontent.com/25688193/30112643-09c7ef7a-934d-11e7-91d2-fcc93505baa0.png)
 ![twitter_nn1_2_160825](https://user-images.githubusercontent.com/25688193/30112644-09c88430-934d-11e7-9450-6d4861190175.png)
+
+### ニューラルネットワークの主動作
 ![twitter_nn3 -1_160827](https://user-images.githubusercontent.com/25688193/30112645-09c8e42a-934d-11e7-95f9-87e0ca316b2f.png)
+
+ニューラルネットワーク、より広義には機械学習は、</br>
+大きく分けて以下の３つの問題設定＆解決のための手法に分けることが出来る。</br>
+① 回帰問題の為の手法。（単回帰分析、重回帰分析、等）</br>
+② （クラスの）分類問題の為の手法（SVM、k-NN、ロジスティクス回帰、等）</br>
+③ クラスタリング問題の為の手法（k-means法、等）
 
 
 <a id="ID_4-2"></a>
@@ -430,47 +448,113 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 
 <a id="ID_4-3"></a>
 
+
+### 学習方法の分類
+
+<a id="ID_4-3-1"></a>
+
+#### 教師あり学習 [supervised learning] と教師なし学習 [Unsupervised learning]
+![image](https://user-images.githubusercontent.com/25688193/30948617-1cb9a46a-a44c-11e7-824b-1f0f23f6780a.png)
+
+<a id="ID_4-3-2"></a>
+
+#### バッチ学習 [batch processing] とオンライン学習 [online learning]
+![image](https://user-images.githubusercontent.com/25688193/30580233-c7f83474-9d56-11e7-8a0f-38a54892e3d0.png)
+
+<a id="ID_4-3-3"></a>
+
+#### 強化学習 [reinforcement learning]
+![image](https://user-images.githubusercontent.com/25688193/30580261-dd196eea-9d56-11e7-8ae6-6f2df8557307.png)
+
+<a id="ID_4-3-4"></a>
+
+#### 転移学習 [transfer learning]
+![image](https://user-images.githubusercontent.com/25688193/30949112-85641f60-a44f-11e7-9430-a0a2fd068e1e.png)
+
+
+<a id="ID_4-4"></a>
+
 ## 単純パーセプトロン
 ![twitter_nn4 -1_160829](https://user-images.githubusercontent.com/25688193/30112642-09b65e90-934d-11e7-9cac-2472c4add901.png)
 
-<a id="ID_4-4"></a>
+<a id="ID_4-4-1"></a>
+
+#### 誤り訂正学習 [error correction learning rule]（パーセプトロンの学習規則 [perceptron learing rule] ）</br>＜教師あり学習、オンライン学習＞
+![image](https://user-images.githubusercontent.com/25688193/30771972-171532fc-a08e-11e7-86ab-663fd81fbb75.png)
+![image](https://user-images.githubusercontent.com/25688193/30772185-7c0aca0c-a091-11e7-8a22-f258792b99df.png)
+![image](https://user-images.githubusercontent.com/25688193/30772194-922be5fa-a091-11e7-8f35-26f52b029e14.png)
+
+<a id="ID_4-4-2"></a>
+
+#### 最急降下法 [gradient descent method] による学習（重みの更新）</br>＜教師あり学習、パッチ学習＞
+![image](https://user-images.githubusercontent.com/25688193/30624595-3a3797da-9df9-11e7-95eb-5edb913e080f.png)
+![image](https://user-images.githubusercontent.com/25688193/30772096-ec426f7a-a08f-11e7-8fa6-47ce74a29bb9.png)
+![image](https://user-images.githubusercontent.com/25688193/30772213-fbeaeaa4-a091-11e7-8838-e8ceccc4b96e.png)
+![image](https://user-images.githubusercontent.com/25688193/30772274-78479b3c-a093-11e7-8f6b-6b7ed6c29751.png)
+
+<a id="ID_4-4-3"></a>
+
+#### 確率的勾配降下法 [stochastic gradient descent method]
+![image](https://user-images.githubusercontent.com/25688193/30772388-ac53aa3c-a094-11e7-80f2-28703a2931b8.png)
+![image](https://user-images.githubusercontent.com/25688193/30772400-d949d8e0-a094-11e7-8d31-87ebc9e8913e.png)
+
+<a id="ID_4-5"></a>
+
+### 多層パーセプトロン [ MLP : Multilayer perceptron]
+
+<a id="ID_4-5-1"></a>
+
+#### 多層パーセプトロンのアーキテクチャ [architecture]
+![image](https://user-images.githubusercontent.com/25688193/30770644-c6575a60-a070-11e7-9a4b-c31a0743abf7.png)
+![image](https://user-images.githubusercontent.com/25688193/30770558-ed0b3fe8-a06e-11e7-99b9-15278ee6f60e.png)
+![image](https://user-images.githubusercontent.com/25688193/30760907-32b178f8-a017-11e7-8605-b087b92c9442.png)
+![image](https://user-images.githubusercontent.com/25688193/30770651-e0155c40-a070-11e7-94b4-9fa49980ff91.png)
+![image](https://user-images.githubusercontent.com/25688193/30761470-541ad50a-a019-11e7-8ece-b0cf55e14cee.png)
+> 【参考 URL】softmax関数について
+>> https://mathtrain.jp/softmax<br>
+>> http://s0sem0y.hatenablog.com/entry/2016/11/30/012350<br>
+
+![image](https://user-images.githubusercontent.com/25688193/30770538-6591cad2-a06e-11e7-9440-290d3957af7e.png)
+![image](https://user-images.githubusercontent.com/25688193/30770761-e01c8a26-a073-11e7-9e49-fc70a23bd63d.png)
+
+![image](https://user-images.githubusercontent.com/25688193/30748067-111c05b4-9fea-11e7-8841-f6e9029ea2b4.png)
+
+<a id="ID_4-5-2"></a>
+
+#### 最急降下法 [gradient descent mesod] による学習（重みの更新）<br>＜教師あり学習、パッチ学習＞
+![image](https://user-images.githubusercontent.com/25688193/30624595-3a3797da-9df9-11e7-95eb-5edb913e080f.png)
+![image](https://user-images.githubusercontent.com/25688193/30772455-74ac9e16-a096-11e7-99b4-69618fdd8ab8.png)
+![image](https://user-images.githubusercontent.com/25688193/30778507-db5903a8-a112-11e7-8a5e-65e356aa2a3c.png)
+![image](https://user-images.githubusercontent.com/25688193/30778884-6f95d782-a11b-11e7-8e2d-885da200a2bf.png)
+![image](https://user-images.githubusercontent.com/25688193/30778895-b24e28c2-a11b-11e7-8b5a-6a4129206fd1.png)
+![image](https://user-images.githubusercontent.com/25688193/30778967-6d01b3ae-a11d-11e7-9ea7-f86b5a6dfeae.png)
+![image](https://user-images.githubusercontent.com/25688193/30772701-111084a2-a09c-11e7-939e-d3f5a2198157.png)
+
+<a id="ID_4-5-3"></a>
+
+#### 確率的勾配降下法 [stochastic gradient descent method] <br>＜教師あり学習、オンライン学習＞
+![image](https://user-images.githubusercontent.com/25688193/30773009-98407c24-a0a2-11e7-8e94-2bad0b818786.png)
+![image](https://user-images.githubusercontent.com/25688193/30773013-a883396e-a0a2-11e7-867e-ad3e9e34188b.png)
+
+<a id="ID_4-5-4"></a>
+
+#### 誤差逆伝播法（バックプロパゲーション）[Backpropagation] <br>＜教師あり学習、バッチ学習 or オンライン学習＞
+![image](https://user-images.githubusercontent.com/25688193/30778562-c4fc9074-a113-11e7-9df5-3af84b3e26fb.png)
+![image](https://user-images.githubusercontent.com/25688193/30778693-392d659c-a117-11e7-9a2c-8658144bc5f2.png)
+![image](https://user-images.githubusercontent.com/25688193/30778686-14bd91be-a117-11e7-8a16-e1651534fc32.png)
+![image](https://user-images.githubusercontent.com/25688193/30779065-4543fc84-a120-11e7-82af-8028fa8e05ef.png)
+![image](https://user-images.githubusercontent.com/25688193/30779458-65f39640-a12c-11e7-848a-fb9cd82e2248.png)
+
+![image](https://user-images.githubusercontent.com/25688193/30780761-9f2678bc-a14d-11e7-8dfb-7e3d5e8591e9.png)
+![image](https://user-images.githubusercontent.com/25688193/30846403-832289f4-a2d2-11e7-9dc7-2842bba5abf9.png)
+![image](https://user-images.githubusercontent.com/25688193/30850059-4522b9aa-a2df-11e7-87b2-77b4b689dfd4.png)
+
+
+<a id="ID_4-6"></a>
 
 ## パーセプトロンによる論理演算
 ![twitter_nn6-1_160829](https://user-images.githubusercontent.com/25688193/30112770-703f5f68-934d-11e7-845d-be2240ef4d17.png)
 ![twitter_nn6-2_160829](https://user-images.githubusercontent.com/25688193/30112772-7042419c-934d-11e7-9330-d8292a108c1c.png)
 ![twitter_nn8-1 _160902](https://user-images.githubusercontent.com/25688193/30112777-70842ee0-934d-11e7-9486-d3d14be4d6bd.png)
 ![twitter_nn10-1_160903](https://user-images.githubusercontent.com/25688193/30112972-1a64417a-934e-11e7-96f1-775f232a2767.png)
-
-
-<a id="ID_4-5"></a>
-
-## 最急降下法による学習
-![twitter_nn8-2 _160902](https://user-images.githubusercontent.com/25688193/30112771-7041b13c-934d-11e7-88c7-8692f42b5799.png)
-![twitter_nn8-3 _160902](https://user-images.githubusercontent.com/25688193/30112769-703f3cb8-934d-11e7-81f0-f78ef37cb2b2.png)
-
-<a id="ID_4-6"></a>
-
-## 誤差逆伝播法
-![twitter_nn9-2_160902](https://user-images.githubusercontent.com/25688193/30112776-70665816-934d-11e7-95d5-fbe5e349b94c.png)
-![twitter_nn9-2 _160903](https://user-images.githubusercontent.com/25688193/30112775-70663048-934d-11e7-8280-b27a02dc1e16.png)
-![twitter_nn9-3_160903](https://user-images.githubusercontent.com/25688193/30112774-706594d0-934d-11e7-89a7-50814730aafe.png)
-
-
-<a id="ID_4-7"></a>
-
-## 多層パーセプトロン
-![twitter_nn5 -1_160829](https://user-images.githubusercontent.com/25688193/30112646-09d7f8fc-934d-11e7-81fa-4cc74b1e3e39.png)
-![twitter_nn5-1_160829](https://user-images.githubusercontent.com/25688193/30112647-09da02d2-934d-11e7-96a1-a8c4592993cc.png)
-![twitter_nn9-1_160902](https://user-images.githubusercontent.com/25688193/30112773-7050f1c4-934d-11e7-9343-398900bd8a2d.png)
-
-<a id="ID_4-8"></a>
-
-## 連想記憶ニューラルネットワーク
-![twitter_nn11-1_160904](https://user-images.githubusercontent.com/25688193/30112974-1a8ff1b2-934e-11e7-81de-933019772299.png)
-![twitter_nn11-2_160904](https://user-images.githubusercontent.com/25688193/30112976-1a965e58-934e-11e7-98a7-f80bdee26b35.png)
-![twitter_nn12-1_160904](https://user-images.githubusercontent.com/25688193/30112977-1aa3d1aa-934e-11e7-98fd-626e1a46fc30.png)
-![twitter_nn13-1_160904](https://user-images.githubusercontent.com/25688193/30112975-1a9358fc-934e-11e7-871f-dd2b55ff3657.png)
-![twitter_nn14-1_160905](https://user-images.githubusercontent.com/25688193/30112978-1aa4cc4a-934e-11e7-9a7b-97c4f9d415b5.png)
-![twitter_nn14-2_160905](https://user-images.githubusercontent.com/25688193/30112973-1a8f9122-934e-11e7-8ef0-2b0f82c00645.png)
-![twitter_nn15-1_160905](https://user-images.githubusercontent.com/25688193/30112979-1abb3e26-934e-11e7-8e8d-23a72b07fe7c.png)
 
