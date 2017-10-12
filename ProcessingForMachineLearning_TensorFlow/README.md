@@ -43,7 +43,8 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
         1. [誤差逆伝播法（バックプロパゲーション）[Backpropagation]<br>＜教師あり学習、バッチ学習 or オンライン学習＞](#ID_4-5-4)
     1. [パーセプトロンによる論理演算](#ID_4-7) 
     1. [パーセプトロンの収束定理](#ID_4-8)
-
+    1. [【補足】ロジスティクス回帰によるパラメータ推定](#ID_4-9)
+    1. [【補足】最尤度法によるロジスティクス回帰モデルのパラメータ推定](#ID_4-10)
 
 <br>
 <a id="ID_0"></a>
@@ -706,10 +707,29 @@ $$ S = - k_B \times \sum_{i=1}^{n} P_i \times \log_e{P_i} $$<br>
 ## パーセプトロンによる論理演算
 ![twitter_nn6-1_160829](https://user-images.githubusercontent.com/25688193/30112770-703f5f68-934d-11e7-845d-be2240ef4d17.png)
 ![twitter_nn6-2_160829](https://user-images.githubusercontent.com/25688193/30112772-7042419c-934d-11e7-9330-d8292a108c1c.png)
-![twitter_nn8-1 _160902](https://user-images.githubusercontent.com/25688193/30112777-70842ee0-934d-11e7-9486-d3d14be4d6bd.png)
 
 <a id="ID_4-7"></a>
 
 ### パーセプトロンの収束定理
 パーセプトロンの学習は、** 線形分離可能な問題であれば、有限回の学習の繰り返しにより収束する ** ことが証明されている。<br>
 このことをパーセプトロンの収束定理と呼ぶ。
+
+---
+
+<a id="ID_4-8"></a>
+
+### 【補足】ロジスティクス回帰によるパラメータ推定
+
+![twitter_ 18-1_161130](https://user-images.githubusercontent.com/25688193/29994398-b3cb8b5e-9009-11e7-9ca3-947c8ede9407.png)
+![twitter_ 18-2_161130](https://user-images.githubusercontent.com/25688193/29994397-b3ca7f84-9009-11e7-8e86-9677931b681e.png)
+![twitter_ 18-3_161130](https://user-images.githubusercontent.com/25688193/29994396-b3c9dcd2-9009-11e7-8db0-c342aac2725c.png)
+![twitter_ 18-4_161130](https://user-images.githubusercontent.com/25688193/29994399-b3cb73f8-9009-11e7-8f86-52d112491644.png)
+![twitter_ 18-5_161201](https://user-images.githubusercontent.com/25688193/29994401-b3ceb5d6-9009-11e7-97b6-9470f10d0235.png)
+
+<a id="ID_4-9"></a>
+
+### 【補足】最尤度法によるロジスティクス回帰モデルのパラメータ推定 [MLE]
+![twitter_ 18-6_161201](https://user-images.githubusercontent.com/25688193/29994400-b3cdbcf8-9009-11e7-9dba-fdaf84d592f8.png)
+![twitter_ 18-6 _170204](https://user-images.githubusercontent.com/25688193/29994403-b3ed4870-9009-11e7-8432-0468dfc2b841.png)
+![twitter_ 18-7_161201](https://user-images.githubusercontent.com/25688193/29994405-b3ee6e94-9009-11e7-840d-50d2a5c10aba.png)
+![twitter_ 18-7 _170204](https://user-images.githubusercontent.com/25688193/29994406-b3efd13a-9009-11e7-817d-6f0d5373f178.png)
