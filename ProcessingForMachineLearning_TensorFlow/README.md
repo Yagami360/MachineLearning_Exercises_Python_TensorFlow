@@ -383,20 +383,27 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 - 平均値 1, 標準偏差 0,1 の正規分布 N(1, 0.1) に従う乱数を 100 個生成する。
     - `x_rnorms = numpy.random.normal( 1.0, 0.1, 100 )`
-- そして、この乱数値に対し、Variable（モデルのパラメータで、最適値は 10 になる）を乗算する演算を行う。
-    - `a_var = tf.Variable( tf.random_normal( shape = [1] ) )` : 乗算する Variable
-    - `x_rnorms_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
-    オペレーター mul_op での x_rnorm にデータを供給する placeholder
-    - `mul_op = tf.multiply( x_rnorms_holder, a_var )` : 計算グラフに乗算追加 
 - 教師データ（目的値）として、 10 の値の list を設定する。
     - `y_targets = numpy.repeat( 10., 100 )` : 教師データ（目的値）の list
+- オペレーターにデータ供給用の各種 placeholder を設定する。
+    - `x_rnorms_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
+    オペレーター mul_op での x_rnorm にデータを供給する placeholder
     - `y_targets_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
     L2 損失関数（オペレーター）loss = y_targets - x_rnorms = 10 - N(1.0, 0.1) での `y_targets` に教師データを供給する placeholder
-- 損失関数として、この教師データと正規分布からの乱数に Variable を乗算した結果の出力の差からなる L2 ノルムの損失関数を設定する。（変数 a が 10 のとき誤差関数の値が 0 になるようなモデルにする。）
+- そして、この乱数値 `x_rnorms` に対し、Variable（モデルのパラメータで、最適値は 10 になる）を乗算する演算を行う。<br>
+最適化アルゴリズムの実行過程で、この Variable の値が TensorFlow によって、適切に変更されていることを確認するのが、このサンプルコードでの目的の１つである。
+    - `a_var = tf.Variable( tf.random_normal( shape = [1] ) )` : 乗算する Variable
+    - `mul_op = tf.multiply( x_rnorms_holder, a_var )` : 計算グラフに乗算追加 
+- Varibale を初期化する。
+    - `init_op = tf.global_variables_initializer()`
+    - `session.run( init_op )`
+- 損失関数として、この教師データと正規分布からの乱数に Variable を乗算した結果の出力の差からなる L2 ノルムの損失関数を設定する。（変数 a が 10 のとき誤差関数の値が 0 になるようなモデルにする。）<br>
+最適化アルゴリズムの実行過程で、この誤差関数の値が TensorFlow によって、適切に最小化されていることを確認するのが、このサンプルコードでの目的の１つである。
     - `l2_loss_op = tf.square( mul_op - y_targets_holder )` : 目的値と乗算の出力の差
-- 最急降下法によるパラメータの最適化を行う。（学習プロセスは、損失関数の最小化）
-    - `optGD_op = tf.train.GradientDescentOptimizer( learning_rate = 0.01 )`
-    - `train_step = optGD_op.minimize( l2_loss_op )`
+- 最適化アルゴリズム : Optimizer として、最急降下法（勾配降下法）を設定し、パラメータの最適化を行う。（学習プロセスは、損失関数の最小化）
+    - `optGD_op = tf.train.GradientDescentOptimizer( learning_rate = 0.01 )` :<br>
+     最適化アルゴリズム : Optimizer として、最急降下法（勾配降下法）を設定（学習率 : 0.01）
+    - `train_step = optGD_op.minimize( l2_loss_op )` : トレーニングは、誤差関数の最小化
 - 各エポックに対し、オンライン学習を行い、パラメータを最適化していく。
     ```python
     a_var_list = []
@@ -420,7 +427,7 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
         )
     ```
 
-以下、最急降下法での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数の値の過程のグラフ
+以下、最急降下（学習率 : 0.01）法での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数の値の過程のグラフ
 > ![processingformachinelearning_tensorflow_3-1](https://user-images.githubusercontent.com/25688193/31498382-bdca09f2-af9c-11e7-8688-d7cc707f2d8c.png)
 >> エポック数（学習回数）が増えるにつれ、パラメータ a → 10 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
 
@@ -428,7 +435,67 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 ### ② 分類問題での誤差逆伝播法
 単純な分類モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する。（※分類問題であるが分類結果は調べない。）
 
+- 2 つの正規分布 N(-1, 1) , N(3, 1) の正規分布に従う乱数をそれぞれ 50 個、合計 100 個生成する。
+    - `x_rnorms = numpy.concatenate( ( numpy.random.normal(-1,1,50), numpy.random.normal(3,1,50) ) )`
+        - `numpy.concatenate(...)` : ２個以上の配列を軸指定して結合する。軸指定オプションの axis はデフォルトが 0
+- 生成した 2 つの正規分布 N(-1, 1) , N(3, 1) のそれぞれのクラスラベルを {0,1} とする。
+    - `y_targets = numpy.concatenate( ( numpy.repeat(0,50), numpy.repeat(1,50) ) )` 
+- オペレーターにデータを供給するための各種 placeholder を設定する。
+    - `x_rnorms_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
+    `x_rnorms` にデータを供給する placeholder
+    - `y_targets_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
+    `y_targets` にデータを供給する placeholder
+- このモデルのパラメータとなる Variable として、シグモイド関数の平行移動分 sigmoid( x + a_var ) となる変数 `a_var` を設定する。<br>
+この平行移動したシグモイド関数が、クラスラベル {0,1} を識別するモデルとなる。<br>
+そして、最適化アルゴリズムの実行過程で、この Variable の値が TensorFlow によって、適切に変更されていることを確認するのが、このサンプルコードでの目的の１つである。
+    - `a_var = tf.Variable( tf.random_normal(mean=10, shape=[1]) )`<br>
+    値を 10 で初期化しているが、これは、最適値である -1 に学習の過程で収束する様子を明示することを意図しての値である。
+- シグモイド関数の平行移動演算（オペレーター）を計算グラフに追加する。<br>
+この際、加算演算 `tf.add(...)` に加えてシグモイド関数 `tf.sigmoid(...)` をラップする必要があるように思えるが、後に定義する損失関数が、シグモイド・クロス・エントロピー関数 `tf.nn.sigmoid_cross_entropy_with_logit(...)` であるため、このシグモイド関数の演算が自動的に行われるために、ここでは必要ないことに注意。
+    - `add_op = tf.add( x_rnorms_holder, a_var )`
+- 後に定義する損失関数が、シグモイド・クロス・エントロピー関数 `tf.nn.sigmoid_cross_entropy_with_logit(...)` が、追加の次元（バッチ数が関連付けられているバッチデータ）を必要とするため、`tf.expand_dims(...)` を用いて、オペレーター、placeholder に次元を追加する。
+    - `add_expaned_op = tf.expand_dims(add_op, 0)` : shape=(1,) → shape=(1,1)
+    - `y_expaned_targets_holder = tf.expand_dims(y_targets_holder, 0)` : shape=(1,) → shape=(1,1)
+- Varibale を初期化する。
+    - `init_op = tf.global_variables_initializer()`
+    - `session.run( init_op )`
+- 損失関数として、正規分布乱数 `x_rnorms` をシグモイド関数で変換し、クロス・エントロピーをとる、シグモイド・クロス・エントロピー関数 : `tf.nn.sigmoid_cross_entropy_with_logit(...)` を使用する。<br>
+この関数は、引数 `logits`, `labels` が特定の次元であることを要求するため、先の次元を拡張した `add_expaned_op`, `y_expaned_targets_holder` で引数を指定する。<br>
+最適化アルゴリズムの実行過程で、この誤差関数の値が TensorFlow によって、適切に最小化されていることを確認するのが、このサンプルコードでの目的の１つである。
+    - `loss_op = tf.nn.sigmoid_cross_entropy_with_logits( logits = add_expaned_op, labels = y_expaned_targets_holder)`
+        - `logits = add_expaned_op` : 最終的な推計値。sigmoid 変換する必要ない
+        - `labels = y_expaned_targets_holder` : 教師データ
+- 最適化アルゴリズム : Optimizer として、最急降下法（勾配降下法）を設定し、パラメータの最適化を行う。（学習プロセスは、損失関数の最小化）
+    - `optGD_op = tf.train.GradientDescentOptimizer( learning_rate = 0.05 )` :<br>
+     最適化アルゴリズム : Optimizer として、最急降下法（勾配降下法）を設定（学習率 : 0.05）
+    - `train_step = optGD_op.minimize( loss_op )` : トレーニングは、誤差関数の最小化
+- 各エポックに対し、オンライン学習を行い、パラメータを最適化していく。
+    ```python
+    a_var_list = []
+    loss_list = []
+    # for ループでオンライン学習
+    for i in range( 1500 ):
+        # RNorm のイテレータ : ランダムサンプリング
+        it = numpy.random.choice( num_train )
 
+        x_rnorm = [ x_rnorms[ it ] ]    # shape を [1] にするため [...] で囲む
+        y_target = [ y_targets[ it ] ]  # ↑
+
+        session.run( 
+            train_step,                     # 学習プロセス（オペレーター）
+            feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } 
+        )
+
+        a_var_list.append( session.run( a_var ) )
+        
+        loss = session.run( loss_op, feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } )
+        loss_reshaped = loss[0, 0]  # shape = (1,1) [[ xxx ]] → xxx に変換
+        loss_list.append( loss_reshaped )
+    ```
+
+以下、最急降下法（学習率 : 0.05）での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数（シグモイド・クロス・エントロピー関数）の値の過程のグラフ
+> ![processingformachinelearning_tensorflow_3-2](https://user-images.githubusercontent.com/25688193/31508764-111ec31e-afba-11e7-9d41-07a5b05a9726.png)
+>> エポック数（学習回数）が増えるにつれ、パラメータ a → -1 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
 
 <br>
 
