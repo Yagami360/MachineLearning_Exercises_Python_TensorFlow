@@ -18,7 +18,8 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
     1. [ニューラルネットにおける活性化関数の実装 : `main1.py`](#ID_3-1)
     1. [損失関数（評価関数、誤差関数）の実装 : `main2.py`](#ID_3-2)
     1. [誤差逆伝播法の実装 : `main3.py`](#ID_3-3)
-    1. [](#)
+    1. [バッチトレーニング（ミニバッチトレーニング）と確率的トレーニング : `main4.py`](#ID_3-4)
+    1. [モデルの評価 : `main5.py`](#ID_3-5)
 1. [背景理論](#ID_4)
     1. [ニューラルネットワークの概要](#ID_4-1)
     1. [活性化関数](#ID_4-2)
@@ -105,8 +106,6 @@ https://www.tensorflow.org/api_docs/python/tf/sigmoid </br>
 https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 > scikit-learn ライブラリ </br>
->> Iris データセット : `sklearn.datasets.load_iris()`</br>
-http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html</br>
 
 > その他ライブラリ </br>
 
@@ -116,7 +115,6 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 
 ## 使用するデータセット
 
-- Iris データセット : `sklearn.datsets.load_iris()`
 
 </br>
 <a id="ID_3"></a>
@@ -361,12 +359,12 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 #### ◎ 分類の為の、損失関数のグラフ
 ![processingformachinelearning_tensorflow_2-2](https://user-images.githubusercontent.com/25688193/30594195-2d46c742-9d88-11e7-8989-585977c7865b.png)
 
-- ヒンジ損失関数は、...
-- クロス・エントロピー交差関数（２クラスの場合）は、
-- シグモイド・クロスエントロピー損失関数は、
-- 重み付きクロス・エントロピー損失関数は、
+<!-- - ヒンジ損失関数は、... -->
+<!-- - クロス・エントロピー交差関数（２クラスの場合）は、-->
+<!-- - シグモイド・クロスエントロピー損失関数は、-->
+<!-- - 重み付きクロス・エントロピー損失関数は、 -->
 
-
+<br>
 <a id="ID_3-3"></a>
 
 ## 誤差逆伝播法（バックプロパゲーション）の実装 : `main3.py`
@@ -375,10 +373,13 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 尚、ここでの誤差逆伝播法の実装例は、ニューラルネットワークに対して適用したものではないが、一般的には、誤差逆伝播法は多層パーセプトロン等のニューラルネットワークの学習として使われる手法である。<br>
 
 誤差逆伝播法は、誤差関数（コスト関数、損失関数）に対しての、最急降下法で最適なパラメータ（ニューラルネットワークの場合、重みベクトル）を求め、又の誤差項を順方向（ニューラルネットワークの場合、入力層→隠れ層→出力層）とは逆方向に逆伝播で伝播させる手法であるが、<br>
-この最急降下法を TensorFlow で実装する場合は、TensorFlow の組み込み関数 `tf.tf.train.GradientDescentOptimizer( learning_rate )` を使用すれば良い。
+これを TensorFlow で実現するには、計算グラフに誤差を逆伝播させることで、変数の値を更新し、損失関数を最小化する必要がある。<br>
+これは、TensorFlow に定義されている最適化アルゴリズム : Optimizer を設定するという方法で実現できる。より詳細には、`tf.XXXOptimizer(...)` と名付けられている最適化アルゴリズムを設定すると、TensorFlow が計算グラフのすべての計算過程でバックプロパゲーションの誤差項を洗い出して計算する。そして、データを供給して誤差関数を最小化すると、それに従って、TensorFlow が計算グラフの（予め定義しておいた） Variable の値を適切に変更する。<br>
+尚、誤差逆伝播法では、最急降下法（勾配降下法）を用ちいるが、この最急降下法を TensorFlow で実装する場合は、最適化アルゴリズム (Optimizer) : `tf.tf.train.GradientDescentOptimizer( learning_rate )` を使用すれば良い。
+
 
 ### ① 回帰問題での誤差逆伝播法
-単純な回帰モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する
+単純な回帰モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する。
 
 - 平均値 1, 標準偏差 0,1 の正規分布 N(1, 0.1) に従う乱数を 100 個生成する。
     - `x_rnorms = numpy.random.normal( 1.0, 0.1, 100 )`
@@ -425,7 +426,9 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 
 
 ### ② 分類問題での誤差逆伝播法
-> コード実装中...
+単純な分類モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する。（※分類問題であるが分類結果は調べない。）
+
+
 
 <br>
 
