@@ -22,6 +22,9 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
 1. [背景理論](#ID_4)
     1. [ニューラルネットワークの概要](#ID_4-1)
     1. [活性化関数](#ID_4-2)
+        1. [sigmoid, tanh, softsign](#ID_4-2-1)
+        1. [Relu, Relu6, softplus, ELU](#ID_4-2-2)
+            1. [ReLu 関数による勾配消失問題 [vanishing gradient problem] への対応と softmax 関数](#ID_4-2-3-1)
     1. [学習方法の分類](#ID_4-3)
         1. [教師あり学習 [supervised learning] と教師なし学習 [Unsupervised learning]](#ID_4-3-1)
         1. [バッチ学習 [batch learning] とオンライン学習 [online learning]](#ID_4-3-2)
@@ -38,6 +41,7 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
         1. [確率的勾配降下法 [stochastic gradient descent method] <br>＜教師あり学習、オンライン学習＞](#ID_4-5-3)
         1. [誤差逆伝播法（バックプロパゲーション）[Backpropagation]<br>＜教師あり学習、バッチ学習 or オンライン学習＞](#ID_4-5-4)
     1. [パーセプトロンによる論理演算](#ID_4-7) 
+    1. [パーセプトロンの収束定理](#ID_4-8)
 
 
 <br>
@@ -453,6 +457,76 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 ![twitter_nn2-1_160826](https://user-images.githubusercontent.com/25688193/30112640-09b4803e-934d-11e7-993d-4e35263cda81.png)
 ![twitter_nn2-2_160826](https://user-images.githubusercontent.com/25688193/30112641-09b5d6d2-934d-11e7-861d-06792890d2f9.png)
 
+<a id="ID_4-2-1"></a>
+
+#### sigmoid, tanh, softsign
+活性化関数の内、sigmoid, tanh, softsign 関数の図
+> ![processingformachinelearning_tensorflow_1-2](https://user-images.githubusercontent.com/25688193/30211949-e16ce07a-94dd-11e7-9562-6d121aeeb59e.png)
+
+<a id="ID_4-2-2"></a>
+
+#### Relu, Relu6, softplus, ELU
+活性化関数の内、Relu, Relu6, softplus, ELU 関数の図
+> ![processingformachinelearning_tensorflow_1-1](https://user-images.githubusercontent.com/25688193/30203903-ac94e5ec-94be-11e7-867f-fc78b059ef44.png)
+
+ReLu関数（ランプ関数）は、x=0 にて非連続で微分不可能な関数であるが、その他の領域では微分可能なので、ニューラルネットワークにおいては、微分可能な活性化関数として取り扱われることが多い。<br>
+そして、この ReLu は、勾配が一定なので、ディープネットワークにおける学習アルゴリズムにおいて発生する、勾配損失問題 [vanishing gradient problem] に対応することが出来るのが最大の利点である。（後述）
+
+<a id="ID_4-2-2-1"></a>
+
+##### ReLu 関数による勾配消失問題 [vanishing gradient problem] への対応と softmax 関数
+勾配消失問題 [vanishing gradient problem] とは、ニューラルネットワークの層が深くなるにつれて、誤差逆伝播法等の学習の際に損失関数の勾配（傾き）が 0 に近くなり、入力層に近い層で入出力誤差が消失してしまい、結果として、うまく学習（重みの更新）ができなくなるような問題である。<br>
+
+この問題に対応するために開発されたのが、ReLU [rectified linear unit] や MaxOut という活性化関数である。<br>
+これらの活性化関数では、勾配（傾き）が一定なので、誤差消失問題を起こさない。従って、深い層のネットワークでも学習が可能となり、現在多くのニューラルネットワークで採用されている。<br>
+
+但し、これらの活性化関数を通して出力される値は、先に示したグラフのように負の値が出てきたりと、そのままでは扱いづらい欠点が存在する。
+
+従って、softmax 関数を通じて出力を確率に変換するようにする。
+この softmax 関数の式は以下のように与えられる。
+
+```math
+y_i=\dfrac{e^{x_i}}{e^{x_1}+e^{x_2}+\cdots +e^{x_n}}
+```
+
+![image](https://user-images.githubusercontent.com/25688193/30590115-37a895ae-9d78-11e7-9012-50cc868b6321.png)
+
+> 参考サイト : [画像処理とか機械学習とか / Softmaxって何をしてるの？](http://hiro2o2.hatenablog.jp/entry/2016/07/21/013805)
+
+##### 【Memo】softmax 関数と統計力学での分配関数の繋がり
+ニューラルネットワークの softmax 関数の形は、<br>
+統計力学で言う所のカノニカルアンサンブルでの sub system の微視的状態を与える確率の式<br>
+
+![image](https://user-images.githubusercontent.com/25688193/31034610-bfe29f12-a59f-11e7-8d90-6541e8fa216c.png)
+
+$$ P_n = \dfrac{ e^{\frac{E_n}{k_B T}} }{ \sum_{i=1}^{n} e^{ \frac{E_i}{k_B \times T } } } $$
+
+の形に対応している。<br>
+
+この確率の式の分母を統計力学では分配関数<br>
+
+![image](https://user-images.githubusercontent.com/25688193/31034696-21d2f636-a5a0-11e7-9f6d-81de5b7f9f39.png)
+
+$$ Z = \sum_{i=1}^{n} e^{ \frac{-E_i}{k_B \times T} } $$
+
+といい重要な意味を持つが、これは、エントロピー最大化に繋がる話しであり、<br>
+
+Helmholtz の自由エネルギーは、この分配関数 Z を用いて、<br>
+
+![image](https://user-images.githubusercontent.com/25688193/31034742-51e4a0ae-a5a0-11e7-8d87-704124ad5467.png)
+
+$$ F = - k_B \times T \times log_e{Z} $$
+
+で表現できるが、これを使えば、カノニカルアンサンブルのエントロピー S が<br>
+
+![image](https://user-images.githubusercontent.com/25688193/31034868-dba484e4-a5a0-11e7-85fe-ba7d5e011a04.png)
+
+$$ S = - k_B \times \sum_{i=1}^{n} P_i \times \log_e{P_i} $$<br>
+
+と書ける。これはまさに、情報理論でいうとこのシャノンの情報量に対応している。
+
+<br>
+
 <a id="ID_4-3"></a>
 
 
@@ -563,5 +637,9 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 ![twitter_nn6-1_160829](https://user-images.githubusercontent.com/25688193/30112770-703f5f68-934d-11e7-845d-be2240ef4d17.png)
 ![twitter_nn6-2_160829](https://user-images.githubusercontent.com/25688193/30112772-7042419c-934d-11e7-9330-d8292a108c1c.png)
 ![twitter_nn8-1 _160902](https://user-images.githubusercontent.com/25688193/30112777-70842ee0-934d-11e7-9486-d3d14be4d6bd.png)
-![twitter_nn10-1_160903](https://user-images.githubusercontent.com/25688193/30112972-1a64417a-934e-11e7-96f1-775f232a2767.png)
 
+<a id="ID_4-7"></a>
+
+### パーセプトロンの収束定理
+パーセプトロンの学習は、** 線形分離可能な問題であれば、有限回の学習の繰り返しにより収束する ** ことが証明されている。<br>
+このことをパーセプトロンの収束定理と呼ぶ。
