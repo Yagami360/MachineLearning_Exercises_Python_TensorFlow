@@ -394,6 +394,8 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
     - `train_step = optGD_op.minimize( l2_loss_op )`
 - 各エポックに対し、オンライン学習を行い、パラメータを最適化していく。
     ```python
+    a_var_list = []
+    loss_list = []
     # for ループでオンライン学習
     for i in range( num_train ):
         # RNorm のイテレータ : ランダムサンプリング
@@ -407,7 +409,10 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
             feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } 
         )
 
-        print( "epoc :", i )
+        a_var_list.append( session.run( a_var ) )
+        loss_list.append( 
+            session.run( l2_loss_op, feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } )
+        )
     ```
 
 以下、最急降下法での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数の値の過程のグラフ
@@ -416,7 +421,9 @@ http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html
 
 
 ### ② 分類問題での誤差逆伝播法
+> コード実装中...
 
+<br>
 
 ---
 
