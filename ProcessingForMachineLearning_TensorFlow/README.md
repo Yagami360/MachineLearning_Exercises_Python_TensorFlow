@@ -736,7 +736,55 @@ TensorFlow は誤差逆伝播法（バックプロパゲーション）に従い
 <a id="ID_3-5-2"></a>
 
 #### ② 分類モデルの評価
-> コード実装中...
+次に、先の `main3.py` で実装した分類モデルと同じモデル（２つの正規分布 N(-1, 1)、N(2, 1) の分類問題）で、分類モデルの評価の TensorFlow での実装を行う。<br>
+分類モデルの評価指数は様々あるが、ここでは最も代表的な分類の正解率の TensorFlow での実装を行う。
+
+- 以下、先の `main3.py` の分類モデルの実装箇所とは異なる箇所（特に、モデルの評価に関わる部分）を中心的に説明する。
+- 正規分布 N(-1, 1) から生成した 50 個の乱数と、別の正規分布 N(2, 1) から生成した 50 個の乱数、合計 100 個の list `x_rnorms` を、トレーニングデータとテストデータに分割する。<br>
+データの分割割合は、トレーニングデータ : 80%, テストデータ : 20 % とする。
+- データをトレーニングデータとテストデータに分割したので、学習は、トレーニングデータで行うようにする。
+    - 具体的には、先の `main3.py` での該当箇所が、`100` → `len(x_train)`, `x_rnorms` → `x_train`, `y_targets` → `y_train` に置き換わる。 
+- このコードでの目的である分類モデルの評価指数として、TensorFlow を用いて正解率を算出する。
+    - そのためにはまず、モデルと同じ演算を実施し、予測値を算出する。
+        ``` python
+        y_pred_op = tf.squeeze( 
+                        tf.round(
+                            tf.nn.sigmoid( tf.add(x_rnorms_holder, a_var) )
+                        ) 
+                    )
+        ```
+    - 続いて、`tf.equal(...)` を用いて、予測値のオペレーター `y_pred_op` と目的値を与える placeholder `y_targets_holder` が等価であるか否かを確認する。
+        - `correct_pred_op = tf.equal( y_pred_op, y_targets_holder )`
+    - これにより、bool 型の Tensor `Tensor("Equal:0", dtype=bool)` が `correct_pred_op` に代入されるので、この値を `float32` 型に `tf.cast(...)` で明示的にキャストした後、平均値を `tf.reduce_mean(...)` で求める。これが、正解率となる。（但し、この段階では Session を run していないので、値は代入されていない）
+        - `accuracy_op = tf.reduce_mean( tf.cast(correct_pred_op, tf.float32) )`
+    - トレーニングデータと、テストデータを feed_dict として、Session を run して、それぞれの正解率を求める。
+        ```python
+        accuracy_train = session.run( 
+            accuracy_op, 
+            feed_dict = {
+                x_rnorms_holder: [x_train],     # shape を合わせるため,[...] で囲む
+                y_targets_holder: [y_train]
+            }
+        )
+
+        accuracy_test = session.run( 
+            accuracy_op, 
+            feed_dict = {
+                x_rnorms_holder: [x_test], 
+                y_targets_holder: [y_test]
+            }
+        )
+
+        print( "Accuracy (train data) : ", accuracy_train )
+        print( "Accuracy (test data) : ", accuracy_test )
+        ```
+        ```python
+        [出力]
+        Accuracy (train data) :  0.9375
+        Accuracy (test data) :  0.95
+        ```
+
+
 
 <br>
 
