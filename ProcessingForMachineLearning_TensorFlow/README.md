@@ -592,7 +592,7 @@ TensorFlow は誤差逆伝播法（バックプロパゲーション）に従い
     A_var_list_online = []
     loss_list_online = []
 
-    # for ループで各エポックに対し、ミニバッチ学習を行い、パラメータを最適化していく。
+    # for ループで各エポックに対し、オンライン学習（確率的トレーニング）を行い、パラメータを最適化していく。
     for i in range( 100 ):
         # RNorm のイテレータ : ランダムサンプリング
         it = numpy.random.choice( 100 )  # online 処理
