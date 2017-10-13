@@ -106,7 +106,7 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 - モデルの構造を定義する。</br>
   データを取得 or 設定し、変数とプレースホルダを初期化した後は、</br>
   モデルを定義する必要がある。これは、計算グラフを作成するという方法で行う。 </br>
-    （例）線形モデル : `y_predict = tf.add( tf.mul( x_input, weight_matrix), b_matrix )`
+    （例）線形モデル : `y_predict_op = tf.add( tf.mul( x_input, weight_matrix), b_matrix )`
 - 損失関数を設定する。
 - モデルの初期化と学習（トレーニング）
     - ここまでの準備で, 実際に, 計算グラフ（有向グラフ）のオブジェクトを作成し,</br>プレースホルダを通じて, データを計算グラフ（有向グラフ）に供給する。</br>
@@ -382,10 +382,11 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 ### ① 回帰問題での誤差逆伝播法
 単純な回帰モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する。
 
-- 平均値 1, 標準偏差 0,1 の正規分布 N(1, 0.1) に従う乱数を 100 個生成する。
-    - `x_rnorms = numpy.random.normal( 1.0, 0.1, 100 )`
-- 教師データ（目的値）として、 10 の値の list を設定する。
-    - `y_targets = numpy.repeat( 10., 100 )` : 教師データ（目的値）の list
+- ますは、このモデルでのデータを生成する。
+    - 平均値 1, 標準偏差 0,1 の正規分布 N(1, 0.1) に従う乱数を 100 個生成する。
+        - `x_rnorms = numpy.random.normal( 1.0, 0.1, 100 )`
+    - 教師データ（目的値）として、 10 の値の list を設定する。
+        - `y_targets = numpy.repeat( 10., 100 )` : 教師データ（目的値）の list
 - オペレーターにデータ供給用の各種 placeholder を設定する。
     - `x_rnorms_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
     オペレーター mul_op での x_rnorm にデータを供給する placeholder
@@ -436,11 +437,12 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 ### ② 分類問題での誤差逆伝播法
 単純な分類モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する。（※分類問題であるが分類結果は調べない。）
 
-- 2 つの正規分布 N(-1, 1) , N(3, 1) の正規分布に従う乱数をそれぞれ 50 個、合計 100 個生成する。
-    - `x_rnorms = numpy.concatenate( ( numpy.random.normal(-1,1,50), numpy.random.normal(3,1,50) ) )`
-        - `numpy.concatenate(...)` : ２個以上の配列を軸指定して結合する。軸指定オプションの axis はデフォルトが 0
-- 生成した 2 つの正規分布 N(-1, 1) , N(3, 1) のそれぞれのクラスラベルを {0,1} とする。
-    - `y_targets = numpy.concatenate( ( numpy.repeat(0,50), numpy.repeat(1,50) ) )` 
+- ますは、このモデルでのデータを生成する。
+    - 2 つの正規分布 N(-1, 1) , N(3, 1) の正規分布に従う乱数をそれぞれ 50 個、合計 100 個生成する。
+        - `x_rnorms = numpy.concatenate( ( numpy.random.normal(-1,1,50), numpy.random.normal(3,1,50) ) )`
+            - `numpy.concatenate(...)` : ２個以上の配列を軸指定して結合する。軸指定オプションの axis はデフォルトが 0
+    - 生成した 2 つの正規分布 N(-1, 1) , N(3, 1) のそれぞれのクラスラベルを {0,1} とする。
+        - `y_targets = numpy.concatenate( ( numpy.repeat(0,50), numpy.repeat(1,50) ) )` 
 - オペレーターにデータを供給するための各種 placeholder を設定する。
     - `x_rnorms_holder = tf.placeholder( shape = [1], dtype = tf.float32 )`<br>
     `x_rnorms` にデータを供給する placeholder
@@ -499,6 +501,128 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 >> エポック数（学習回数）が増えるにつれ、パラメータ a → -1 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
 
 <br>
+
+
+<a id="ID_3-4"></a>
+
+## バッチトレーニング（ミニバッチトレーニング）と確率的トレーニングの実装 : `main4.py`
+TensorFlow は誤差逆伝播法（バックプロパゲーション）に従い、設定したモデルの変数の更新を行なっていくが、この誤差逆伝播法で行われる、学習アルゴリズム（最急降下法（勾配降下法）等）は、
+- バッチ学習 : 全てのトレーニングデータセットを一度にまとめて学習する手法。
+- オンライン学習 : １つのトレーニングデータ度に学習を行う）による手法。
+    - 特に、最急降下法（勾配降下法）の場合は、確率的勾配降下法という。
+- ミニバッチ学習 : バッチ学習とオンライン学習の折込案で、ある程度個のトレーニングデータセットを一度にまとめて学習する手法。
+
+が存在する。<br>
+先の `main3.py` で示したコードは、このオンライン学習である確率的最急降下法での実装例である。<br>
+このトレーニングの種類での違いによるメリット・デメリットをまとめると、以下の表のようになる。
+
+|トレーニングの種類|メリット|デメリット|
+|---|---|---|
+|オンライン学習<br>確率的トレーニング|最適化過程で、局所的最適解（ローカルミニマム）を脱出できる可能性がある。<br>又、トレーニングデータの変化に素早く対応できる。<br>但し、１つトレーニングサンプル毎に学習を行うので、エポック度にトレーニングデータをシャッフルすることが重要となる。|一般的に、収束に必要なイテレーション回数（トレーニング回数）が多くなる。|
+|バッチ学習<br>ミニバッチ学習|最適解を素早く特定することが出来る。|計算リソースを多く消費する。<br>又、オンライン学習に比べて、最適化過程で、局所的最適解（ローカルミニマム）を脱出できる可能性が低い。|
+
+ここでは、比較的簡単なサンプルコードで、バッチ学習（正確には、ミニバッチ学習）とオンライン学習（確率的トレーニング）の学習過程の違いを確認する。
+
+- 以下、ミニバッチ学習での処理を記載。
+- ますは、このモデルでのデータを生成する。
+    - 正規分布 N(1, 0.1) に従う乱数の list `x_rnorms` を 100 個生成する。
+        - `x_rnorms = numpy.random.normal(1, 0.1, 100)`
+    - 教師データ（目的値）の list `y_targets` として、 10 の値の list を設定する。
+        - `y_targets = numpy.repeat(10.0, 100)` 
+- 次に、ミニバッチ学習でのバッチサイズを指定する。<br>
+  これは、計算グラフに対し、一度に供給するトレーニングデータの数となる.
+    - `batch_size = 20`
+- オペレーターにデータを供給するための各種 placeholder を設定する。<br>
+  ここでの placeholder の形状 shape は、先のコードとは異なり、1 次元目を `None`, 2 次元目をバッチサイズとする。( `shape = [None, 1]` )<br>
+  1 次元目を明示的に `20` としても良いが、`None` とすることでより汎用的になる。
+    - `x_rnorms_holder = tf.placeholder( shape = [None, 1], dtype = tf.float32 )`<br>
+    `x_rnorms` にデータを供給する placeholder<br>
+    後のバッチ学習では, shape = [None, 1] → shape = [20, 1] と解釈される。<br>
+    オンライン学習では、shape = [None, 1] → shape = [1, 1] と解釈される。
+    - `y_targets_holder = tf.placeholder( shape = [None, 1], dtype = tf.float32 )`<br>
+    `y_targets` にデータを供給する placeholder<br>
+    後のバッチ学習では, shape = [None, 1] → shape = [20, 1] と解釈される。<br>
+    オンライン学習では、shape = [None, 1] → shape = [1, 1] と解釈される。
+- このモデルのパラメータとなる Variable として、そして、この正規分布乱数値の list である `x_rnorms` に対し、行列での乗算演算を行うための変数 `A_var` を設定する。<br>
+最適化アルゴリズムの実行過程で、この Variable の値が TensorFlow によって、適切に変更されていることを確認するのが、このサンプルコードでの目的の１つである。
+    - `A_var = tf.tf.Variable( tf.random_normal(shape=[1,1]) )` <br>
+    placeholder の shape の変更に合わせて、shape = [1,1] としている。
+- モデルの構造（計算グラフ）を定義する。
+    - 先に記述したように、正規分布乱数値の list である `x_rnorms` と変数 `A_var` の行列での乗算演算を設定する。
+        - `matmul_op = tf.matmul( x_rnorms_holder, A_var )` : 行列での乗算演算
+- 損失関数を設定する。
+    - 損失関数として、この教師データと正規分布からの乱数に Variable を乗算した結果の出力の差からなる L2 ノルムの損失関数を定義するが、<br>
+    バッチのデータ点ごとに、すべての L2 ノルムの損失の平均を求める必要があるので、L2 ノルムの損失関数を `reduce_mean(...)` という関数（平均を算出する関数）でラップする。
+        - `loss_op = tf.reduce_mean( tf.square( matmul_op - y_targets_holder ) )`
+- 最適化アルゴリズム : Optimizer として、最急降下法（勾配降下法）を設定し、パラメータの最適化を行う。（学習プロセスは、損失関数の最小化）
+    - `GD_opt = tf.train.GradientDescentOptimizer( learning_rate = 0.02 )` : 学習率 = 0.02
+    - `train_step = GD_opt.minimize( loss_op )` : トレーニングは、誤差関数の最小化
+- Varibale を初期化する。
+    - `init_op = tf.global_variables_initializer()`
+    - `session.run( init_op )`
+- 各エポックに対し、ミニバッチ学習を行い、パラメータを最適化していく。
+    ```python
+    A_var_list_batch = []
+    loss_list_batch = []
+
+    # for ループで各エポックに対し、ミニバッチ学習を行い、パラメータを最適化していく。
+    for i in range( 100 ):
+        # RNorm のイテレータ : ランダムサンプリング
+        it = numpy.random.choice( 100, size = batch_size )  # ミニバッチ処理
+
+        x_rnorm = numpy.transpose( [ x_rnorms[ it ] ] )    # shape を [1] にするため [...] で囲む
+        y_target = numpy.transpose( [ y_targets[ it ] ] )  # ↑
+
+        session.run( 
+            train_step,                     # 学習プロセス（オペレーター）
+            feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } 
+        )
+
+        A_batch = session.run( A_var )
+        loss_batch = session.run( loss_op, feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } )
+
+        A_var_list_batch.append( A_batch )
+        loss_list_batch.append( loss_batch )
+    ```
+<br>
+
+- オンライン学習（確率的トレーニング）に関しても、同様の処理を実施していく。（詳細略、コード `main4.py` 参照）
+- そして、各エポックに対し、オンライン学習（確率的トレーニング）を行い、パラメータを最適化していく。
+    ```python
+    A_var_list_online = []
+    loss_list_online = []
+
+    # for ループで各エポックに対し、ミニバッチ学習を行い、パラメータを最適化していく。
+    for i in range( 100 ):
+        # RNorm のイテレータ : ランダムサンプリング
+        it = numpy.random.choice( 100 )  # online 処理
+
+        x_rnorm = [ x_rnorms[ it ] ]    # shape を [1] にするため [...] で囲む
+        y_target = [ y_targets[ it ] ]  # ↑
+
+        session.run( 
+            train_step,                     # 学習プロセス（オペレーター）
+            feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } 
+        )
+
+        A_online = session.run( A_var )
+        loss_online = session.run( loss_op, feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } )
+
+        A_var_list_online.append( A_online )
+        loss_list_online.append( loss_online )
+    ```
+
+以下、ミニバッチ学習、オンライン学習（確率的トレーニング）での勾配降下法（学習率 : 0.02）での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数の値の過程のグラフ。
+> ![processingformachinelearning_tensorflow_4-1](https://user-images.githubusercontent.com/25688193/31527653-b7c25dd0-b009-11e7-907e-c4ba599cffb6.png)
+>> バッチ学習による学習過程のほうが滑らかで、オンライン学習（確率的トレーニング）による学習過程のほうが不規則であることが見て取れる。この不規則な動きが、局所的最適解（ローカルミニマム）を脱出する可能性を高めるが、逆に収束速度を遅くする。<br>
+>> 又、エポック数（学習回数）が増えるにつれ、パラメータ A_var → 10 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
+
+<br>
+
+<a id="ID_3-5"></a>
+
+### モデルの評価 : `main5.py`
+> コード実装中...
 
 ---
 
