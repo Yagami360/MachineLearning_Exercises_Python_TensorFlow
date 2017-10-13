@@ -307,20 +307,20 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
         ```
     - 重み付きクロス・エントロピー損失関数は、重み付きのシグモイド・クロスエントロピー損失関数のことである。<br>
     ここでは、正の目的値 1 を 0.5 で重み付けするようにする。<br>
-    そして TensorFlow による関数値の算出＆グラフ化のための実装は、以下のように書ける。<br>
-    ```python
-    # 重み付けクロス・エントロピー損失関数
-    # loss = targets * -log(sigmoid(logits)) * pos_weight + (1 - targets) * -log(1 - sigmoid(logits))
-    weight_tsr = tf.constant( 0.5 )      # 重み付けの値の定数 Tensor
-    weighted_cross_entropy_loss_op = tf.nn.weighted_cross_entropy_with_logits(
-                                         logits = x_predicts_tsr, 
-                                         targets = targets_tsr,
-                                         pos_weight = weight_tsr
-                                     )
+    そして TensorFlow による関数値の算出＆グラフ化のための実装は、以下のように書ける。
+        ```python
+        # 重み付けクロス・エントロピー損失関数
+        # loss = targets * -log(sigmoid(logits)) * pos_weight + (1 - targets) * -log(1 - sigmoid(logits))
+        weight_tsr = tf.constant( 0.5 )      # 重み付けの値の定数 Tensor
+        weighted_cross_entropy_loss_op = tf.nn.weighted_cross_entropy_with_logits(
+                                             logits = x_predicts_tsr, 
+                                             targets = targets_tsr,
+                                             pos_weight = weight_tsr
+                                         )
     
-    # 重み付けクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
-    output_weighted_cross_entropy_loss = session.run( weighted_cross_entropy_loss_op )
-    ```
+        # 重み付けクロス・エントロピー損失関数の値 （グラフの y 軸値の list）
+        output_weighted_cross_entropy_loss = session.run( weighted_cross_entropy_loss_op )
+        ```
     - ソフトマックスクロス・エントロピー損失関数 [softmax cross-entrpy loss function] は、正規化されていない出力を操作する。
         - この関数は、ソフトマックス関数を用いて、出力を確率分布に変換して、真の確率分布から損失関数を計算する。
         ```python
@@ -510,7 +510,9 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
         loss_list.append( loss_reshaped )
     ```
 
-以下、最急降下法（学習率 : 0.05）での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数（シグモイド・クロス・エントロピー関数）の値の過程のグラフ
+<br>
+
+最急降下法（学習率 : 0.05）での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数（シグモイド・クロス・エントロピー関数）の値の過程のグラフ
 > ![processingformachinelearning_tensorflow_3-2](https://user-images.githubusercontent.com/25688193/31508764-111ec31e-afba-11e7-9d41-07a5b05a9726.png)
 >> エポック数（学習回数）が増えるにつれ、パラメータ a → -1 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
 
@@ -626,7 +628,9 @@ TensorFlow は誤差逆伝播法（バックプロパゲーション）に従い
         loss_list_online.append( loss_online )
     ```
 
-以下、ミニバッチ学習、オンライン学習（確率的トレーニング）での勾配降下法（学習率 : 0.02）での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数の値の過程のグラフ。
+<br>
+
+ミニバッチ学習、オンライン学習（確率的トレーニング）での勾配降下法（学習率 : 0.02）での最適なパラメータの値の逐次計算過程、及びそのときの誤差関数の値の過程のグラフ。
 > ![processingformachinelearning_tensorflow_4-1](https://user-images.githubusercontent.com/25688193/31527653-b7c25dd0-b009-11e7-907e-c4ba599cffb6.png)
 >> バッチ学習による学習過程のほうが滑らかで、オンライン学習（確率的トレーニング）による学習過程のほうが不規則であることが見て取れる。この不規則な動きが、局所的最適解（ローカルミニマム）を脱出する可能性を高めるが、逆に収束速度を遅くする。<br>
 >> 又、エポック数（学習回数）が増えるにつれ、パラメータ A_var → 10 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
@@ -726,8 +730,6 @@ TensorFlow は誤差逆伝播法（バックプロパゲーション）に従い
     MSE (train data) :  0.93
     MSE (test data) :  1.29
     ```
-
-
 
 <br>
 
