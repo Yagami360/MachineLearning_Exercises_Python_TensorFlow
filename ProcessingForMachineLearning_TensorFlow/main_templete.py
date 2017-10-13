@@ -11,7 +11,7 @@ import pandas
 import matplotlib.pyplot as plt
 
 # TensorFlow ライブラリ
-import tenslorflow as tf
+import tensorflow as tf
 from tensorflow.python.framework import ops
 
 def main():
