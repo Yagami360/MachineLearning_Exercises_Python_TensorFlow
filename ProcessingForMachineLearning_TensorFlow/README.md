@@ -4,11 +4,6 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
 この README.md ファイルには、各コードの実行結果、概要、機械学習の背景理論の説明を記載しています。</br>
 分かりやすいように `main.py` ファイル毎に１つの完結したコードにしています。
 
-> 参考 URL :
->> ニューラルネットワークにおける損失関数について
->>> http://s0sem0y.hatenablog.com/entry/2017/06/19/084210
->>> http://s0sem0y.hatenablog.com/entry/2017/06/20/135402
-
 ## 項目 [Contents]
 
 1. [使用するライブラリ](#ID_1)
@@ -17,9 +12,15 @@ TensorFlow における基本的な機械学習処理（特にニューラルネ
     1. [TensorFlow での機械学習処理の全体ワークフロー : `main_templete.py`](#ID_3-0)
     1. [ニューラルネットにおける活性化関数の実装 : `main1.py`](#ID_3-1)
     1. [損失関数（評価関数、誤差関数）の実装 : `main2.py`](#ID_3-2)
+        1. [① 回帰問題の為の損失関数（評価関数、誤差関数）](#ID_3-2-1)
+        1. [② クラスの分類問題の為の損失関数（評価関数、誤差関数）](#ID_3-2-2)
     1. [誤差逆伝播法の実装 : `main3.py`](#ID_3-3)
+        1. [① 回帰問題での誤差逆伝播法](#ID_3-3-1)
+        1. [② 分類問題での誤差逆伝播法](#ID_3-3-2)
     1. [バッチ学習（ミニバッチ学習）とオンライン学習（確率的トレーニング）の実装 : `main4.py`](#ID_3-4)
     1. [モデルの評価 : `main5.py`](#ID_3-5)
+        1. [ ① 回帰モデルの評価](#ID_3-5-1)
+        1. [ ② 分類モデルの評価](#ID_3-5-2)
 1. [背景理論](#ID_4)
     1. [ニューラルネットワークの概要](#ID_4-1)
     1. [活性化関数](#ID_4-2)
@@ -187,10 +188,15 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 ![processingformachinelearning_tensorflow_1-2](https://user-images.githubusercontent.com/25688193/30211950-e16e1922-94dd-11e7-9320-7b16dd6006f6.png)
 
 
-</br>
+<br>
 <a id="ID_3-2"></a>
 
 ## 損失関数（評価関数、誤差関数）の実装 : `main2.py`
+
+> 参考 URL :
+>> ニューラルネットワークにおける損失関数について
+>>> http://s0sem0y.hatenablog.com/entry/2017/06/19/084210
+>>> http://s0sem0y.hatenablog.com/entry/2017/06/20/135402
 
 損失関数（評価関数、誤差関数）は、モデルの出力と目的値（真の値、教師データ）との差（いいえ変えれば、誤差、距離）を計測する関数であり、モデルの学習に適用されるものである。<br>
 
@@ -201,6 +207,8 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 従って、損失関数も同様にして、回帰問題の為の損失関数と、分類問題の為の損失関数が存在することになる。<br>
 ここでは、それぞれの問題（回帰問題分類問題）の損失関数を分けて TensorFlow で実装する。
+
+<a id="ID_3-2-1"></a>
 
 ### ① 回帰問題の為の損失関数（評価関数、誤差関数）
 
@@ -228,6 +236,7 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
       先に定義した シーケンス Tensor を `session.run(...)` することで取得できる。
         - `axis_x_list = session.run( x_predicts_tsr )`
 
+
 #### ① 回帰の為の、損失関数（L2正則化、L1正則化）のグラフ
 ![processingformachinelearning_tensorflow_2-1](https://user-images.githubusercontent.com/25688193/30562150-6efa89e8-9cf8-11e7-924f-43a3f3623248.png)
 
@@ -241,6 +250,8 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 
 <br>
+
+<a id="ID_3-2-2"></a>
 
 ### ② クラスの分類問題の為の損失関数（評価関数、誤差関数）
 
@@ -378,6 +389,7 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 これは、TensorFlow に定義されている最適化アルゴリズム : Optimizer を設定するという方法で実現できる。より詳細には、`tf.XXXOptimizer(...)` と名付けられている最適化アルゴリズムを設定すると、TensorFlow が計算グラフのすべての計算過程でバックプロパゲーションの誤差項を洗い出して計算する。そして、データを供給して誤差関数を最小化すると、それに従って、TensorFlow が計算グラフの（予め定義しておいた） Variable の値を適切に変更する。<br>
 尚、誤差逆伝播法では、最急降下法（勾配降下法）を用ちいるが、この最急降下法を TensorFlow で実装する場合は、最適化アルゴリズム (Optimizer) : `tf.tf.train.GradientDescentOptimizer( learning_rate )` を使用すれば良い。
 
+<a id="ID_3-3-1"></a>
 
 ### ① 回帰問題での誤差逆伝播法
 単純な回帰モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する。
@@ -433,6 +445,8 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 > ![processingformachinelearning_tensorflow_3-1](https://user-images.githubusercontent.com/25688193/31498382-bdca09f2-af9c-11e7-8688-d7cc707f2d8c.png)
 >> エポック数（学習回数）が増えるにつれ、パラメータ a → 10 （最適値）に近づいていく様子と、又その過程で誤差関数の値が小さくなっていく（０に近づいていく）様子が見て取れる。
 
+
+<a id="ID_3-3-2"></a>
 
 ### ② 分類問題での誤差逆伝播法
 単純な分類モデルとして、以下のようなモデルを実装し、最急降下法での最適なパラメータ逐次計算過程、及びそのときの誤差関数の値の過程をグラフ化する。（※分類問題であるが分類結果は調べない。）
@@ -621,8 +635,108 @@ TensorFlow は誤差逆伝播法（バックプロパゲーション）に従い
 
 <a id="ID_3-5"></a>
 
-### モデルの評価 : `main5.py`
+### TensorFlow でのモデルの評価 : `main5.py`
+ここでは、比較的簡単な回帰問題、分類問題、それぞれに対して、TensorFlow を用いてのモデルの評価手法のサンプルコードを実装する。
+
+<a id="ID_3-5-1"></a>
+
+#### ① 回帰モデルの評価
+回帰問題は、与えられたデータから数値を予想する問題であり、分類問題のように、その評価指数として正解率というものは存在しない。<br>
+回帰問題における、モデルの評価指数としては、予想値と目的値の間の距離、又はそれに準じるものに関しての集約したものが指標となり得る（平均２乗誤差 : MES 等）。<br>
+多くの場合、誤差関数は、この指標に準じるものになり得るので、誤差関数の値を調べることが、そのまま回帰モデルの性能評価に繋がる。
+
+ここでは、先の `main4.py` で実装した回帰モデルと同じモデルで、モデルの評価指数として、L2 損失関数から求められる平均２乗誤差（MES）を求め、モデルの評価を行う。
+
+- 以下、先の `main4.py` とは異なる箇所（特に、モデルの評価に関わる部分）を中心的に説明する。
+- 正規分布 N(1, 0.1) から生成した 100 個乱数の list `x_rnorms` を、トレーニングデータとテストデータに分割する。<br>
+データの分割割合は、トレーニングデータ : 80%, テストデータ : 20 % とする。
+    ```python
+    # トレーニングデータのインデックス範囲
+    train_indices = numpy.random.choice(                # ランダムサンプリング
+                        len( x_rnorms ),                # 100
+                        round( len(x_rnorms)*0.8 ),     # 80% : 100*0.8 = 80
+                        replace = False                 # True:重複あり、False:重複なし
+                    )
+
+    # テストデータのインデックス範囲
+    test_indices = numpy.array( 
+                       list( set( range(len(x_rnorms)) ) - set( train_indices ) )   #  set 型（集合型） {...} の list を ndarry 化
+                   )
+
+    # トレーニングデータ、テストデータに分割
+    x_train = x_rnorms[ train_indices ]
+    x_test = x_rnorms[ test_indices ]
+    y_train = y_targets[ train_indices ]
+    y_test = y_targets[ test_indices ]
+    ```
+    - 尚、このデータの分割は scikit-learn の `sklearn.model_selection.train_test_split(...)` を用いて、より簡単に行うことも可能である。但し、この場合は、`numpy.reshape(..)` 等で TensorFlow 用にデータの次元 : shape との整合性をとる必要がある。
+- データをトレーニングデータとテストデータに分割したので、学習は、トレーニングデータで行うようにする。
+    - 具体的には、先の `main4.py` での該当箇所が、`100` → `len(x_train)`, `x_rnorms` → `x_train`, `y_targets` → `y_train` に置き換わる。 
+    ``` python
+    A_var_list_batch = []
+    loss_list_batch = []
+
+    # for ループで各エポックに対し、ミニバッチ学習を行い、パラメータを最適化していく。
+    for i in range( 100 ):
+        # RNorm のイテレータ : ランダムサンプリング
+        it = numpy.random.choice( len(x_train), size = batch_size )  # ミニバッチ処理
+
+        x_rnorm = numpy.transpose( [ x_train[ it ] ] )    # shape を [1] にするため [...] で囲む
+        y_target = numpy.transpose( [ y_train[ it ] ] )  # ↑
+
+        session.run( 
+            train_step,                     # 学習プロセス（オペレーター）
+            feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } 
+        )
+
+        A_batch = session.run( A_var )
+        loss_batch = session.run( loss_op, feed_dict = { x_rnorms_holder: x_rnorm, y_targets_holder: y_target } )
+
+        A_var_list_batch.append( A_batch )
+        loss_list_batch.append( loss_batch )
+    ```
+- この回帰モデルの評価として、トレーニングデータとテストデータの L2 損失関数から、平均２乗誤差（MSE）を算出する。
+    - 尚、この MSE 値は、トレーニングデータでのトレーニング終了後の、ランダムサンプリングされた 1 つのデータに対する値となる。
+    ```python
+    # MSE の算出
+    loss_train = session.run( 
+                    loss_op, 
+                    feed_dict = { 
+                        x_rnorms_holder: numpy.transpose( [x_train] ), 
+                        y_targets_holder: numpy.transpose( [y_train] )
+                    } 
+                 )
+
+    loss_test = session.run( 
+                    loss_op, 
+                    feed_dict = { 
+                        x_rnorms_holder: numpy.transpose( [x_test] ), 
+                        y_targets_holder: numpy.transpose( [y_test] )
+                    } 
+                 )
+
+    mse_train = numpy.round( loss_train, 2 )    # ２乗
+    mse_test = numpy.round( loss_test, 2 )
+
+    print( "MSE (train data)", mse_train )
+    print( "MSE (test data)", mse_test )
+    ```
+    ```python
+    [出力]
+    MSE (train data) :  0.93
+    MSE (test data) :  1.29
+    ```
+
+
+
+<br>
+
+<a id="ID_3-5-2"></a>
+
+#### ② 分類モデルの評価
 > コード実装中...
+
+<br>
 
 ---
 
