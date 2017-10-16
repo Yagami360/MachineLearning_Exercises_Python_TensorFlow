@@ -26,14 +26,20 @@ class NeuralNetworkBase( metaclass=ABCMeta ):
     実際のニューラルネットワークを表すクラスの実装は、このクラスを継承することで行うことを想定している。
     
     ----------------------------------------------------------------------------------------------------
+    [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
+        _session : tf.Session()
+            自身の Session
+
+        _init_var_op : tf.global_variables_initializer()
+            全 Variable の初期化オペレーター
+    
+        _loss_op : Operator
+            損失関数を表すオペレーター
+
+        _y_out_op : Operator
+            モデルの出力のオペレーター
 
     [protedted] protedted な使用法を想定 
-        _n_inputLayer : int
-            入力層のノード数
-        _n_outputLayer : int
-            出力層のノード数
-
-    [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
 
     [private] 変数名の前にダブルアンダースコア __ を付ける（Pythonルール）
 
@@ -44,8 +50,11 @@ class NeuralNetworkBase( metaclass=ABCMeta ):
         コンストラクタ（厳密にはイニシャライザ）
         """
         # メンバ変数の初期化
-        self._n_inputLayer = 1
-        self._n_outputLayer = 1
+        self._session = tf.Session()
+        self._init_var_op = tf.global_variables_initializer()
+        
+        self._loss_op = None
+        self._y_out_op = None
 
         return
 
@@ -58,25 +67,33 @@ class NeuralNetworkBase( metaclass=ABCMeta ):
         return
 
 
-    @classmethod
     @abstractmethod
     def models( self ):
         """
-        モデルの定義を行う。（抽象メソッド）
+        モデルの定義を行い、
+        最終的なモデルの出力のオペレーター self._y_out_op を設定する。
+        （抽象メソッド）
+
+        [Output]
+            self._y_out_op : Operator
+                モデルの出力のオペレーター
         """
-        return self
+        return self._y_out_op
 
     
-    @classmethod
     @abstractmethod
     def loss( self ):
         """
-        損失関数（誤差関数、コスト関数）の定義を行う。（抽象メソッド）
+        損失関数（誤差関数、コスト関数）の定義を行う。
+        （抽象メソッド）
+
+        [Output]
+            self._loss_op : Operator
+                損失関数を表すオペレーター
         """
-        return self
+        return self._loss_op
 
     
-    @classmethod
     @abstractmethod
     def optimizer( self ):
         """
