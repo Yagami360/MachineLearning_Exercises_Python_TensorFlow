@@ -54,7 +54,7 @@ class MLPlot(object):
         return
 
     @ staticmethod
-    def drawDiscriminantRegions( X_features, y_labels, classifier, list_test_idx = None, resolusion = 0.02 ):
+    def drawDiscriminantRegions( X_features, y_labels, classifier, bFitting = False, list_test_idx = None, resolusion = 0.02 ):
         """ 識別器 [classifier] による識別領域を色分けで描写する """
         
         # 識別クラス数に対応したMAPの作成（最大５クラス対応）
@@ -80,10 +80,11 @@ class MLPlot(object):
         xx2 = meshgrids[1]
 
         # 識別器を指定した特徴行列 X_features で fitting
-        classifier.fit( X_features, y_labels)
+        if (bFitting == True):
+            classifier.fit( X_features, y_labels )
 
         # ? 値の全ての組み合わせを１次元配列に変換 numpy.array( [xx1.ravel(), xx2.ravel()] ) し、
-        # classifierに設定されている predict（予想）を実行
+        # classifier に設定されている predict（予想）を実行
         Z = classifier.predict( 
                 numpy.array( [xx1.ravel(), xx2.ravel()] ).T
             )

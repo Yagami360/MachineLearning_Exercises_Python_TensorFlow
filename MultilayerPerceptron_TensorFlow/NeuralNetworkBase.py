@@ -50,19 +50,26 @@ class NeuralNetworkBase( metaclass=ABCMeta ):
         コンストラクタ（厳密にはイニシャライザ）
         """
         # メンバ変数の初期化
-        self._session = tf.Session()
-        self._init_var_op = tf.global_variables_initializer()
-        
+        #self._session = tf.Session()
+        #self._init_var_op = tf.global_variables_initializer()
+        self._session = None
+        self._init_var_op = None
+
         self._loss_op = None
         self._y_out_op = None
 
         return
 
-    
+    @abstractmethod
     def print( self, str ):
         print( "NeuralNetworkBase" )
         print( self )
         print( str )
+
+        print( "_session : \n", self._session )
+        print( "_init_var_op : \n", self._init_var_op )
+        print( "_loss_op : \n", self._loss_op )
+        print( "_y_out_op : \n", self._y_out_op )
 
         return
 

@@ -36,7 +36,6 @@ class MultilayerPerceptron( NeuralNetworkBase ):
 
         _weights : list <Variable>
             モデルの各層の重みの Variable からなる list
-        
         _biases : list <Variable>
             モデルの各層のバイアス項の  Variable からなる list
 
@@ -44,6 +43,8 @@ class MultilayerPerceptron( NeuralNetworkBase ):
             入力層にデータを供給するための placeholder
         _t_holder : placeholder
             出力層に教師データを供給するための placeholder
+        _keep_prob_holder : placeholder
+            ? ドロップアウトのオペレーターにデータを供給するための placeholder
 
     [protedted] protedted な使用法を想定 
 
@@ -67,6 +68,7 @@ class MultilayerPerceptron( NeuralNetworkBase ):
         # shape の行は、None にして汎用性を確保
         self._X_holder = tf.placeholder( tf.float32, shape = [None, self._n_inputLayer] )
         self._t_holder = tf.placeholder( tf.float32, shape = [None, self._n_outputLayer] )
+        self._keep_prob_holder = tf.placeholder( tf.float32 )
 
         return
     
@@ -75,9 +77,18 @@ class MultilayerPerceptron( NeuralNetworkBase ):
         print( "MultilayerPerceptron" )
         print( self )
         print( str )
+
         print( "_n_inputLayer : ", self._n_inputLayer )
         print( "_n_hiddenLayers : ", self._n_hiddenLayers )
         print( "_n_outputLayer : ", self._n_outputLayer )
+
+        print( "_weights : \n", self._weights )
+        print( "_biases : \n", self._biases )
+
+        print( "_X_holder : ", self._X_holder )
+        print( "_t_holder : ", self._t_holder )
+        print( "_keep_prob_holder : ", self._keep_prob_holder )
+
         print( "----------------------------------" )
         return
         
@@ -141,7 +152,7 @@ class MultilayerPerceptron( NeuralNetworkBase ):
         # 計算グラフの構築
         # i=0 : 入力層 ~ 隠れ層
         # i=1,2... : 隠れ層 ~ 隠れ層
-        for (i, n_hidden) in enumerate( self._n_hiddenLayer ):
+        for (i, n_hidden) in enumerate( self._n_hiddenLayers ):
             # 入力層 ~ 隠れ層
             if (i==0):
                 input_dim = self._n_inputLayer
@@ -149,24 +160,24 @@ class MultilayerPerceptron( NeuralNetworkBase ):
 
             # 隠れ層 ~ 隠れ層
             else:
-                input_dim = self._n_hiddenLayer[i-1]
+                input_dim = self._n_hiddenLayers[i-1]
                 input_holder = output_holder
 
             # 重みの Variable の list に、入力層 ~ 隠れ層 or 隠れ層 ~ 隠れ層の重みを追加
             self._weights.append( self.init_weight_variable( input_shape = [input_dim, n_hidden] ) )
 
             # バイアス項の Variable の list に、入力層 ~ 隠れ層 or 隠れ層 ~ 隠れ層のバイアス項を追加
-            self._biases.append( self.init_bias_variable( input_shape = [input_dim, n_hidden] ) )
+            self._biases.append( self.init_bias_variable( input_shape = [n_hidden] ) )
 
             # 隠れ層への入力 : h_in = W*x + b
             h_in_op = tf.matmul( input_holder, self._weights[-1] ) + self._biases[-1]
 
             # 隠れ層からの出力
             h_out_op = tf.nn.relu( h_in_op )
-            #output_holder = tf.nn.dropout( h_out_op, keep_prob_holder )
+            output_holder = tf.nn.dropout( h_out_op, self._keep_prob_holder )
 
         # 隠れ層 ~ 出力層
-        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer[-1], self._n_outputLayer] ) )
+        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayers[-1], self._n_outputLayer] ) )
         self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
 
         # 出力層への入力
@@ -189,7 +200,7 @@ class MultilayerPerceptron( NeuralNetworkBase ):
 
         # クロス・エントロピー
         self._loss_op = tf.reduce_mean(
-                      -tf.reduce_sum( _t_holder * tf.log(self._y_out_op), reduction_indices = [1] )
+                      -tf.reduce_sum( self._t_holder * tf.log(self._y_out_op), reduction_indices = [1] )
                   )
 
         return self._loss_op
@@ -203,7 +214,7 @@ class MultilayerPerceptron( NeuralNetworkBase ):
             optimizer の train_step
         """
         optimizer = tf.train.GradientDescentOptimizer( learning_rate = 0.01 )
-        train_step = optimizer.minimize( optimizer )
+        train_step = optimizer.minimize( self._loss_op )
 
         return train_step
 
@@ -222,14 +233,17 @@ class MultilayerPerceptron( NeuralNetworkBase ):
         [Output]
             self : 自身のオブジェクト
         """
+        # TensorFlow 用にデータを reshape
+        y_train.reshape( [len(y_train), 1] )
+
         #----------------------------
         # モデルの設定＆学習開始処理
         #----------------------------
         # モデルの設定
-        self.models()
+        #self.models()
 
         # 損失関数の設定
-        self.loss()
+        #self.loss()
 
         # 最適化アルゴリズムの設定
         train_step = self.optimizer()
@@ -238,6 +252,7 @@ class MultilayerPerceptron( NeuralNetworkBase ):
         self._init_var_op = tf.global_variables_initializer()
 
         # Session の run（初期化オペレーター）
+        self._session = tf.Session()
         self._session.run( self._init_var_op )
         
         #-------------------
@@ -247,9 +262,12 @@ class MultilayerPerceptron( NeuralNetworkBase ):
         batch_size = 5
 
         # for ループでエポック数分トレーニング
-        for epoch in epochs:
+        for epoch in range( epochs ):
             # ミニバッチ学習処理のためランダムサンプリング
             X_train_shuffled, y_train_shuffled = shuffle( X_train, y_train )
+            
+            # shape を placeholder の形状に合わせるためにするため [...] で囲み、transpose() する。
+            y_train_shuffled = numpy.transpose( [ y_train_shuffled ] )
 
             for i in range( batch_size ):
                 it_start = i * batch_size
@@ -258,8 +276,9 @@ class MultilayerPerceptron( NeuralNetworkBase ):
                 self._session.run(
                     train_step,
                     feed_dict = {
-                        self._X_holder : X_train_shuffled[it_start:it_end],
-                        self._t_holder : y_train_shuffled[it_start:it_end]
+                        self._X_holder: X_train_shuffled[it_start:it_end],
+                        self._t_holder: y_train_shuffled[it_start:it_end],
+                        self._keep_prob_holder: 0.5
                     }
                 )
 
@@ -267,12 +286,12 @@ class MultilayerPerceptron( NeuralNetworkBase ):
         return self._y_out_op
 
 
-    def predict( self, X_features ):
+    def predict( self, X_test ):
         """
-        fitting 処理したモデルで、推定を行い、予想値を返す。（抽象メソッド）
+        fitting 処理したモデルで、推定を行い、予想クラスラベル値を返す。
 
         [Input]
-            X_features : numpy.ndarry ( shape = [n_samples, n_features] )
+            X_test : numpy.ndarry ( shape = [n_samples, n_features] )
                 予想したい特徴行列
 
         [Output]
@@ -280,5 +299,27 @@ class MultilayerPerceptron( NeuralNetworkBase ):
                 予想結果（分類モデルの場合は、クラスラベル）
         """
 
-        return
+        predict_op = tf.equal( 
+                        tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
+                        self._t_holder
+                     )
 
+        predict = predict_op.eval( 
+                      session = self._session,
+                      feed_dict = {
+                          self._X_holder: X_test,
+                          self._keep_prob_holder: 1
+                      }
+                  )
+        print( "predict() predict :", predict )
+
+        return predict
+
+
+    def predict_proba( self, X_test ):
+        """
+        fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
+        proba : probability
+        """
+
+        return

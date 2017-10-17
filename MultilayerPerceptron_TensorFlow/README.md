@@ -1,7 +1,9 @@
 # TensorFlow での多層パーセプトロン [MLP : Multilayer perceptron] の実装
 
-TensorFlow での多層パーセプトロンの練習要実装コード集。<br>
-ニューラルネットワークの自作の基底クラス `NeuralNetworkBase` を、継承した多層パーセプトロンを表す自作クラス `MultilayerPerceptron` を使用。<br>
+TensorFlow での多層パーセプトロンの練習用実装コード集。<br>
+
+TensorFlow での多層パーセプトロンの処理をクラス（任意の層にディープラーニング化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス `MultilayerPerceptron` を使用。<br>
+これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
 
 この README.md ファイルには、各コードの実行結果、概要、ニューラルネットワーク（パーセプトロン）の背景理論の説明を記載しています。<br>
 分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
@@ -10,8 +12,8 @@ TensorFlow での多層パーセプトロンの練習要実装コード集。<br
 
 1. [使用するライブラリ](#ID_1)
 1. [使用するデータセット](#ID_2)
-1. [コードの実行結果](#ID_3)
-    1. [ニューラルネットワークのフレームワーク : `NeuralNetworkBase.py`](#ID_3-1)
+1. [コードの説明＆実行結果](#ID_3)
+    1. [ニューラルネットワークのフレームワークのコードの説明](#ID_3-1)
     1. [多層パーセプトロンによるアヤメデータの識別 : `main1.py`](#ID_3-2)
     1. [多層パーセプトロンによる MIST データの識別 : `main2.py`](#ID_3-3)
 1. [背景理論](#ID_4)
@@ -82,13 +84,57 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 <br>
 <a id="ID_3"></a>
 
-## コードの実行結果
+## コードの説明＆実行結果
 
 <a id="ID_3-1"></a>
 
-## ニューラルネットワークのフレームワーク : `NeuralNetworkBase.py`
-> コード実装中（抽象クラス、基底クラス）...
+## ニューラルネットワークのフレームワークのコードの説明
 
+- `NeuralNetworkBase`
+    - TensorFlow でのニューラルネットワークの処理のラッピングした基底クラス
+    - このクラスを継承するクラスの共通メソッド（インターフェイス）として、以下のメソッドを抽象メソッドで定義している。このクラスを継承したクラスは、これらのメソッドの具体的な実装（オーバーライド）を行わなければならない。
+        - `models()` : モデルの定義を行い、最終的なモデルの出力のオペレーターを設定する。
+        - `loss()` : 損失関数（誤差関数、コスト関数）の定義を行う。
+        - `optimizer()` : モデルの最適化アルゴリズムの設定を行う。
+- `MultilayerPerceptron`
+    - TensorFlow での多層パーセプトロンの処理をクラス（任意の層にディープラーニング化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス。<br>
+    これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
+    - 具体的には、scikit-learn ライブラリの classifier, estimator と同じく、fitting 処理するメソッドとして、`fit( X_train, y_train )` 及び、fitting 処理後の推定を行う `predict( X_test )` メソッド（インターフェイス）を実装している。
+    - ニューラルネットワークの自作基底クラス `NeuralNetworkBase` を継承し、各ニューラルネットワーク用の抽象メソッドに対し、この多層パーセプトロンに固有な具体的な実装（オーバーライド）を行なっている<br>
+
+- 使用例
+```python
+from MLPlot import MLPlot
+from MLPreProcess import MLPreProcess
+from MultilayerPerceptron import MultilayerPerceptron
+
+# データセットを読み込み or 生成
+X_features, y_labels = MLPreProcess.generateCirclesDataSet( input_n_samples = 100 )
+
+# データセットをトレーニングデータ、テストデータ、検証データセットに分割
+X_train, X_test, y_train, y_test \
+= MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.3, input_random_state = 1 )
+
+# 多層パーセプトロンクラスのオブジェクト生成
+# 入力層 : 1 ユニット、
+# 隠れ層 1 : 3 ユニット、
+# 隠れ層 2 : 3 ユニット、
+# 出力層：1 ユニット
+mlp = MultilayerPerceptron( n_inputLayer = 2, n_hiddenLayers = [3,3], n_outputLayer = 1 )
+
+# モデルの構造を定義する。
+mlp.models()
+
+# 損失関数を設定する。
+mlp.loss()
+
+# モデルの初期化と学習（トレーニング）
+mlp1.fit( X_train, y_train )
+
+# 識別境界を plot
+MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp )
+...
+```
 
 <a id="ID_3-1"></a>
 
