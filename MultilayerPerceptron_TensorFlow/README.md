@@ -2,8 +2,8 @@
 
 TensorFlow での多層パーセプトロンの練習用実装コード集。<br>
 
-TensorFlow での多層パーセプトロンの処理をクラス（任意の層にディープラーニング化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス `MultilayerPerceptron` を使用。<br>
-これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
+TensorFlow での多層パーセプトロンの処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス `MultilayerPerceptron` を使用。<br>
+
 
 この README.md ファイルには、各コードの実行結果、概要、ニューラルネットワーク（パーセプトロン）の背景理論の説明を記載しています。<br>
 分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
@@ -193,7 +193,7 @@ def main():
         - `h_out_op = tf.nn.sigmoid( h_in_op )`
     - 出力層からの出力に対する活性化関数は、シグモイド関数で実装
         - `self._y_out_op = tf.nn.sigmoid( y_in_op )`
-- `MultilayerPerceptron.models()` メソッドにて、このモデルの損失関数を設定。<br>このモデルの損失関数は、クロス・エントロピー関数
+- `MultilayerPerceptron.loss()` メソッドにて、このモデルの損失関数を設定。<br>このモデルの損失関数は、クロス・エントロピー関数
     ```python
     def loss( self ):
         self._loss_op = -tf.reduce_sum( 
@@ -203,7 +203,7 @@ def main():
 
         return self._loss_op
     ```
-- 最適化アルゴリズムは、最急降下法（勾配降下法）。学習率は、0.05
+- `MultilayerPerceptron.optimizer()` メソッドにて、このモデルの最適化アルゴリズムを設定。<br>このモデルの最適化アルゴリズムは、最急降下法（勾配降下法）。学習率は、0.05
     ```python
     def optimizer( self ):
         """
