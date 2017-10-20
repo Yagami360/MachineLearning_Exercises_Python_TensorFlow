@@ -111,8 +111,11 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
         - `y_train` : numpy.ndarray ( shape = [n_samples] ) <br>
         トレーニングデータ用のクラスラベル（教師データ）のリスト
     - `predict( X_test )` : fitting 処理したモデルで、推定を行い、予想クラスラベル値を返す。
-        - `X_test` : numpy.ndarry ( shape = [n_samples, n_features] )<br>予想したい特徴行列
+        - `X_test` : numpy.ndarry ( shape = [n_samples, n_features] )<br>
+        予想したい特徴行列
     - `predict_proba( X_test )` : fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
+        - `X_test` : numpy.ndarry ( shape = [n_samples, n_features] )<br>
+        予想したい特徴行列
 - ニューラルネットワークモデルに共通する処理を行うメソッド
     - `model()` : モデルの定義（計算グラフの構築）を行い、最終的なモデルの出力のオペレーターを設定する。
     - `loss( type = "cross-entropy1", original_loss_op = None )` : 損失関数の定義を行う。
@@ -214,6 +217,33 @@ def main():
     - `X_features, y_labels = MLPreProcess.generateMoonsDataSet( input_n_samples = 300, input_noize = 0.3 )`
 - データセットをトレーニングデータ、テストデータに 8:2 の割合で分割。
     - `X_train, X_test, y_train, y_test = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )`
+- `MultilayerPerceptron` のコンストラクタ（厳密にはイニシャライザ） `__init(...)__` にて、多層パーセプトロンの各層の層数等を初期設定。
+    - １つ目の検証モデルは、入力層が２ノード、隠れ層が３ノード、出力層が１ノードの MLP モデル (2-3-1)<br>
+    又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
+    ```python
+    mlp1 = MultilayerPerceptron(
+               session = tf.Session(),
+               n_inputLayer = len(X_features[0]), 
+               n_hiddenLayers = [3],
+               n_outputLayer = 1,
+               learning_rate = 0.05,
+               epochs = 500,
+               batch_size = 20
+           )
+    ```
+    - ２つ目の検証モデルは、入力層が２ノード、隠れ層１が３ノード、隠れ層２が３ノード、出力層が１ノードの MLP モデル (2-3-3-1)<br>
+    又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
+    ```python
+    mlp2 = MultilayerPerceptron(
+               session = tf.Session(),
+               n_inputLayer = len(X_features[0]), 
+               n_hiddenLayers = [3,3],
+               n_outputLayer = 1,
+               learning_rate = 0.05,
+               epochs = 500,
+               batch_size = 20
+           )
+    ```
 - `MultilayerPerceptron.models()` メソッドにて、多層パーセプトロンのフィードフォワード処理をモデル化。
     - 入力層、及び隠れ層からの出力に対する活性化関数は、シグモイド関数で実装
         - `h_out_op = tf.nn.sigmoid( h_in_op )`
@@ -232,7 +262,7 @@ def main():
         ...
         return self._loss_op
     ```
-- `MultilayerPerceptron.optimizer()` メソッドにて、このモデルの最適化アルゴリズムを設定。<br>このモデルの最適化アルゴリズムは、最急降下法（勾配降下法）。学習率は、0.05
+- `MultilayerPerceptron.optimizer()` メソッドにて、このモデルの最適化アルゴリズムを設定。<br>このモデルの最適化アルゴリズムは、最急降下法（勾配降下法）。学習率 `learning_rate` は、コンストラクタで設定した値である 0.05
     ```python
     def optimizer( self, type = "gradient-descent", original_opt = None ):
         ...
@@ -243,7 +273,7 @@ def main():
         self._train_step = self._optimizer.minimize( self._loss_op )
         return self._train_step
     ```
-- エポック数は 500 回で、ミニバッチ学習のサイズは 20 で学習
+
 
 <br>
 
@@ -295,7 +325,13 @@ def main():
 <a id="ID_3-2"></a>
 
 ## 多層パーセプトロンによる多クラスの識別 : `main2.py`
-> コード実装中...
+
+<a id="ID_3-2-1"></a>
+
+### アヤメデータでの３クラス識別
+
+
+
 
 <br>
 

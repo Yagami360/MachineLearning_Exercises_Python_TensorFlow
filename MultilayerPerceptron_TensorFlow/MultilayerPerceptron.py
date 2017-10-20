@@ -236,7 +236,7 @@ class MultilayerPerceptron( object ):
         if ( len( self._n_hiddenLayers ) == 1 ):
             # 入力層 ~ 隠れ層
             self._weights.append( self.init_weight_variable( input_shape = [self._n_inputLayer, self._n_hiddenLayers[0] ] ) )
-            self._biases.append( self.init_bias_variable( input_shape = [3] ) )
+            self._biases.append( self.init_bias_variable( input_shape = [self._n_hiddenLayers[0]] ) )
 
             # 隠れ層への入力 : h_in = W*x + b
             h_in_op = tf.matmul( self._X_holder, self._weights[0] ) + self._biases[0]
@@ -537,9 +537,23 @@ class MultilayerPerceptron( object ):
         """
         fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
         proba : probability
-        """
 
-        return
+        [Input]
+            X_test : numpy.ndarry ( shape = [n_samples, n_features] )
+                予想したい特徴行列
+        """
+        prob = self._y_out_op.eval(
+                   session = self._session,
+                   feed_dict = {
+                       self._X_holder: X_test 
+                   }
+               )
+
+        # X_test のデータ数、特徴数に応じて reshape
+        #prob = prob.reshape( (len[X_test], len[X_test[0]]) )
+
+        return prob
+
 
     def accuracy( self, X_test, y_test):
         """
