@@ -31,7 +31,7 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    X_features, y_labels = MLPreProcess.generateMoonsDataSet( input_n_samples = 300, input_noize = 0.3 )
+    X_features, y_labels = MLPreProcess.generateCirclesDataSet( input_n_samples = 300, input_noize = 0.1 )
     
     #======================================================================
     # データを変換、正規化
@@ -74,10 +74,7 @@ def main():
                epochs = 500,
                batch_size = 20
            )
-
-    mlp1.print( "mlp1" )
-    mlp2.print( "mlp2" )
-
+    
     #======================================================================
     # 変数とプレースホルダを設定
     # Initialize variables and placeholders.
@@ -97,17 +94,15 @@ def main():
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
-    mlp1.models()
-    mlp2.models()
-    #mlp1.print( "after models()" )
+    mlp1.model()
+    mlp2.model()
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    mlp1.loss()
-    mlp2.loss()
-    #mlp1.print( "after loss()" )
+    mlp1.loss( type = "cross-entropy1" )
+    mlp2.loss( type = "cross-entropy1" )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -123,10 +118,16 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
+    # モデルの最適化アルゴリズムを設定
+    mlp1.optimizer( type = "gradient-descent" )
+    mlp2.optimizer( type = "gradient-descent" )
+
+    # トレーニングデータで fitting 処理
     mlp1.fit( X_train, y_train )
     mlp2.fit( X_train, y_train )
 
     mlp1.print( "after fit()" )
+    mlp2.print( "after fit()" )
     #print( mlp1._session.run( mlp1._weights[0] ) )
 
     #======================================================================
@@ -148,7 +149,7 @@ def main():
     plt.subplot( 1, 2, 1 )
     plt.plot(
         range( 0, 500 ), mlp1._losses_train,
-        label = 'train data : 1-3-1',
+        label = 'train data : MLP = 2-3-1',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
@@ -162,7 +163,7 @@ def main():
     plt.subplot( 1, 2, 2 )
     plt.plot(
         range( 0, 500 ), mlp2._losses_train,
-        label = 'train data : network 1-3-3-1',
+        label = 'train data : MLP = 2-3-3-1',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
@@ -181,12 +182,12 @@ def main():
     plt.clf()
     plt.subplot( 1, 2, 1 )
     MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp1 )
-    plt.title( "Mulutiplelayer Perceptron : 1-3-1" )
+    plt.title( "Mulutiplelayer Perceptron : 2-3-1" )
     plt.legend( loc = 'best' )
 
     plt.subplot( 1, 2, 2 )
     MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp2 )
-    plt.title( "Mulutiplelayer Perceptron : 1-3-3-1" )
+    plt.title( "Mulutiplelayer Perceptron : 2-3-3-1" )
     plt.legend( loc = 'best' )
 
     MLPlot.saveFigure( fileName = "MultilayerPerceptron_1-2.png" )

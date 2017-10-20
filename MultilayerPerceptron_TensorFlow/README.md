@@ -106,19 +106,42 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
 - 具体的には、scikit-learn ライブラリの classifier, estimator と同じく、fitting 処理するメソッドとして、`fit( X_train, y_train )` 及び、fitting 処理後の推定を行う `predict( X_test )` メソッド（インターフェイス）等を実装している。
     - `fit( X_train, y_train )` : 指定されたトレーニングデータで、モデルの fitting 処理を行う。
-        - `X_train` : numpy.ndarray ( shape = [n_samples, n_features] )<br>トレーニングデータ（特徴行列）
-        - `y_train` : numpy.ndarray ( shape = [n_samples] ) <br> トレーニングデータ用のクラスラベル（教師データ）のリスト
+        - `X_train` : numpy.ndarray ( shape = [n_samples, n_features] )<br>
+        トレーニングデータ（特徴行列）
+        - `y_train` : numpy.ndarray ( shape = [n_samples] ) <br>
+        トレーニングデータ用のクラスラベル（教師データ）のリスト
     - `predict( X_test )` : fitting 処理したモデルで、推定を行い、予想クラスラベル値を返す。
         - `X_test` : numpy.ndarry ( shape = [n_samples, n_features] )<br>予想したい特徴行列
-        - `predict_proba( X_test )` : fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
+    - `predict_proba( X_test )` : fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
 - ニューラルネットワークモデルに共通する処理を行うメソッド
     - `model()` : モデルの定義（計算グラフの構築）を行い、最終的なモデルの出力のオペレーターを設定する。
-    - `loss()` : 損失関数の定義を行う。
-    - `optimizer() :` モデルの最適化アルゴリズムの設定を行う。
+    - `loss( type = "cross-entropy1", original_loss_op = None )` : 損失関数の定義を行う。
+        - `type` : str<br>
+        損失関数の種類
+            - `"original"` : 独自の損失関数
+            - `"l1-norm"` : L1 損失関数（L1ノルム）
+            - `"l2-norm"` : L2 損失関数（L2ノルム）
+            - `"cross-entropy1"` : クロス・エントロピー交差関数（２クラスの分類問題）
+            - `"cross-entropy2"` : クロス・エントロピー交差関数（多クラスの分類問題）
+            - `"sigmoid-cross-entropy"` : シグモイド・クロス・エントロピー損失関数
+            - `"weighted-cross-entropy"` : 重み付きクロス・エントロピー損失関数
+            - `"softmax-cross-entrpy"` : ソフトマックス クロス・エントロピー損失関数
+            - `"sparse-softmax-cross-entrpy"` : 疎なソフトマックスクロス・エントロピー損失関数
+        - `original_loss_op` : Operator<br>
+        type = "original" で独自の損失関数とした場合の損失関数を表すオペレーター
+    - `optimizer( type ) :` モデルの最適化アルゴリズムの設定を行う。
+        - `type` : str<br>
+        最適化アルゴリズムの種類
+            - `"original"` : 独自の最適化アルゴリズム
+            - `"gradient-descent"` : 最急降下法 `tf.train.GradientDescentOptimizer(...)`
+            - `"momentum"` : モメンタム `tf.train.MomentumOptimizer( ..., use_nesterov = False )`
+            - `"momentum-nesterov"` : Nesterov モメンタム `tf.train.MomentumOptimizer( ..., use_nesterov = True )`
+            - `"ada-grad"` : Adagrad `tf.train.AdagradOptimizer(...)`
+            - `"ada-delta"` : Adadelta `tf.train.AdadeletaOptimizer(...)`
 - 多層パーセプトロン固有の処理を行うメソッド
-    - `init_weight_variable( input_shape )` : 重みの初期化を行う。重みは TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。
+    - `init_weight_variable( input_shape )` : 重みの初期化を行う。重みは TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。尚、初期化の値は、正規分布に従う乱数に基いて初期化する。
         - `input_shape` : [int,int] <br>重みの Variable を初期化するための Tensor の形状
-    - `init_bias_variable( input_shape )` : バイアス項 b の初期化を行う。バイアス項は TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。
+    - `init_bias_variable( input_shape )` : バイアス項 b の初期化を行う。バイアス項は TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。尚、初期化の値は、正規分布に従う乱数に基いて初期化する。
         - `input_shape` : [int,int] <br>バイアス項の Variable を初期化するための Tensor の形状
 - その他、評価のためのメソッド
     - `accuracy( X_test, y_test )` : 引数で指定されたデータから正解率を算出する。
@@ -164,7 +187,10 @@ def main():
     mlp.models()
 
     # 損失関数を設定する。
-    mlp.loss()
+    mlp.loss( type = "cross-entropy1" )
+
+    # 最適化アルゴリズムを設定
+    mlp.optimizer( type = "gradient-descent" )
 
     # モデルの初期化と学習（トレーニング）
     mlp1.fit( X_train, y_train )
@@ -195,27 +221,27 @@ def main():
         - `self._y_out_op = tf.nn.sigmoid( y_in_op )`
 - `MultilayerPerceptron.loss()` メソッドにて、このモデルの損失関数を設定。<br>このモデルの損失関数は、クロス・エントロピー関数
     ```python
-    def loss( self ):
-        self._loss_op = -tf.reduce_sum( 
-                            self._t_holder * tf.log(self._y_out_op) +
-                             (1-self._t_holder)*tf.log(1-self._y_out_op)
-                    )
-
+    def loss( self, type = "cross-entropy1", original_loss_op = None ):
+        ...
+        # クロス・エントロピー（２クラスの分類問題）
+        elif ( type == "cross-entropy1" ):
+            self._loss_op = -tf.reduce_sum( 
+                                self._t_holder * tf.log(self._y_out_op) + 
+                                ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
+                            )
+        ...
         return self._loss_op
     ```
 - `MultilayerPerceptron.optimizer()` メソッドにて、このモデルの最適化アルゴリズムを設定。<br>このモデルの最適化アルゴリズムは、最急降下法（勾配降下法）。学習率は、0.05
     ```python
-    def optimizer( self ):
-        """
-        モデルの最適化アルゴリズムの設定を行う。
+    def optimizer( self, type = "gradient-descent", original_opt = None ):
+        ...
+        elif ( type == "gradient-descent" ):
+            self._optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
 
-        [Output]
-            optimizer の train_step
-        """
-        optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
-        train_step = optimizer.minimize( self._loss_op )
-
-        return train_step
+        ...
+        self._train_step = self._optimizer.minimize( self._loss_op )
+        return self._train_step
     ```
 - エポック数は 500 回で、ミニバッチ学習のサイズは 20 で学習
 

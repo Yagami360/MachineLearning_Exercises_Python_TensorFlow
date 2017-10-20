@@ -23,7 +23,7 @@ class NeuralNetworkBase( metaclass=ABCMeta ):
     TensorFlow ライブラリを使用
     
     ニューラルネットワークの基本的なフレームワークを想定した仮想メソッドからなる抽象クラス。
-    実際のニューラルネットワークを表すクラスの実装は、このクラスを継承することで行うことを想定している。
+    実際のニューラルネットワークを表すクラスの実装は、このクラスを継承し、オーバーライドするを想定している。
     
     ----------------------------------------------------------------------------------------------------
     [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
@@ -50,9 +50,9 @@ class NeuralNetworkBase( metaclass=ABCMeta ):
         コンストラクタ（厳密にはイニシャライザ）
         """
         # メンバ変数の初期化
-        #self._session = tf.Session()
+        self._session = tf.Session()
         #self._init_var_op = tf.global_variables_initializer()
-        self._session = None
+        #self._session = None
         self._init_var_op = None
 
         self._loss_op = None
@@ -75,7 +75,7 @@ class NeuralNetworkBase( metaclass=ABCMeta ):
 
 
     @abstractmethod
-    def models( self ):
+    def model( self ):
         """
         モデルの定義を行い、
         最終的なモデルの出力のオペレーター self._y_out_op を設定する。

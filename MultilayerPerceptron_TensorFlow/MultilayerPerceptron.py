@@ -61,6 +61,12 @@ class MultilayerPerceptron( object ):
         _loss_op : Operator
             損失関数を表すオペレーター
 
+        _optimizer : Optimizer
+            モデルの最適化アルゴリズム
+
+        _train_step : 
+            トレーニングステップ
+
         _y_out_op : Operator
             モデルの出力のオペレーター
         
@@ -113,6 +119,8 @@ class MultilayerPerceptron( object ):
         # オペレーターの初期化
         self._init_var_op = None
         self._loss_op = None
+        self._optimizer = None
+        self._train_step = None
         self._y_out_op = None
 
         # placeholder の初期化
@@ -148,6 +156,8 @@ class MultilayerPerceptron( object ):
 
         print( "_init_var_op :\n", self._init_var_op )
         print( "_loss_op :", self._loss_op )
+        print( "_optimizer :", self._optimizer )
+        print( "_train_step :", self._train_step )
         print( "_y_out_op :", self._y_out_op )
 
         print( "_X_holder : ", self._X_holder )
@@ -207,10 +217,10 @@ class MultilayerPerceptron( object ):
         return bias_var
 
 
-    def models( self ):
+    def model( self ):
         """
         モデルの定義（計算グラフの構築）を行い、
-        最終的なモデルの出力のオペレーター self._y_out_op を設定する。
+        最終的なモデルの出力のオペレーターを設定する。
 
         [Output]
             self._y_out_op : Operator
@@ -233,7 +243,8 @@ class MultilayerPerceptron( object ):
             
             # 隠れ層からの出力            
             h_out_op = tf.nn.sigmoid( h_in_op )
-        
+            print( "activate function [hidden layer] = sigmoid" )
+
             # 隠れ層 ~ 出力層
             self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayers[0], self._n_outputLayer] ) )
             self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
@@ -243,8 +254,8 @@ class MultilayerPerceptron( object ):
             # i=0 : 入力層 ~ 隠れ層
             # i=1,2... : 隠れ層 ~ 隠れ層
             for (i, n_hidden) in enumerate( self._n_hiddenLayers ):
-                print("i=", i)
-                print("n_hidden=", n_hidden)
+                #print("i=", i)
+                #print("n_hidden=", n_hidden)
 
                 # 入力層 ~ 隠れ層
                 if (i==0):
@@ -267,7 +278,11 @@ class MultilayerPerceptron( object ):
 
                 # 隠れ層からの出力
                 h_out_op = tf.nn.sigmoid( h_in_op )
+                print( "activate function [hidden layer] = sigmoid" )
                 #h_out_op = tf.nn.relu( h_in_op )
+                #print( "activate function [hidden layer] = Relu" )
+
+                # ドロップアウト処理
                 #output_holder = tf.nn.dropout( h_out_op, self._keep_prob_holder )
                 #output_holder = h_out_op
         
@@ -281,72 +296,148 @@ class MultilayerPerceptron( object ):
 
         # モデルの出力
         # ２分類問題の場合
-        self._y_out_op = tf.nn.sigmoid( y_in_op )
-        """
-        # ２分類問題の場合
-        if (self._n_inputLayer == 2 ):
+        if (self._n_inputLayer <= 2 ):
             # sigmoid
             self._y_out_op = tf.nn.sigmoid( y_in_op )
+            print( "activate function [output layer] = sigmoid" )
 
             # Relu
             #self._y_out_op = tf.nn.relu( y_in_op )
+            #print( "activate function [output layer] = Relu" )
 
         # 多分類問題の場合
         else:
             # softmax
             self._y_out_op = tf.nn.softmax( y_in_op )
-        """
+            print( "activate function [output layer] = softmax" )
+
 
         return self._y_out_op
 
     
-    def loss( self ):
+    def loss( self, type = "cross-entropy1", original_loss_op = None ):
         """
         損失関数の定義を行う。
         
+        [Input]
+            type : str
+                損失関数の種類
+                "original" : 独自の損失関数
+                "l1-norm" : L1 損失関数（L1ノルム）
+                "l2-norm" : L2 損失関数（L2ノルム）
+                "cross-entropy1" : クロス・エントロピー交差関数（２クラスの分類問題）
+                "cross-entropy2" : クロス・エントロピー交差関数（多クラスの分類問題）
+                "sigmoid-cross-entropy" : シグモイド・クロス・エントロピー損失関数
+                "weighted-cross-entropy" : 重み付きクロス・エントロピー損失関数
+                "softmax-cross-entrpy" : ソフトマックス クロス・エントロピー損失関数
+                "sparse-softmax-cross-entrpy" : 疎なソフトマックスクロス・エントロピー損失関数
+
+            original_loss_op : Operator
+                type = "original" で独自の損失関数とした場合の損失関数を表すオペレーター
+
         [Output]
             self._loss_op : Operator
                 損失関数を表すオペレーター
         """
+        # 独自の損失関数
+        if ( type == "original" ):
+            self._loss_op = original_loss_op
 
-        # クロス・エントロピー
-        # ２クラスの分類問題の場合
-        self._loss_op = -tf.reduce_sum( 
-                            self._t_holder * tf.log(self._y_out_op) + (1-self._t_holder)*tf.log(1-self._y_out_op)
-                        )
-
-        """
-        # 多クラスの分類問題の場合
-        # tf.clip_by_value(...) : 下限値、上限値を設定
-        self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
-                            -tf.reduce_sum( 
-                                self._t_holder * tf.log( tf.clip_by_value(self._y_out_op, 1e-10, 1.0) ), 
-                                reduction_indices = [1]     # 行列の方向
+        # L1 損失関数
+        elif ( type == "l1-norm" ):
+            # 回帰問題の場合
+            self._loss_op = tf.reduce_mean(
+                                tf.abs( self._t_holder - self._y_out_op )
                             )
-                        )
-        """
+        # L2 損失関数
+        elif ( type == "l2-norm" ):
+            # 回帰問題の場合
+            self._loss_op = tf.reduce_mean(
+                                tf.square( self._t_holder - self._y_out_op )
+                            )
 
-        """
-        # 回帰問題の場合
-        self._loss_op = tf.reduce_mean(
-                            tf.square( self._t_holder - self._y_out_op )
-                        )
-        """
+        # クロス・エントロピー（２クラスの分類問題）
+        elif ( type == "cross-entropy1" ):
+            # クロス・エントロピー
+            # ２クラスの分類問題の場合
+            self._loss_op = -tf.reduce_sum( 
+                                self._t_holder * tf.log(self._y_out_op) + 
+                                ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
+                            )
+
+        # クロス・エントロピー（多クラスの分類問題）
+        elif ( type == "cross-entropy2" ):
+            # 多クラスの分類問題の場合
+            # tf.clip_by_value(...) : 下限値、上限値を設定
+            self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
+                                -tf.reduce_sum( 
+                                    self._t_holder * tf.log( tf.clip_by_value(self._y_out_op, 1e-10, 1.0) ), 
+                                    reduction_indices = [1]     # 行列の方向
+                                )
+                            )
+
+        # その他（デフォルト）
+        else:
+            self._loss_op = -tf.reduce_sum( 
+                                self._t_holder * tf.log(self._y_out_op) +
+                                ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
+                            )
+        
 
         return self._loss_op
 
-    
-    def optimizer( self ):
+
+    def optimizer( self, type = "gradient-descent", original_opt = None ):
         """
         モデルの最適化アルゴリズムの設定を行う。
+        [Input]
+            type : str
+                最適化アルゴリズムの種類
+                "original" : 独自の最適化アルゴリズム
+                "gradient-descent" : 最急降下法 tf.train.GradientDescentOptimizer(...)
+                "momentum" : モメンタム tf.train.MomentumOptimizer( ..., use_nesterov = False )
+                "momentum-nesterov" : Nesterov モメンタム  tf.train.MomentumOptimizer( ..., use_nesterov = True )
+                "ada-grad" : Adagrad tf.train.AdagradOptimizer(...)
+                "ada-delta" : Adadelta tf.train.AdadeletaOptimizer(...)
+
+            original_opt : Optimizer
+                独自の最適化アルゴリズム
 
         [Output]
             optimizer の train_step
         """
-        optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
-        train_step = optimizer.minimize( self._loss_op )
+        if ( type == "original" ):
+            self._optimizer = original_opt
 
-        return train_step
+        elif ( type == "gradient-descent" ):
+            self._optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
+        
+        elif ( type == "momentum" ):
+            self._optimizer = tf.train.MomentumOptimizer( 
+                                  learning_rate = self._learning_rate, 
+                                  momentum = 0.9,
+                                  use_nesterov = False
+                              )
+        
+        elif ( type == "momentum-nesterov" ):
+            self._optimizer = tf.train.MomentumOptimizer( 
+                                  learning_rate = self._learning_rate, 
+                                  momentum = 0.9,
+                                  use_nesterov = True
+                              )
+
+        elif ( type == "ada-grad" ):
+            self._optimizer = tf.train.AdagradOptimizer( learning_rate = self._learning_rate )
+
+        elif ( type == "ada-delta" ):
+            self._optimizer = tf.train.AdadeltaOptimizer( learning_rate = self._learning_rate, rho = 0.95 )
+
+        else:
+            self._optimizeroptimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
+
+
+        self._train_step = self._optimizer.minimize( self._loss_op )
+        return self._train_step
 
 
     def fit( self, X_train, y_train ):
@@ -358,7 +449,7 @@ class MultilayerPerceptron( object ):
                 トレーニングデータ（特徴行列）
             
             y_train : numpy.ndarray ( shape = [n_samples] )
-                レーニングデータ用のクラスラベル（教師データ）のリスト
+                トレーニングデータ用のクラスラベル（教師データ）のリスト
 
         [Output]
             self : 自身のオブジェクト
@@ -369,21 +460,10 @@ class MultilayerPerceptron( object ):
         #----------------------------
         # 学習開始処理
         #----------------------------
-        # モデルの設定
-        #self.models()
-
-        # 損失関数の設定
-        #self.loss()
-
-        # 最適化アルゴリズムの設定
-        train_step = self.optimizer()
-        print( "train_step", train_step )
-
         # Variable の初期化オペレーター
         self._init_var_op = tf.global_variables_initializer()
 
         # Session の run（初期化オペレーター）
-        #self._session = tf.Session()
         self._session.run( self._init_var_op )
         
         #print( "init_weights", self._session.run( self._weights ) )
@@ -391,7 +471,6 @@ class MultilayerPerceptron( object ):
         #-------------------
         # 学習処理
         #-------------------
-        #self._epochs = len( X_train )
         n_batches = len( X_train ) // self._batch_size     # バッチ処理の回数
 
         # for ループでエポック数分トレーニング
@@ -402,15 +481,12 @@ class MultilayerPerceptron( object ):
             # shape を placeholder の形状に合わせるためにするため [...] で囲み、transpose() する。
             y_train_shuffled = numpy.transpose( [ y_train_shuffled ] )
 
-            #print( "X_train_shuffled", X_train_shuffled )
-            #print( "y_train_shuffled", y_train_shuffled )
-
             for i in range( n_batches ):
                 it_start = i * self._batch_size
                 it_end = it_start + self._batch_size
 
                 self._session.run(
-                    train_step,
+                    self._train_step,
                     feed_dict = {
                         self._X_holder: X_train_shuffled[it_start:it_end],
                         self._t_holder: y_train_shuffled[it_start:it_end]
@@ -426,7 +502,7 @@ class MultilayerPerceptron( object ):
                            #self._t_holder: y_train_shuffled
                        }
                    )
-            #print( "loss", loss )
+
             self._losses_train.append( loss )
 
         return self._y_out_op
