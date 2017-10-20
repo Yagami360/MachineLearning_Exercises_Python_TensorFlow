@@ -234,9 +234,35 @@ def main():
 
 |NN model|accuracy [test data]|
 |---|---|
-|Multiplelayer Perceptron<br>(1-3-1)|0.883333|
-|Multiplelayer Perceptron<br>(1-3-3-1)|0.816667|
+|Multiplelayer Perceptron<br>(1-3-1)|0.883|
+|Multiplelayer Perceptron<br>(1-3-3-1)|0.817|
 
+
+<br>
+<a id="ID_3-1-2"></a>
+
+### 円状データ `sklearn.datasets.make_circles(...)` での識別
+
+- scikit-learn ライブラリの `sklearn.datasets.make_circles(...)` で生成した円状データにて、２クラスの識別を行なった。<br>データ数は 300 個で、ノイズ値を 0.1 に設定<br>
+    - `X_features, y_labels = MLPreProcess.generateCirclesDataSet( input_n_samples = 300, input_noize = 0.1 )`
+- その他の条件は、先の半月状データのときと同様。
+
+#### トレーニング回数（エポック）に対する、損失関数（クロス・エントロピー）の値のグラフ
+![multilayerperceptron_1-3](https://user-images.githubusercontent.com/25688193/31832404-daad6094-b601-11e7-92d5-765de4b614ef.png)
+> １つ目の図が、入力層：１ノード、隠れ層：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-1) での損失関数のグラフ。<br>
+> ２つ目の図が、入力層：１ノード、隠れ層１：３ノード、隠れ層２：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-3-1) での損失関数のグラフ。<br>
+> 1-3-1 の MLP モデルでは、損失関数が早い段階で収束おり、overfitting 状態であることが見て取れる。一方、1-3-3-1 の MLP モデルでは、損失関数が収束しておらず、underfitting 状態であることが見て取れる。
+
+#### 識別結果＆境界のグラフ
+![multilayerperceptron_1-4](https://user-images.githubusercontent.com/25688193/31832405-dad313a2-b601-11e7-9c1e-f09d2b960d91.png)
+> １つ目の図が、入力層：１ノード、隠れ層：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-1) での識別結果＆境界のグラフ。<br>
+> ２つ目の図が、入力層：１ノード、隠れ層１：３ノード、隠れ層２：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-3-1) での識別結果＆境界のグラフ。<br>
+> 先の、損失関数の結果を反映して、1-3-1 の MLP モデルでは、（学習が収束しているので）うまく識別できている。一方、1-3-3-1 の MLP モデルでは、（まだ学習が収束していないので）うまく識別できていない。
+
+|NN model|accuracy [test data]|
+|---|---|
+|Multiplelayer Perceptron<br>(1-3-1)|1.000|
+|Multiplelayer Perceptron<br>(1-3-3-1)|0.783|
 
 <br>
 
