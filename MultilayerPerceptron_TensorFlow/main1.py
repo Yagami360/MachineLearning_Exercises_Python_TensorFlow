@@ -31,20 +31,23 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    X_features, y_labels = MLPreProcess.generateCirclesDataSet( input_n_samples = 100 )
+    X_features, y_labels = MLPreProcess.generateCirclesDataSet( input_n_samples = 300 )
     
     #======================================================================
     # データを変換、正規化
     # Transform and normalize data.
     # ex) data = tf.nn.batch_norm_with_global_normalization(...)
     #======================================================================
-    #y_labels.reshape( [100, 1] )
+    #y_labels.reshape( 300, 1 )
     
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
     X_train, X_test, y_train, y_test \
     = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.3, input_random_state = 1 )
+
+    print( "X_train :\n", X_train )
+    print( "y_train :\n", y_train )
 
     #======================================================================
     # アルゴリズム（モデル）のパラメータを設定
@@ -75,14 +78,14 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     mlp1.models()
-    mlp1.print( "after models()" )
+    #mlp1.print( "after models()" )
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
     mlp1.loss()
-    mlp1.print( "after loss()" )
+    #mlp1.print( "after loss()" )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -98,15 +101,40 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
+    #print( mlp1._session.run( mlp1._weights[0] ) )
     mlp1.fit( X_train, y_train )
     mlp1.print( "after fit()" )
+    #print( mlp1._session.run( mlp1._weights[0] ) )
 
     #======================================================================
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
+    predict = mlp1.predict( X_test )
+    print( "predict", predict )
+
+    # 
+    plt.clf()
+    plt.plot(
+        range( 0, len(X_train) ), mlp1._losses_train,
+        label = 'train data (batch size = 5)',
+        linestyle = '-',
+        #linewidth = 2,
+        color = 'red'
+    )
+    plt.title( "loss ( cross-entropy )" )
+    plt.legend( loc = 'best' )
+    #plt.ylim( [0, 10.5] )
+    plt.xlabel( "Epocs" )
+    plt.tight_layout()
+
+    #MLPlot.saveFigure( fileName = "MultilayerPerceptron_1-1.png" )
+    plt.show()
+    
     # plot
+    plt.clf()
     MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp1 )
+    plt.show()
 
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
