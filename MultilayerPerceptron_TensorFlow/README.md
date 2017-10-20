@@ -14,8 +14,9 @@ TensorFlow での多層パーセプトロンの処理をクラス（任意の層
 1. [使用するデータセット](#ID_2)
 1. [コードの説明＆実行結果](#ID_3)
     1. [ニューラルネットワークのフレームワークのコードの説明](#ID_3-1)
-    1. [多層パーセプトロンによるアヤメデータの識別 : `main1.py`](#ID_3-2)
-    1. [多層パーセプトロンによる MIST データの識別 : `main2.py`](#ID_3-3)
+    1. [多層パーセプトロンによる２クラスの識別 : `main1.py`](#ID_3-2)
+    1. [多層パーセプトロンによる多クラスの識別 : `main2.py`](#ID_3-3)
+    1. [多層パーセプトロンによる MIST データの識別 : `main3.py`](#ID_3-3)
 1. [背景理論](#ID_4)
     1. [ニューラルネットワークの概要](#ID_4-1)
     1. [活性化関数](#ID_4-2)
@@ -78,8 +79,10 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 ## 使用するデータセット
 
-- Iris データ
-- MIST
+- 半月状データ : ２クラスの識別 
+- 円状データ : ２クラスの識別
+- Iris データ : ３クラスの識別
+- MIST : 多クラスの識別＆パターン認識
 
 <br>
 <a id="ID_3"></a>
@@ -90,63 +93,156 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 ## ニューラルネットワークのフレームワークのコードの説明
 
+<!--
 - `NeuralNetworkBase`
     - TensorFlow でのニューラルネットワークの処理のラッピングした基底クラス
     - このクラスを継承するクラスの共通メソッド（インターフェイス）として、以下のメソッドを抽象メソッドで定義している。このクラスを継承したクラスは、これらのメソッドの具体的な実装（オーバーライド）を行わなければならない。
         - `models()` : モデルの定義を行い、最終的なモデルの出力のオペレーターを設定する。
         - `loss()` : 損失関数（誤差関数、コスト関数）の定義を行う。
         - `optimizer()` : モデルの最適化アルゴリズムの設定を行う。
-- `MultilayerPerceptron`
-    - TensorFlow での多層パーセプトロンの処理をクラス（任意の層にディープラーニング化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス。<br>
-    これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
-    - 具体的には、scikit-learn ライブラリの classifier, estimator と同じく、fitting 処理するメソッドとして、`fit( X_train, y_train )` 及び、fitting 処理後の推定を行う `predict( X_test )` メソッド（インターフェイス）を実装している。
+-->
+### `MultilayerPerceptron` クラス : `MultilayerPerceptron.py`
+- TensorFlow での多層パーセプトロンの処理をクラス（任意の層数に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス。<br>
+これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
+- 具体的には、scikit-learn ライブラリの classifier, estimator と同じく、fitting 処理するメソッドとして、`fit( X_train, y_train )` 及び、fitting 処理後の推定を行う `predict( X_test )` メソッド（インターフェイス）等を実装している。
+    - `fit( X_train, y_train )` : 指定されたトレーニングデータで、モデルの fitting 処理を行う。
+        - `X_train` : numpy.ndarray ( shape = [n_samples, n_features] )<br>トレーニングデータ（特徴行列）
+        - `y_train` : numpy.ndarray ( shape = [n_samples] ) <br> トレーニングデータ用のクラスラベル（教師データ）のリスト
+    - `predict( X_test )` : fitting 処理したモデルで、推定を行い、予想クラスラベル値を返す。
+        - `X_test` : numpy.ndarry ( shape = [n_samples, n_features] )<br>予想したい特徴行列
+        - `predict_proba( X_test )` : fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
+- ニューラルネットワークモデルに共通する処理を行うメソッド
+    - `model()` : モデルの定義（計算グラフの構築）を行い、最終的なモデルの出力のオペレーターを設定する。
+    - `loss()` : 損失関数の定義を行う。
+    - `optimizer() :` モデルの最適化アルゴリズムの設定を行う。
+- 多層パーセプトロン固有の処理を行うメソッド
+    - `init_weight_variable( input_shape )` : 重みの初期化を行う。重みは TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。
+        - `input_shape` : [int,int] <br>重みの Variable を初期化するための Tensor の形状
+    - `init_bias_variable( input_shape )` : バイアス項 b の初期化を行う。バイアス項は TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。
+        - `input_shape` : [int,int] <br>バイアス項の Variable を初期化するための Tensor の形状
+- その他、評価のためのメソッド
+    - `accuracy( X_test, y_test )` : 引数で指定されたデータから正解率を算出する。
+<!--
     - ニューラルネットワークの自作基底クラス `NeuralNetworkBase` を継承し、各ニューラルネットワーク用の抽象メソッドに対し、この多層パーセプトロンに固有な具体的な実装（オーバーライド）を行なっている<br>
+-->
 
-- 使用例
+#### 使用例
 ```python
 from MLPlot import MLPlot
 from MLPreProcess import MLPreProcess
 from MultilayerPerceptron import MultilayerPerceptron
 
-# データセットを読み込み or 生成
-X_features, y_labels = MLPreProcess.generateCirclesDataSet( input_n_samples = 100 )
+def main():
+    ...
 
-# データセットをトレーニングデータ、テストデータ、検証データセットに分割
-X_train, X_test, y_train, y_test \
-= MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.3, input_random_state = 1 )
+    # データセットを読み込み or 生成
+    X_features, y_labels = MLPreProcess.generateMoonsDataSet( input_n_samples = 300, input_noize = 0.3 )
 
-# 多層パーセプトロンクラスのオブジェクト生成
-# 入力層 : 1 ユニット、
-# 隠れ層 1 : 3 ユニット、
-# 隠れ層 2 : 3 ユニット、
-# 出力層：1 ユニット
-mlp = MultilayerPerceptron( n_inputLayer = 2, n_hiddenLayers = [3,3], n_outputLayer = 1 )
+    # データセットをトレーニングデータ、テストデータ、検証データセットに分割
+    X_train, X_test, y_train, y_test \
+    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )
 
-# モデルの構造を定義する。
-mlp.models()
+    # 多層パーセプトロンクラスのオブジェクト生成
+    # 入力層 : 1 ユニット、
+    # 隠れ層 1 : 3 ユニット、
+    # 隠れ層 2 : 3 ユニット、
+    # 出力層：1 ユニット
+    # 学習率 : 0.05
+    # エポック数 : 500
+    # ミニバッチサイズ : 20
+    mlp = MultilayerPerceptron(
+               session = tf.Session(),
+               n_inputLayer = len(X_features[0]), 
+               n_hiddenLayers = [3,3],
+               n_outputLayer = 1,
+               learning_rate = 0.05,
+               epochs = 500,
+               batch_size = 20
+           )
 
-# 損失関数を設定する。
-mlp.loss()
+    # モデルの構造を定義する。
+    mlp.models()
 
-# モデルの初期化と学習（トレーニング）
-mlp1.fit( X_train, y_train )
+    # 損失関数を設定する。
+    mlp.loss()
 
-# 識別境界を plot
-MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp )
-...
+    # モデルの初期化と学習（トレーニング）
+    mlp1.fit( X_train, y_train )
+
+    # 識別境界を plot
+    MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp )
+    ...
+
 ```
 
+<br>
 <a id="ID_3-1"></a>
 
-## 多層パーセプトロンによるアヤメデータの識別 : `main1.py`
-> コード実装中...
+## 多層パーセプトロンによる２クラス識別 : `main1.py`
+
+<a id="ID_3-1-1"></a>
+
+### 半月状データ `sklearn.datasets.make_moons(...)` での識別
+
+- scikit-learn ライブラリの `sklearn.datasets.make_moons(...)` で生成した半月状データにて、２クラスの識別を行なった。<br>データ数は 300 個で、ノイズ値を 0.3 に設定<br>
+    - `X_features, y_labels = MLPreProcess.generateMoonsDataSet( input_n_samples = 300, input_noize = 0.3 )`
+- データセットをトレーニングデータ、テストデータに 8:2 の割合で分割。
+    - `X_train, X_test, y_train, y_test = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )`
+- `MultilayerPerceptron.models()` メソッドにて、多層パーセプトロンのフィードフォワード処理をモデル化。
+    - 入力層、及び隠れ層からの出力に対する活性化関数は、シグモイド関数で実装
+        - `h_out_op = tf.nn.sigmoid( h_in_op )`
+    - 出力層からの出力に対する活性化関数は、シグモイド関数で実装
+        - `self._y_out_op = tf.nn.sigmoid( y_in_op )`
+- `MultilayerPerceptron.models()` メソッドにて、このモデルの損失関数を設定。<br>このモデルの損失関数は、クロス・エントロピー関数
+    ```python
+    def loss( self ):
+        self._loss_op = -tf.reduce_sum( 
+                            self._t_holder * tf.log(self._y_out_op) +
+                             (1-self._t_holder)*tf.log(1-self._y_out_op)
+                    )
+
+        return self._loss_op
+    ```
+- 最適化アルゴリズムは、最急降下法（勾配降下法）。学習率は、0.05
+    ```python
+    def optimizer( self ):
+        """
+        モデルの最適化アルゴリズムの設定を行う。
+
+        [Output]
+            optimizer の train_step
+        """
+        optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
+        train_step = optimizer.minimize( self._loss_op )
+
+        return train_step
+    ```
+- エポック数は 500 回で、ミニバッチ学習のサイズは 20 で学習
+
+<br>
+
+#### トレーニング回数（エポック）に対する、損失関数（クロス・エントロピー）の値のグラフ
+> ![multilayerperceptron_1-1](https://user-images.githubusercontent.com/25688193/31829121-543ade9c-b5f7-11e7-8929-b98928876989.png)
+> １つ目の図が、入力層：１ノード、隠れ層：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-1) での損失関数のグラフ。<br>
+> ２つ目の図が、入力層：１ノード、隠れ層１：３ノード、隠れ層２：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-3-1) での損失関数のグラフ。<br>
+
+
+#### 識別結果＆境界のグラフ
+![multilayerperceptron_1-2](https://user-images.githubusercontent.com/25688193/31829551-8e0df7a2-b5f8-11e7-910e-d56db2bab919.png)
+> １つ目の図が、入力層：１ノード、隠れ層：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-1) での識別結果＆境界のグラフ。<br>
+> ２つ目の図が、入力層：１ノード、隠れ層１：３ノード、隠れ層２：３ノード、出力層：１ノードの多層パーセプトロンモデル (1-3-3-1) での識別結果＆境界のグラフ。<br>
+
+|NN model|accuracy [test data]|
+|---|---|
+|Multiplelayer Perceptron<br>(1-3-1)|0.883333|
+|Multiplelayer Perceptron<br>(1-3-3-1)|0.816667|
 
 
 <br>
 
 <a id="ID_3-2"></a>
 
-## 多層パーセプトロンによる MIST データの識別 : `main2.py`
+## 多層パーセプトロンによる多クラスの識別 : `main2.py`
 > コード実装中...
 
 <br>

@@ -39,6 +39,15 @@ class MultilayerPerceptron( object ):
         _biases : list <Variable>
             モデルの各層のバイアス項の  Variable からなる list
 
+        _learning_rate : float
+            学習率
+
+        _epochs : int
+            エポック数（トレーニング回数）
+
+        _batch_size : int
+            ミニバッチ学習でのバッチサイズ
+
         _losses_train : list <float32>
             トレーニングデータでの損失関数の値の list
 
@@ -70,11 +79,23 @@ class MultilayerPerceptron( object ):
 
     """
 
-    def __init__( self, n_inputLayer = 1, n_hiddenLayers = [1,1,1], n_outputLayer = 1 ):
+    def __init__( 
+            self, 
+            session = tf.Session(), 
+            n_inputLayer = 1, n_hiddenLayers = [1,1,1], n_outputLayer = 1, 
+            learning_rate = 0.01, 
+            epochs = 1000,
+            batch_size = 1 
+        ):
         """
         コンストラクタ（厳密にはイニシャライザ）
         """
-        # メンバ変数の初期化
+        tf.set_random_seed(12)
+        
+        # 引数で指定された Session を設定
+        self._session = session
+
+        # 各パラメータの初期化
         self._n_inputLayer = n_inputLayer
         self._n_hiddenLayers = n_hiddenLayers
         self._n_outputLayer = n_outputLayer
@@ -82,23 +103,24 @@ class MultilayerPerceptron( object ):
         self._weights = []
         self._biases = []
 
-        #
-        self._session = tf.Session()
-        self._init_var_op = None
-        #self._session = None
-        #self._init_var_op = None
+        self._learning_rate = learning_rate
+        self._epochs = epochs
+        self._batch_size = batch_size
 
+        # evaluate 関連の初期化
+        self._losses_train = []
+
+        # オペレーターの初期化
+        self._init_var_op = None
         self._loss_op = None
         self._y_out_op = None
 
+        # placeholder の初期化
         # shape の列（横方向）は、各層の次元（ユニット数）に対応させる。
         # shape の行は、None にして汎用性を確保
         self._X_holder = tf.placeholder( tf.float32, shape = [None, self._n_inputLayer] )
         self._t_holder = tf.placeholder( tf.float32, shape = [None, self._n_outputLayer] )
         self._keep_prob_holder = tf.placeholder( tf.float32 )
-        
-        #
-        self._losses_train = []
 
         return
     
@@ -108,11 +130,22 @@ class MultilayerPerceptron( object ):
         print( self )
         print( str )
 
+        print( "_session : ", self._session )
+
         print( "_n_inputLayer : ", self._n_inputLayer )
         print( "_n_hiddenLayers : ", self._n_hiddenLayers )
         print( "_n_outputLayer : ", self._n_outputLayer )
 
-        print( "_session : ", self._session )
+        print( "_weights : \n", self._weights )
+        print( self._session.run( self._weights ) )
+
+        print( "_biases : \n", self._biases )
+        print( self._session.run( self._biases ) )
+
+        print( "_learning_rate :", self._learning_rate )
+        print( "_epoches :", self._epochs )
+        print( "_batch_size :", self._batch_size )
+
         print( "_init_var_op :\n", self._init_var_op )
         print( "_loss_op :", self._loss_op )
         print( "_y_out_op :", self._y_out_op )
@@ -120,12 +153,6 @@ class MultilayerPerceptron( object ):
         print( "_X_holder : ", self._X_holder )
         print( "_t_holder : ", self._t_holder )
         print( "_keep_prob_holder : ", self._keep_prob_holder )
-
-        print( "_weights : \n", self._weights )
-        print( self._session.run( self._weights ) )
-
-        print( "_biases : \n", self._biases )
-        print( self._session.run( self._biases ) )
 
         print( "----------------------------------" )
         return
@@ -170,7 +197,9 @@ class MultilayerPerceptron( object ):
             ゼロ初期化された重みの Variable 
             session.run(...) はされていない状態。
         """
-        init_tsr = tf.zeros( shape = input_shape )
+
+        #init_tsr = tf.zeros( shape = input_shape )
+        init_tsr = tf.random_normal( shape = input_shape )
 
         # バイアス項の Variable
         bias_var = tf.Variable( init_tsr )
@@ -188,45 +217,72 @@ class MultilayerPerceptron( object ):
                 モデルの出力のオペレーター
         """
         # 計算グラフの構築
-        # i=0 : 入力層 ~ 隠れ層
-        # i=1,2... : 隠れ層 ~ 隠れ層
-        for (i, n_hidden) in enumerate( self._n_hiddenLayers ):
-            print("i=", i)
-            print("n_hidden=", n_hidden)
+        #print( "len( _n_hiddenLayers ) : ", len( self._n_hiddenLayers ) )
+        #print( "len( [_n_hiddenLayers] ) : ", len( [self._n_hiddenLayers] ) )
+        #print( "_n_hiddenLayers", self._n_hiddenLayers.shape )
+        #print( "_n_hiddenLayers", self._n_hiddenLayers.shape[0] )
 
+        # 隠れ層が１つのみの場合
+        if ( len( self._n_hiddenLayers ) == 1 ):
             # 入力層 ~ 隠れ層
-            if (i==0):
-                input_dim = self._n_inputLayer
-                input_holder = self._X_holder
-
-            # 隠れ層 ~ 隠れ層
-            else:
-                input_dim = self._n_hiddenLayers[i-1]
-                input_holder = h_out_op
-
-            # 重みの Variable の list に、入力層 ~ 隠れ層 or 隠れ層 ~ 隠れ層の重みを追加
-            self._weights.append( self.init_weight_variable( input_shape = [input_dim, n_hidden] ) )
-
-            # バイアス項の Variable の list に、入力層 ~ 隠れ層 or 隠れ層 ~ 隠れ層のバイアス項を追加
-            self._biases.append( self.init_bias_variable( input_shape = [n_hidden] ) )
+            self._weights.append( self.init_weight_variable( input_shape = [self._n_inputLayer, self._n_hiddenLayers[0] ] ) )
+            self._biases.append( self.init_bias_variable( input_shape = [3] ) )
 
             # 隠れ層への入力 : h_in = W*x + b
-            h_in_op = tf.matmul( input_holder, self._weights[-1] ) + self._biases[-1]
-
-            # 隠れ層からの出力
-            #h_out_op = tf.nn.relu( h_in_op )
+            h_in_op = tf.matmul( self._X_holder, self._weights[0] ) + self._biases[0]
+            
+            # 隠れ層からの出力            
             h_out_op = tf.nn.sigmoid( h_in_op )
-            #output_holder = tf.nn.dropout( h_out_op, self._keep_prob_holder )
-            #output_holder = h_out_op
+        
+            # 隠れ層 ~ 出力層
+            self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayers[0], self._n_outputLayer] ) )
+            self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
+        
+        # 隠れ層が複数個ある場合
+        else:
+            # i=0 : 入力層 ~ 隠れ層
+            # i=1,2... : 隠れ層 ~ 隠れ層
+            for (i, n_hidden) in enumerate( self._n_hiddenLayers ):
+                print("i=", i)
+                print("n_hidden=", n_hidden)
 
-        # 隠れ層 ~ 出力層
-        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayers[-1], self._n_outputLayer] ) )
-        self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
+                # 入力層 ~ 隠れ層
+                if (i==0):
+                    input_dim = self._n_inputLayer
+                    input_holder = self._X_holder
+
+                # 隠れ層 ~ 隠れ層
+                else:
+                    input_dim = self._n_hiddenLayers[i-1]
+                    input_holder = h_out_op
+
+                # 重みの Variable の list に、入力層 ~ 隠れ層 or 隠れ層 ~ 隠れ層の重みを追加
+                self._weights.append( self.init_weight_variable( input_shape = [input_dim, n_hidden] ) )
+
+                # バイアス項の Variable の list に、入力層 ~ 隠れ層 or 隠れ層 ~ 隠れ層のバイアス項を追加
+                self._biases.append( self.init_bias_variable( input_shape = [n_hidden] ) )
+
+                # 隠れ層への入力 : h_in = W*x + b
+                h_in_op = tf.matmul( input_holder, self._weights[-1] ) + self._biases[-1]
+
+                # 隠れ層からの出力
+                h_out_op = tf.nn.sigmoid( h_in_op )
+                #h_out_op = tf.nn.relu( h_in_op )
+                #output_holder = tf.nn.dropout( h_out_op, self._keep_prob_holder )
+                #output_holder = h_out_op
+        
+            # 隠れ層 ~ 出力層
+            self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayers[-1], self._n_outputLayer] ) )
+            self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
+
 
         # 出力層への入力
         y_in_op = tf.matmul( h_out_op, self._weights[-1] ) + self._biases[-1]
 
         # モデルの出力
+        # ２分類問題の場合
+        self._y_out_op = tf.nn.sigmoid( y_in_op )
+        """
         # ２分類問題の場合
         if (self._n_inputLayer == 2 ):
             # sigmoid
@@ -239,6 +295,7 @@ class MultilayerPerceptron( object ):
         else:
             # softmax
             self._y_out_op = tf.nn.softmax( y_in_op )
+        """
 
         return self._y_out_op
 
@@ -253,8 +310,14 @@ class MultilayerPerceptron( object ):
         """
 
         # クロス・エントロピー
-        # tf.clip_by_value(...) : 下限値、上限値を設定
+        # ２クラスの分類問題の場合
+        self._loss_op = -tf.reduce_sum( 
+                            self._t_holder * tf.log(self._y_out_op) + (1-self._t_holder)*tf.log(1-self._y_out_op)
+                        )
+
         """
+        # 多クラスの分類問題の場合
+        # tf.clip_by_value(...) : 下限値、上限値を設定
         self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
                             -tf.reduce_sum( 
                                 self._t_holder * tf.log( tf.clip_by_value(self._y_out_op, 1e-10, 1.0) ), 
@@ -262,15 +325,13 @@ class MultilayerPerceptron( object ):
                             )
                         )
         """
-        # ２値問題の場合
+
         """
-        self._loss_op = -tf.reduce_sum( 
-                            self._t_holder * tf.log(self._y_out_op) + (1-self._t_holder)*tf.log(1-self._y_out_op)
-                        )
-        """
+        # 回帰問題の場合
         self._loss_op = tf.reduce_mean(
                             tf.square( self._t_holder - self._y_out_op )
                         )
+        """
 
         return self._loss_op
 
@@ -282,7 +343,7 @@ class MultilayerPerceptron( object ):
         [Output]
             optimizer の train_step
         """
-        optimizer = tf.train.GradientDescentOptimizer( learning_rate = 0.01 )
+        optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
         train_step = optimizer.minimize( self._loss_op )
 
         return train_step
@@ -306,7 +367,7 @@ class MultilayerPerceptron( object ):
         #y_train.reshape( [len(y_train), 1] )
 
         #----------------------------
-        # モデルの設定＆学習開始処理
+        # 学習開始処理
         #----------------------------
         # モデルの設定
         #self.models()
@@ -325,16 +386,16 @@ class MultilayerPerceptron( object ):
         #self._session = tf.Session()
         self._session.run( self._init_var_op )
         
-        print( "init_weights", self._session.run( self._weights ) )
+        #print( "init_weights", self._session.run( self._weights ) )
 
         #-------------------
         # 学習処理
         #-------------------
-        epochs = len( X_train )
-        batch_size = 10
+        #self._epochs = len( X_train )
+        n_batches = len( X_train ) // self._batch_size     # バッチ処理の回数
 
         # for ループでエポック数分トレーニング
-        for epoch in range( epochs ):
+        for epoch in range( self._epochs ):
             # ミニバッチ学習処理のためランダムサンプリング
             X_train_shuffled, y_train_shuffled = shuffle( X_train, y_train )
             
@@ -344,9 +405,9 @@ class MultilayerPerceptron( object ):
             #print( "X_train_shuffled", X_train_shuffled )
             #print( "y_train_shuffled", y_train_shuffled )
 
-            for i in range( batch_size ):
-                it_start = i * batch_size
-                it_end = it_start + batch_size
+            for i in range( n_batches ):
+                it_start = i * self._batch_size
+                it_end = it_start + self._batch_size
 
                 self._session.run(
                     train_step,
@@ -360,9 +421,9 @@ class MultilayerPerceptron( object ):
             loss = self._loss_op.eval(
                        session = self._session,
                        feed_dict = {
-                           self._X_holder: X_train_shuffled,
-                           #self._t_holder: numpy.transpose( [ y_train ] )
-                           self._t_holder: y_train_shuffled
+                           self._X_holder: X_train,
+                           self._t_holder: numpy.transpose( [ y_train ] )
+                           #self._t_holder: y_train_shuffled
                        }
                    )
             #print( "loss", loss )
@@ -382,13 +443,6 @@ class MultilayerPerceptron( object ):
         [Output]
             results : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
-        """
-        """
-        predict_op = tf.equal( 
-                        tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
-                        self._t_holder
-                     )
-
         """
         predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
         
@@ -410,3 +464,26 @@ class MultilayerPerceptron( object ):
         """
 
         return
+
+    def accuracy( self, X_test, y_test):
+        """
+        指定したデータでの正解率 [accuracy] を計算する。
+        """
+        correct_predict_op = tf.equal( 
+                                 tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
+                                 self._t_holder 
+                             )
+
+        # correct_predict_op は、feed_dict で与えるデータ分（全データ）の結果（合っていた数）を返すので、
+        # tf.reduce_mean(..) でその平均値を計算すれば、合っていた数 / 全データ数 = 正解率　が求まる。
+        accuracy_op = tf.reduce_mean( tf.cast( correct_predict_op, tf.float32 ) )
+        
+        accuracy = accuracy_op.eval(
+                       session = self._session,
+                       feed_dict = {
+                           self._X_holder: X_test,
+                           self._t_holder: numpy.transpose( [ y_test ] )
+                       }                       
+                   )
+
+        return accuracy

@@ -119,7 +119,7 @@ class MLPreProcess( object ):
     # 検証用サンプルデータセットを出力する関数群
     #---------------------------------------------------------
     @staticmethod
-    def generateMoonsDataSet( input_n_samples = 100, input_random_state = 123 ):
+    def generateMoonsDataSet( input_n_samples = 100, input_noize = 0.1, input_random_state = 123 ):
         """
         半月形のデータセットを生成する。
 
@@ -135,7 +135,7 @@ class MLPreProcess( object ):
                 クラスラベル 0 or 1 (1次元 Numpy 配列)
         """
 
-        dat_X, dat_y = make_moons( n_samples = input_n_samples, random_state = input_random_state )
+        dat_X, dat_y = make_moons( n_samples = input_n_samples, random_state = input_random_state, noise = input_noize )
 
         # 戻り値のオブジェクトの型確認
         #print( isinstance(dat_X, list) )

@@ -23,7 +23,7 @@ from MultilayerPerceptron import MultilayerPerceptron
 
 def main():
     """
-    多層パーセプトロンを用いた、アヤメデータの識別
+    多層パーセプトロンを用いた、データの識別
     """
     print("Enter main()")
 
@@ -31,7 +31,7 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    X_features, y_labels = MLPreProcess.generateCirclesDataSet( input_n_samples = 300 )
+    X_features, y_labels = MLPreProcess.generateMoonsDataSet( input_n_samples = 300, input_noize = 0.3 )
     
     #======================================================================
     # データを変換、正規化
@@ -44,7 +44,7 @@ def main():
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
     X_train, X_test, y_train, y_test \
-    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.3, input_random_state = 1 )
+    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )
 
     print( "X_train :\n", X_train )
     print( "y_train :\n", y_train )
@@ -55,8 +55,28 @@ def main():
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
     # 多層パーセプトロンクラスのオブジェクト生成
-    mlp1 = MultilayerPerceptron( n_inputLayer = len(X_features[0]), n_hiddenLayers = [3,3], n_outputLayer = 1 )
+    mlp1 = MultilayerPerceptron(
+               session = tf.Session(),
+               n_inputLayer = len(X_features[0]), 
+               n_hiddenLayers = [3],
+               n_outputLayer = 1,
+               learning_rate = 0.05,
+               epochs = 500,
+               batch_size = 20
+           )
+
+    mlp2 = MultilayerPerceptron(
+               session = tf.Session(),
+               n_inputLayer = len(X_features[0]), 
+               n_hiddenLayers = [3,3],
+               n_outputLayer = 1,
+               learning_rate = 0.05,
+               epochs = 500,
+               batch_size = 20
+           )
+
     mlp1.print( "mlp1" )
+    mlp2.print( "mlp2" )
 
     #======================================================================
     # 変数とプレースホルダを設定
@@ -78,6 +98,7 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     mlp1.models()
+    mlp2.models()
     #mlp1.print( "after models()" )
 
     #======================================================================
@@ -85,6 +106,7 @@ def main():
     # Declare the loss functions.
     #======================================================================
     mlp1.loss()
+    mlp2.loss()
     #mlp1.print( "after loss()" )
 
     #======================================================================
@@ -101,8 +123,9 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
-    #print( mlp1._session.run( mlp1._weights[0] ) )
     mlp1.fit( X_train, y_train )
+    mlp2.fit( X_train, y_train )
+
     mlp1.print( "after fit()" )
     #print( mlp1._session.run( mlp1._weights[0] ) )
 
@@ -110,32 +133,66 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    predict = mlp1.predict( X_test )
-    print( "predict", predict )
+    predict1 = mlp1.predict( X_test )
+    print( "predict1 :\n", predict1 )
 
-    # 
+    # テストデータでの正解率
+    accuracy1 = mlp1.accuracy( X_test, y_test )
+    accuracy2 = mlp2.accuracy( X_test, y_test )
+
+    print( "accuracy1 [test data] : ", accuracy1 )
+    print( "accuracy2 [test data] : ", accuracy2 )
+    
+    # トレーニング回数に対する loss 値の plot
     plt.clf()
+    plt.subplot( 1, 2, 1 )
     plt.plot(
-        range( 0, len(X_train) ), mlp1._losses_train,
-        label = 'train data (batch size = 5)',
+        range( 0, 500 ), mlp1._losses_train,
+        label = 'train data : 1-3-1',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
     )
-    plt.title( "loss ( cross-entropy )" )
+    plt.title( "loss" )
     plt.legend( loc = 'best' )
-    #plt.ylim( [0, 10.5] )
+    #plt.ylim( [0, 1.05] )
     plt.xlabel( "Epocs" )
     plt.tight_layout()
 
-    #MLPlot.saveFigure( fileName = "MultilayerPerceptron_1-1.png" )
+    plt.subplot( 1, 2, 2 )
+    plt.plot(
+        range( 0, 500 ), mlp2._losses_train,
+        label = 'train data : network 1-3-3-1',
+        linestyle = '-',
+        #linewidth = 2,
+        color = 'red'
+    )
+    plt.title( "loss" )
+    plt.legend( loc = 'best' )
+    #plt.ylim( [0, 1.05] )
+    plt.xlabel( "Epocs" )
+    plt.tight_layout()
+    
+    MLPlot.saveFigure( fileName = "MultilayerPerceptron_1-1.png" )
     plt.show()
     
-    # plot
+
+    # 識別結果＆境界の plot
     plt.clf()
+    plt.subplot( 1, 2, 1 )
     MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp1 )
+    plt.title( "Mulutiplelayer Perceptron : 1-3-1" )
+    plt.legend( loc = 'best' )
+
+    plt.subplot( 1, 2, 2 )
+    MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp2 )
+    plt.title( "Mulutiplelayer Perceptron : 1-3-3-1" )
+    plt.legend( loc = 'best' )
+
+    MLPlot.saveFigure( fileName = "MultilayerPerceptron_1-2.png" )
     plt.show()
 
+    
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================
