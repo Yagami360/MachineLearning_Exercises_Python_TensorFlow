@@ -19,7 +19,7 @@ from tensorflow.python.framework import ops
 from MLPlot import MLPlot
 from MLPreProcess import MLPreProcess
 from MultilayerPerceptron import MultilayerPerceptron
-
+from NNActivation import NNActivation     # ニューラルネットワークの活性化関数を表すクラス
 
 def main():
     """
@@ -60,6 +60,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3],
                n_outputLayer = 1,
+               activate_hiddenLayer = NNActivation( "sigmoid" ),
+               activate_outputLayer = NNActivation( "sigmoid" ),
                learning_rate = 0.05,
                epochs = 500,
                batch_size = 20
@@ -70,6 +72,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3,3],
                n_outputLayer = 1,
+               activate_hiddenLayer = NNActivation( "sigmoid" ),
+               activate_outputLayer = NNActivation( "sigmoid" ),
                learning_rate = 0.05,
                epochs = 500,
                batch_size = 20

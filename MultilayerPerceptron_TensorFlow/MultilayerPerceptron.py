@@ -16,15 +16,17 @@ from tensorflow.python.framework import ops
 # scikit-learn ライブラリ
 from sklearn.utils import shuffle
 
-# 親クラス（自作クラス）
-from NeuralNetworkBase import NeuralNetworkBase
+# 自作クラス
+#from NeuralNetworkBase import NeuralNetworkBase    # 親クラス
+from NNActivation import NNActivation     # ニューラルネットワークの活性化関数を表すクラス
 
 
 class MultilayerPerceptron( object ):
     """
-    多層パーセプトロンを表すクラス（自作クラス）
-    ニューラルネットワークの基底クラス NeuralNetworkBase （自作の基底クラス）を継承している。
-    
+    多層パーセプトロンを表すクラス
+    TensorFlow での多層パーセプトロンの処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、
+    scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、
+    scikit-learn ライブラリとの互換性のある自作クラス
     ----------------------------------------------------------------------------------------------------
     [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
         _n_inputLayer : int
@@ -41,35 +43,32 @@ class MultilayerPerceptron( object ):
 
         _learning_rate : float
             学習率
-
         _epochs : int
             エポック数（トレーニング回数）
-
         _batch_size : int
             ミニバッチ学習でのバッチサイズ
 
         _losses_train : list <float32>
             トレーニングデータでの損失関数の値の list
 
-
         _session : tf.Session()
             自身の Session
-
         _init_var_op : tf.global_variables_initializer()
             全 Variable の初期化オペレーター
-    
+
+        _activate_hiddenLayer : NNActivatation クラス
+            隠れ層からの活性化関数の種類
+        _activate_outputLayer : NNActivatation クラス
+            出力層からの活性化関数
+
         _loss_op : Operator
             損失関数を表すオペレーター
-
         _optimizer : Optimizer
             モデルの最適化アルゴリズム
-
         _train_step : 
             トレーニングステップ
-
         _y_out_op : Operator
             モデルの出力のオペレーター
-        
             
         _X_holder : placeholder
             入力層にデータを供給するための placeholder
@@ -78,7 +77,6 @@ class MultilayerPerceptron( object ):
         _keep_prob_holder : placeholder
             ドロップアウトしない確率 (1-p) にデータを供給するための placeholder
         
-
     [protedted] protedted な使用法を想定 
 
     [private] 変数名の前にダブルアンダースコア __ を付ける（Pythonルール）
@@ -89,6 +87,8 @@ class MultilayerPerceptron( object ):
             self, 
             session = tf.Session(), 
             n_inputLayer = 1, n_hiddenLayers = [1,1,1], n_outputLayer = 1, 
+            activate_hiddenLayer = NNActivation( "sigmoid" ),
+            activate_outputLayer = NNActivation( "sigmoid" ),
             learning_rate = 0.01, 
             epochs = 1000,
             batch_size = 1 
@@ -108,6 +108,9 @@ class MultilayerPerceptron( object ):
 
         self._weights = []
         self._biases = []
+
+        self._activate_hiddenLayer = activate_hiddenLayer
+        self._activate_outputLayer = activate_outputLayer
 
         self._learning_rate = learning_rate
         self._epochs = epochs
@@ -149,6 +152,9 @@ class MultilayerPerceptron( object ):
 
         print( "_biases : \n", self._biases )
         print( self._session.run( self._biases ) )
+
+        print( "_activate_hiddenLayer :", self._activate_hiddenLayer )
+        print( "_activate_outputLayer :", self._activate_outputLayer )
 
         print( "_learning_rate :", self._learning_rate )
         print( "_epoches :", self._epochs )
@@ -232,7 +238,9 @@ class MultilayerPerceptron( object ):
         #print( "_n_hiddenLayers", self._n_hiddenLayers.shape )
         #print( "_n_hiddenLayers", self._n_hiddenLayers.shape[0] )
 
+        #--------------------------------------------------------------
         # 隠れ層が１つのみの場合
+        #--------------------------------------------------------------
         if ( len( self._n_hiddenLayers ) == 1 ):
             # 入力層 ~ 隠れ層
             self._weights.append( self.init_weight_variable( input_shape = [self._n_inputLayer, self._n_hiddenLayers[0] ] ) )
@@ -241,22 +249,22 @@ class MultilayerPerceptron( object ):
             # 隠れ層への入力 : h_in = W*x + b
             h_in_op = tf.matmul( self._X_holder, self._weights[0] ) + self._biases[0]
             
-            # 隠れ層からの出力            
-            h_out_op = tf.nn.sigmoid( h_in_op )
-            print( "activate function [hidden layer] = sigmoid" )
+            # 隠れ層からの出力
+            h_out_op = self._activate_hiddenLayer.activate( h_in_op )
+            #h_out_op = tf.nn.sigmoid( h_in_op )
+            #print( "activate function [hidden layer] = sigmoid" )
 
             # 隠れ層 ~ 出力層
             self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayers[0], self._n_outputLayer] ) )
             self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
         
+        #--------------------------------------------------------------
         # 隠れ層が複数個ある場合
+        #--------------------------------------------------------------
         else:
             # i=0 : 入力層 ~ 隠れ層
             # i=1,2... : 隠れ層 ~ 隠れ層
             for (i, n_hidden) in enumerate( self._n_hiddenLayers ):
-                #print("i=", i)
-                #print("n_hidden=", n_hidden)
-
                 # 入力層 ~ 隠れ層
                 if (i==0):
                     input_dim = self._n_inputLayer
@@ -277,8 +285,9 @@ class MultilayerPerceptron( object ):
                 h_in_op = tf.matmul( input_holder, self._weights[-1] ) + self._biases[-1]
 
                 # 隠れ層からの出力
-                h_out_op = tf.nn.sigmoid( h_in_op )
-                print( "activate function [hidden layer] = sigmoid" )
+                h_out_op = self._activate_hiddenLayer.activate( h_in_op )
+                #h_out_op = tf.nn.sigmoid( h_in_op )
+                #print( "activate function [hidden layer] = sigmoid" )
                 #h_out_op = tf.nn.relu( h_in_op )
                 #print( "activate function [hidden layer] = Relu" )
 
@@ -291,26 +300,29 @@ class MultilayerPerceptron( object ):
             self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
 
 
+        #--------------------------------------------------------------
         # 出力層への入力
+        #--------------------------------------------------------------
         y_in_op = tf.matmul( h_out_op, self._weights[-1] ) + self._biases[-1]
 
+        #--------------------------------------------------------------
         # モデルの出力
+        #--------------------------------------------------------------
+        self._y_out_op = self._activate_outputLayer.activate( y_in_op )
+        
         # ２分類問題の場合
-        if (self._n_inputLayer <= 2 ):
-            # sigmoid
-            self._y_out_op = tf.nn.sigmoid( y_in_op )
-            print( "activate function [output layer] = sigmoid" )
-
-            # Relu
-            #self._y_out_op = tf.nn.relu( y_in_op )
-            #print( "activate function [output layer] = Relu" )
+        # sigmoid
+        #self._y_out_op = tf.nn.sigmoid( y_in_op )
+        #print( "activate function [output layer] = sigmoid" )
+        
+        # Relu
+        #self._y_out_op = tf.nn.relu( y_in_op )
+        #print( "activate function [output layer] = Relu" )
 
         # 多分類問題の場合
-        else:
-            # softmax
-            self._y_out_op = tf.nn.softmax( y_in_op )
-            print( "activate function [output layer] = softmax" )
-
+        # softmax
+        #self._y_out_op = tf.nn.softmax( y_in_op )
+        #print( "activate function [output layer] = softmax" )
 
         return self._y_out_op
 
@@ -520,8 +532,15 @@ class MultilayerPerceptron( object ):
             results : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
-        predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
-        
+        # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
+        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
+            predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
+        # 出力層の活性化関数が softmax のとき（多クラスの識別）
+        elif ( self._activate_outputLayer._activate_type == "softmax" ):
+            predict_op = tf.arg_max( input = self._y_out_op, dimension = 1 )
+        else:
+            predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
+
         predict = predict_op.eval( 
                    session = self._session,
                    feed_dict = {
@@ -559,10 +578,23 @@ class MultilayerPerceptron( object ):
         """
         指定したデータでの正解率 [accuracy] を計算する。
         """
-        correct_predict_op = tf.equal( 
-                                 tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
-                                 self._t_holder 
-                             )
+        # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
+        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
+            correct_predict_op = tf.equal( 
+                                     tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
+                                     self._t_holder 
+                                 )
+        # 出力層の活性化関数が softmax のとき（多クラスの識別）
+        elif (  self._activate_outputLayer._activate_type == "softmax"  ):
+            correct_predict_op = tf.equal(
+                                     tf.arg_max( self._y_out_op, dimension = 1 ),
+                                     tf.arg_max( self._t_holder, dimension = 1 )
+                                 )
+        else:
+            correct_predict_op = tf.equal( 
+                                     tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
+                                     self._t_holder 
+                                 )
 
         # correct_predict_op は、feed_dict で与えるデータ分（全データ）の結果（合っていた数）を返すので、
         # tf.reduce_mean(..) でその平均値を計算すれば、合っていた数 / 全データ数 = 正解率　が求まる。

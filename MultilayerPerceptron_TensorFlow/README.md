@@ -124,8 +124,8 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
             - `"original"` : 独自の損失関数
             - `"l1-norm"` : L1 損失関数（L1ノルム）
             - `"l2-norm"` : L2 損失関数（L2ノルム）
-            - `"cross-entropy1"` : クロス・エントロピー交差関数（２クラスの分類問題）
-            - `"cross-entropy2"` : クロス・エントロピー交差関数（多クラスの分類問題）
+            - `"binary-cross-entropy"` : クロス・エントロピー交差関数（２クラスの分類問題）
+            - `"cross-entropy"` : クロス・エントロピー交差関数（多クラスの分類問題）
             - `"sigmoid-cross-entropy"` : シグモイド・クロス・エントロピー損失関数
             - `"weighted-cross-entropy"` : 重み付きクロス・エントロピー損失関数
             - `"softmax-cross-entrpy"` : ソフトマックス クロス・エントロピー損失関数
@@ -152,10 +152,24 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
     - ニューラルネットワークの自作基底クラス `NeuralNetworkBase` を継承し、各ニューラルネットワーク用の抽象メソッドに対し、この多層パーセプトロンに固有な具体的な実装（オーバーライド）を行なっている<br>
 -->
 
+### `NNActivation` クラス : `NNActivation.py`
+- ニューラルネットワークの活性化関数を表すクラス。
+- コンストラクタ `__init( activate_type )__` の引数 `activate_type` で活性化関数の種類を指定。ここで指定された活性化関数の種類に応じて、`NNActivation.activate(...)` メソッド内の活性化関数のオペレーターが指定される。
+- `activate_type` の種類
+    - `"original"` : 外部で定義した独自の活性化関数を指定する場合に設定
+    - `"sigmoid"` : シグモイド関数 `tf.nn.sigmoid(...)`
+    - `"relu"` : Relu 関数 `tf.nn.relu(...)`
+    - `"softmax"` : softmax 関数 `tf.nn.softmax(...)`
+- `activate( input, original_activate_op = None )` : 指定されている activate_type に応じた、活性化関数のオペレーターを返す。
+    - `input` : Operator or placeholder <br>
+    活性化関数の入力となる Operatore、又は placeholder
+    - `original_activate_op` : 外部で定義した独自の活性化関数を指定したい場合に設定。
+
 #### 使用例
 ```python
 from MLPlot import MLPlot
 from MLPreProcess import MLPreProcess
+from NNActivation import NNActivation
 from MultilayerPerceptron import MultilayerPerceptron
 
 def main():
@@ -173,6 +187,8 @@ def main():
     # 隠れ層 1 : 3 ユニット、
     # 隠れ層 2 : 3 ユニット、
     # 出力層：1 ユニット
+    # 隠れ層の活性化関数 : sigmoid 関数
+    # 出力層の活性化関数 : sigmoid 関数
     # 学習率 : 0.05
     # エポック数 : 500
     # ミニバッチサイズ : 20
@@ -181,6 +197,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3,3],
                n_outputLayer = 1,
+               activate_hiddenLayer = NNActivation( "sigmoid" ),
+               activate_outputLayer = NNActivation( "sigmoid" ),
                learning_rate = 0.05,
                epochs = 500,
                batch_size = 20
@@ -219,36 +237,44 @@ def main():
     - `X_train, X_test, y_train, y_test = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )`
 - `MultilayerPerceptron` のコンストラクタ（厳密にはイニシャライザ） `__init(...)__` にて、多層パーセプトロンの各層の層数等を初期設定。
     - １つ目の検証モデルは、入力層が２ノード、隠れ層が３ノード、出力層が１ノードの MLP モデル (2-3-1)<br>
-    又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
+        - 隠れ層の活性化関数 `activate_hiddenLayer` は、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
+        出力層の活性化関数 `activate_hiddenLayer` も、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
+        - 又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
     ```python
     mlp1 = MultilayerPerceptron(
                session = tf.Session(),
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3],
                n_outputLayer = 1,
+               activate_hiddenLayer = NNActivation( "sigmoid" ),
+               activate_outputLayer = NNActivation( "sigmoid" ),
                learning_rate = 0.05,
                epochs = 500,
                batch_size = 20
            )
     ```
     - ２つ目の検証モデルは、入力層が２ノード、隠れ層１が３ノード、隠れ層２が３ノード、出力層が１ノードの MLP モデル (2-3-3-1)<br>
-    又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
+        - 隠れ層の活性化関数 `activate_hiddenLayer` は、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
+        出力層の活性化関数 `activate_hiddenLayer` も、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
+        - 又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
     ```python
     mlp2 = MultilayerPerceptron(
                session = tf.Session(),
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3,3],
                n_outputLayer = 1,
+               activate_hiddenLayer = NNActivation( "sigmoid" ),
+               activate_outputLayer = NNActivation( "sigmoid" ),
                learning_rate = 0.05,
                epochs = 500,
                batch_size = 20
            )
     ```
 - `MultilayerPerceptron.models()` メソッドにて、多層パーセプトロンのフィードフォワード処理をモデル化。
-    - 入力層、及び隠れ層からの出力に対する活性化関数は、シグモイド関数で実装
-        - `h_out_op = tf.nn.sigmoid( h_in_op )`
-    - 出力層からの出力に対する活性化関数は、シグモイド関数で実装
-        - `self._y_out_op = tf.nn.sigmoid( y_in_op )`
+    - 入力層、及び隠れ層からの出力に対する活性化関数は、`NNActivation( activate_type = "sigmoid" )` で指定したシグモイド関数で実装
+        - `h_out_op = self._activate_hiddenLayer.activate( h_in_op )`
+    - 出力層からの出力に対する活性化関数は、`NNActivation( activate_type = "sigmoid" )` で指定したシグモイド関数で実装
+        - `self._y_out_op = self._activate_outputLayer.activate( y_in_op )`
 - `MultilayerPerceptron.loss()` メソッドにて、このモデルの損失関数を設定。<br>このモデルの損失関数は、クロス・エントロピー関数
     ```python
     def loss( self, type = "cross-entropy1", original_loss_op = None ):
