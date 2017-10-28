@@ -5,9 +5,12 @@
     更新情報
     [17/08/16] : 検証用のサンプルデータセット生成関数を追加
     [17/08/31] : クラス名を DataPreProcess → MLDreProcess に改名
-    [17/10/21] : アヤメデータの読み込む関数 を追加
+    [17/10/21] : アヤメデータの読み込み関数 load_iris(...) を追加
+    [17/10/28] : MIST データの読み込み関数 load_mist(...) を追加
 """
 
+import os
+import struct
 import numpy
 
 # Data Frame & IO 関連
@@ -178,6 +181,7 @@ class MLPreProcess( object ):
     #---------------------------------------------------------
     # 検証用サンプルデータセットを読み込むする関数群
     #---------------------------------------------------------
+    @staticmethod
     def load_iris():
         """
         アヤメデータを読み込む。
@@ -224,12 +228,72 @@ class MLPreProcess( object ):
         return X_features, y_labels
 
 
-    def load_mist():
+    @staticmethod
+    def load_mist( path, kind = "train" ):
         """
-
+        トレーニングデータ用の MIST データを読み込む。
+        [Input]
+            path : str
+                MIST データセットが格納されているフォルダへのパス
+            kind : str
+                読み込みたいデータの種類（トレーニング用データ or テスト用データ）
+                "train" : トレーニング用データ
+                "t10k" : テスト用データ
+        [Output]
+            images : [n_samples = 60,000, n_features = 28*28 = 784]
+                トレーニングデータ用の画像データ
+            labels : [n_samples = 60,000,]
+                トレーニングデータ用のラベルデータ（教師データ）
+                0~9 の数字ラベル
         """
-        return
+        # path の文字列を結合して、MIST データへのパスを作成
+        # (kind = train) %s → train-images.idx3-ubyte, train-labels.idx1-ubyte
+        # (kind = t10k)  %s → t10k-images.idx3-ubyte,  t10k-labels.idx1-ubyte
+        labels_path = os.path.join( path, "%s-labels.idx1-ubyte" % kind )
+        images_path = os.path.join( path, "%s-images.idx3-ubyte" % kind )
 
+        #------------------------------------------
+        # open() 関数と with 構文でラベルデータ（教師データ）の読み込み
+        # "rb" : バイナリーモードで読み込み
+        #------------------------------------------
+        with open( labels_path, 'rb' ) as lbpath:
+            # struct.unpack(...) : バイナリーデータを読み込み文字列に変換
+            # magic : マジックナンバー （先頭 から 4byte）
+            # num : サンプル数（magicの後の 4byte）
+            magic, n = \
+            struct.unpack(
+                '>II',           # > : ビッグエンディアン, I : 符号なし整数, >II : 4byte + 4byte
+                lbpath.read(8)   # 8byte
+            )
+            
+            # numpy.fromfile(...) : numpy 配列にバイトデータを読み込んむ
+            # dtype : numpy 配列のデータ形式
+            labels = numpy.fromfile( file = lbpath, dtype = numpy.uint8 )
+
+        #------------------------------------------
+        # open() 関数と with 構文で画像データの読み込む
+        # "rb" : バイナリーモードで読み込み
+        #------------------------------------------
+        with open( images_path, "rb" ) as imgpath:
+            # struct.unpack(...) : バイナリーデータを読み込み文字列に変換
+            # magic : マジックナンバー （先頭 から 4byte）
+            # num : サンプル数（magicの後の 4byte）
+            # rows : ?
+            # cols : ?
+            magic, num, rows, cols = \
+            struct.unpack(
+                ">IIII",           # > : ビッグエンディアン, I : 符号なし整数, >IIII : 4byte + 4byte + 4byte + 4byte
+                imgpath.read(16)   # 16byte
+            )
+
+            # numpy.fromfile(...) : numpy 配列にバイトデータを読み込んでいき,
+            # 読み込んだデータを shape = [labels, 784] に reshape
+            images = numpy.fromfile( file = imgpath, dtype = numpy.uint8 )
+            images = images.reshape( len(labels), 784 )
+       
+            
+        return images, labels
+    
     #---------------------------------------------------------
     # 欠損値の処理を行う関数群
     #---------------------------------------------------------
