@@ -96,13 +96,13 @@ URL : https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wi
 URL : http://yann.lecun.com/exdb/mnist/
 
 - トレーニング用データセットの画像
-    - `t10k-images.idx3-ubyte` : 60,000 サンプル、解凍後 47 MB
+    - `train-images.idx3-ubyte` : 60,000 サンプル、解凍後 47 MB
 - トレーニング用データセットのラベル（教師データ）
-    - `t10k-labels.idx1-ubyte` : 60,000 サンプル、解凍後 60 KB
+    - `train-labels.idx1-ubyte` : 60,000 サンプル、解凍後 60 KB
 - テスト用データセットの画像
-    - `train-images.idx3-ubyte` : 10,000 サンプル、解凍後 7.8 MB
+    - `t10k-images.idx3-ubyte` : 10,000 サンプル、解凍後 7.8 MB
 - テストデータセットのラベル（教師データ）
-    - `train-labels.idx1-ubyte` : 10,000 サンプル、解凍後 10 KB
+    - `t10k-labels.idx1-ubyte` : 10,000 サンプル、解凍後 10 KB
 
 トレーニングデータセットは、250 人の手書き数字で構成されている。（内訳は、高校生と国税調査員が半数ずつ）<br>
 テストデータセットには、同じ割合（高校生と国税調査員が半数ずつ）で、別の人々の手書き数字が含まれている。
