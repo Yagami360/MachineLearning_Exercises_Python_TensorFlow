@@ -124,6 +124,14 @@ URL : http://yann.lecun.com/exdb/mnist/
 |...|...|...|...|
 |0x????|符号なし byte|...|ラベル値|
 
+- 0 ~ 9 のラベルとなる先頭の画像 9 枚
+
+![multilayerperceptron_3-1](https://user-images.githubusercontent.com/25688193/32138999-e4aa485a-bc78-11e7-97f4-b3f358f3f752.png)
+
+- 7 のラベルとなる先頭の画像 25 枚
+
+![multilayerperceptron_3-2](https://user-images.githubusercontent.com/25688193/32139064-8594a6ce-bc7a-11e7-8081-309c14485b9d.png)
+
 <br>
 
 ### 渦巻きデータ：（csvフォーマット）
