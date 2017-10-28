@@ -29,7 +29,8 @@ http://tensorflow.classcat.com/2016/02/13/tensorflow-how-tos-graph-visualization
 https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/</br>
 
 ### 検証用データセット
-> 
+> dataset.md
+>> https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md
 
 ## 項目（フォルダ別）
 
