@@ -126,9 +126,9 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
             - `"l2-norm"` : L2 損失関数（L2ノルム）
             - `"binary-cross-entropy"` : クロス・エントロピー交差関数（２クラスの分類問題）
             - `"cross-entropy"` : クロス・エントロピー交差関数（多クラスの分類問題）
+            - `"softmax-cross-entrpy"` : ソフトマックス クロス・エントロピー損失関数
             - `"sigmoid-cross-entropy"` : シグモイド・クロス・エントロピー損失関数
             - `"weighted-cross-entropy"` : 重み付きクロス・エントロピー損失関数
-            - `"softmax-cross-entrpy"` : ソフトマックス クロス・エントロピー損失関数
             - `"sparse-softmax-cross-entrpy"` : 疎なソフトマックスクロス・エントロピー損失関数
         - `original_loss_op` : Operator<br>
         type = "original" で独自の損失関数とした場合の損失関数を表すオペレーター
@@ -356,8 +356,42 @@ def main():
 
 ### アヤメデータでの３クラス識別
 
+- アヤメデータを読み込み、3,4 列目の特徴量を抽出
+    - アヤメデータの読み込みは、`MLPreProcess` クラスの `load_iris(...)` 関数を使用して行う。
+        - `X_features, y_labels = MLPreProcess.load_iris()`
+    - `X_features = X_features[:, [2,3]]` : 3,4 列目の特徴量を抽出
+- データをトレーニングデータとテストデータに分割。分割割合は 80% : 20%
+    - データの分割は、`MLPreProcess` クラスの `dataTrainTestSplit(...)` 関数を使用して行う。
+        - `X_train, X_test, y_train, y_test = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )`
+- データを標準化
+    - データを標準化は、`MLPreProcess` クラスの `standardizeTrainTest(...)` 関数を使用して行う。
+        - `X_train_std, X_test_std = MLPreProcess.standardizeTrainTest( X_train, X_test )`
+- 多クラスを分類できるように、教師データに対し One-hot encoding 処理実施する。
+    - TensorFlow の `tf.one_hot(...)` を使用して、教師データに対し One-hot encoding 処理を行う。
+    ```python
+    # One-hot encode
+    session = tf.Session()
+    encode_holder = tf.placeholder(tf.int64, [None])
+    y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=3, dtype=tf.float32 ) # depth が 出力層のノード数に対応
+    session.run( tf.initialize_all_variables() )
+    y_train_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_train } )
+    y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
+    ```
+    - この際の、One-hot encoding の depth は、MLP の出力層のノード数に対応する。
+- 
 
 
+#### トレーニング回数（エポック）に対する、損失関数（クロス・エントロピー）の値のグラフ
+![multilayerperceptron_2-1-1](https://user-images.githubusercontent.com/25688193/32129359-42249d9a-bbc1-11e7-96a4-2c43a379ede3.png)
+
+#### 識別結果＆境界のグラフ
+![multilayerperceptron_2-2-1](https://user-images.githubusercontent.com/25688193/32129360-451bfb74-bbc1-11e7-928e-ae2287241c72.png)
+
+
+|NN model|accuracy [test data]|
+|---|---|
+|Multiplelayer Perceptron<br>(2-5-3)|0.767|
+|Multiplelayer Perceptron<br>(2-5-5-1)|0.933|
 
 <br>
 

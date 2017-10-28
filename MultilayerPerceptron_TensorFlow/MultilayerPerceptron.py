@@ -337,11 +337,11 @@ class MultilayerPerceptron( object ):
                 "original" : 独自の損失関数
                 "l1-norm" : L1 損失関数（L1ノルム）
                 "l2-norm" : L2 損失関数（L2ノルム）
-                "cross-entropy1" : クロス・エントロピー交差関数（２クラスの分類問題）
-                "cross-entropy2" : クロス・エントロピー交差関数（多クラスの分類問題）
+                "binary-cross-entropy" : クロス・エントロピー交差関数（２クラスの分類問題）
+                "cross-entropy" : クロス・エントロピー交差関数（多クラスの分類問題）
+                "softmax-cross-entrpy" : ソフトマックス クロス・エントロピー損失関数
                 "sigmoid-cross-entropy" : シグモイド・クロス・エントロピー損失関数
                 "weighted-cross-entropy" : 重み付きクロス・エントロピー損失関数
-                "softmax-cross-entrpy" : ソフトマックス クロス・エントロピー損失関数
                 "sparse-softmax-cross-entrpy" : 疎なソフトマックスクロス・エントロピー損失関数
 
             original_loss_op : Operator
@@ -369,22 +369,33 @@ class MultilayerPerceptron( object ):
                             )
 
         # クロス・エントロピー（２クラスの分類問題）
-        elif ( type == "cross-entropy1" ):
+        elif ( type == "binary-cross-entropy" ):
             # クロス・エントロピー
             # ２クラスの分類問題の場合
             self._loss_op = -tf.reduce_sum( 
-                                self._t_holder * tf.log(self._y_out_op) + 
+                                self._t_holder * tf.log( self._y_out_op ) + 
                                 ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
                             )
 
         # クロス・エントロピー（多クラスの分類問題）
-        elif ( type == "cross-entropy2" ):
+        elif ( type == "cross-entropy" ):
             # 多クラスの分類問題の場合
+            # softmax で正規化済みの場合
             # tf.clip_by_value(...) : 下限値、上限値を設定
             self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
                                 -tf.reduce_sum( 
                                     self._t_holder * tf.log( tf.clip_by_value(self._y_out_op, 1e-10, 1.0) ), 
-                                    reduction_indices = [1]     # 行列の方向
+                                    reduction_indices = [1]     # sum をとる行列の方向 ( 1:row 方向 )
+                                )
+                            )
+
+        # ソフトマックス　クロス・エントロピー（多クラスの分類問題）
+        elif ( type == "softmax-cross-entropy"):
+            # softmax で正規化済みでない場合
+            self._loss_op = tf.reduce_mean(
+                                tf.nn.softmax_cross_entropy_with_logits(
+                                    labels = self._t_holder,
+                                    logits = self._y_out_op
                                 )
                             )
 
@@ -490,9 +501,12 @@ class MultilayerPerceptron( object ):
             # ミニバッチ学習処理のためランダムサンプリング
             X_train_shuffled, y_train_shuffled = shuffle( X_train, y_train )
             
-            # shape を placeholder の形状に合わせるためにするため [...] で囲み、transpose() する。
-            y_train_shuffled = numpy.transpose( [ y_train_shuffled ] )
-
+            # ２クラス分類の場合
+            if (self._n_outputLayer == 1):
+                # shape を placeholder の形状に合わせるためにするため [...] で囲み、transpose() する。
+                # shape を (n_samples, → (n_samples,1) に reshape
+                y_train_shuffled = numpy.transpose( [ y_train_shuffled ] )
+            
             for i in range( n_batches ):
                 it_start = i * self._batch_size
                 it_end = it_start + self._batch_size
@@ -506,14 +520,25 @@ class MultilayerPerceptron( object ):
                 )
 
             # 損失関数の値をストック
-            loss = self._loss_op.eval(
-                       session = self._session,
-                       feed_dict = {
-                           self._X_holder: X_train,
-                           self._t_holder: numpy.transpose( [ y_train ] )
-                           #self._t_holder: y_train_shuffled
-                       }
-                   )
+            # ２クラス分類の場合
+            if (self._n_outputLayer == 1):
+                # shape を (n_samples, → (n_samples,1) に reshape
+                loss = self._loss_op.eval(
+                           session = self._session,
+                           feed_dict = {
+                               self._X_holder: X_train,
+                               self._t_holder: numpy.transpose( [ y_train ] )
+                           }
+                       )
+            # 多クラス分類の場合
+            else:
+                loss = self._loss_op.eval(
+                           session = self._session,
+                           feed_dict = {
+                               self._X_holder: X_train,
+                               self._t_holder: y_train
+                           }
+                       )
 
             self._losses_train.append( loss )
 
@@ -600,11 +625,16 @@ class MultilayerPerceptron( object ):
         # tf.reduce_mean(..) でその平均値を計算すれば、合っていた数 / 全データ数 = 正解率　が求まる。
         accuracy_op = tf.reduce_mean( tf.cast( correct_predict_op, tf.float32 ) )
         
+        # ２クラス分類の場合
+        if (self._n_outputLayer == 1):
+            # shape を (n_samples, → (n_samples,1) に reshape
+            y_test = numpy.transpose( [ y_test ] )
+
         accuracy = accuracy_op.eval(
                        session = self._session,
                        feed_dict = {
                            self._X_holder: X_test,
-                           self._t_holder: numpy.transpose( [ y_test ] )
+                           self._t_holder: y_test
                        }                       
                    )
 

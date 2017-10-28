@@ -49,9 +49,8 @@ def main():
     # データを変換、正規化
     # Transform and normalize data.
     # ex) data = tf.nn.batch_norm_with_global_normalization(...)
-    #======================================================================
-    #y_labels.reshape( 300, 1 )
-    
+    #======================================================================   
+    # 標準化
     X_train_std, X_test_std = MLPreProcess.standardizeTrainTest( X_train, X_test )
     print( "X_train_std :\n", X_train_std )
     print( "y_train :\n", y_train )
@@ -63,18 +62,34 @@ def main():
     print( "X_combined_std.shape :\n", X_combined_std.shape )
     print( "X_combined_std :\n", X_combined_std )
 
+    # One-hot encode
+    session = tf.Session()
+    encode_holder = tf.placeholder(tf.int64, [None])
+    y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=3, dtype=tf.float32 ) # depth が 出力層のノード数に対応
+    session.run( tf.initialize_all_variables() )
+    y_train_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_train } )
+    y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
+    
+    # [depth=3, n_sample=150] → [n_sample, depth]
+    #y_train_encoded = numpy.transpose( y_train_encoded )
+    #y_test_encoded = numpy.transpose( y_test )
+
+    print( "y_train_encoded :\n" , y_train_encoded )
+    print( "y_test_encoded :\n" , y_test_encoded )
+    print( "y_train_encoded.shape :\n" , y_train_encoded.shape )
+    print( "y_test_encoded.shape :\n" , y_test_encoded.shape )
+
     #======================================================================
     # アルゴリズム（モデル）のパラメータを設定
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    
     # 多層パーセプトロンクラスのオブジェクト生成
     mlp1 = MultilayerPerceptron(
                session = tf.Session(),
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [5],
-               n_outputLayer = 1,
+               n_outputLayer = 3,
                activate_hiddenLayer = NNActivation( "sigmoid" ),
                activate_outputLayer = NNActivation( "softmax" ),
                learning_rate = 0.05,
@@ -86,10 +101,9 @@ def main():
                session = tf.Session(),
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [5,5],
-               n_outputLayer = 1,
-               activate_hiddenLayer = NNActivation( "sigmoid" ),
+               n_outputLayer = 3,
+               activate_hiddenLayer = NNActivation( "relu" ),       # Relu
                activate_outputLayer = NNActivation( "softmax" ),
-
                learning_rate = 0.05,
                epochs = 500,
                batch_size = 50
@@ -121,8 +135,8 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    mlp1.loss( type = "cross-entropy2" )
-    mlp2.loss( type = "cross-entropy2" )
+    mlp1.loss( type = "cross-entropy" )
+    mlp2.loss( type = "cross-entropy" )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -143,8 +157,8 @@ def main():
     mlp2.optimizer( type = "gradient-descent" )
 
     # トレーニングデータで fitting 処理
-    mlp1.fit( X_train_std, y_train )
-    mlp2.fit( X_train_std, y_train )
+    mlp1.fit( X_train_std, y_train_encoded )
+    mlp2.fit( X_train_std, y_train_encoded )
 
     mlp1.print( "after fit()" )
     mlp2.print( "after fit()" )
@@ -161,35 +175,35 @@ def main():
     print( "prob1 :\n", prob1 )
 
     # テストデータでの正解率
-    accuracy1 = mlp1.accuracy( X_test_std, y_test )
-    accuracy2 = mlp2.accuracy( X_test_std, y_test )
+    accuracy1 = mlp1.accuracy( X_test_std, y_test_encoded )
+    accuracy2 = mlp2.accuracy( X_test_std, y_test_encoded )
 
     print( "accuracy1 [test data] : ", accuracy1 )
     print( "accuracy2 [test data] : ", accuracy2 )
     
     # トレーニング回数に対する loss 値の plot
     plt.clf()
-    plt.subplot( 1, 2, 1 )
+    #plt.subplot( 1, 2, 1 )
     plt.plot(
         range( 0, mlp1._epochs ), mlp1._losses_train,
-        label = 'train data : MLP = 2-3-1',
+        label = 'train data : MLP = 2-5-3 (sigmoid-softmax)',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
     )
-    plt.title( "loss" )
-    plt.legend( loc = 'best' )
+    #plt.title( "loss" )
+    #plt.legend( loc = 'best' )
     #plt.ylim( [0, 1.05] )
-    plt.xlabel( "Epocs" )
-    plt.tight_layout()
+    #plt.xlabel( "Epocs" )
+    #plt.tight_layout()
 
-    plt.subplot( 1, 2, 2 )
+    #plt.subplot( 1, 2, 2 )
     plt.plot(
         range( 0, mlp2._epochs ), mlp2._losses_train,
-        label = 'train data : MLP = 2-3-3-1',
-        linestyle = '-',
+        label = 'train data : MLP = 2-5-5-3 (relu-relu-softmax)',
+        linestyle = '--',
         #linewidth = 2,
-        color = 'red'
+        color = 'blue'
     )
     plt.title( "loss" )
     plt.legend( loc = 'best' )
@@ -205,12 +219,12 @@ def main():
     plt.clf()
     plt.subplot( 1, 2, 1 )
     MLPlot.drawDiscriminantRegions( X_combined_std, y_combined, classifier = mlp1 )
-    plt.title( "Mulutiplelayer Perceptron : 2-3-1" )
+    plt.title( "Mulutiplelayer Perceptron : 2-5-3 \n activation : sigmoid-softmax" )
     plt.legend( loc = 'best' )
 
     plt.subplot( 1, 2, 2 )
     MLPlot.drawDiscriminantRegions( X_combined_std, y_combined, classifier = mlp2 )
-    plt.title( "Mulutiplelayer Perceptron : 2-3-3-1" )
+    plt.title( "Mulutiplelayer Perceptron : 2-5-5-3 \n activation : relu-relu-softmax" )
     plt.legend( loc = 'best' )
 
     MLPlot.saveFigure( fileName = "MultilayerPerceptron_2-2.png" )
