@@ -66,7 +66,7 @@ def main():
     session = tf.Session()
     encode_holder = tf.placeholder(tf.int64, [None])
     y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=3, dtype=tf.float32 ) # depth が 出力層のノード数に対応
-    session.run( tf.initialize_all_variables() )
+    session.run( tf.global_variables_initializer() )
     y_train_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_train } )
     y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
     

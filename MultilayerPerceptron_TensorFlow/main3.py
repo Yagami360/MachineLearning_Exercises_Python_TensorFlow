@@ -104,7 +104,7 @@ def main():
     session = tf.Session()
     encode_holder = tf.placeholder(tf.int64, [None])
     y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=10, dtype=tf.float32 ) # depth が 出力層のノード数に対応
-    session.run( tf.initialize_all_variables() )
+    session.run( tf.global_variables_initializer() )
     y_train_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_train } )
     y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
     
@@ -119,7 +119,7 @@ def main():
     #======================================================================
     # 多層パーセプトロンクラスのオブジェクト生成
     mlp1 = MultilayerPerceptron(
-               session = tf.Session(),
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),  # 使用デバイスを表示
                n_inputLayer = X_train.shape[1], # 784 
                n_hiddenLayers = [50,50],
                n_outputLayer = 10,
@@ -186,9 +186,9 @@ def main():
     #======================================================================
     # テストデータでの正解率
     accuracy1 = mlp1.accuracy( X_test, y_test_encoded )
-    print( "accuracy1 [test data] : ", accuracy1 )
+    print( "accuracy [test data] : ", accuracy1 )
 
-    # loss 値の plot    
+    # トレーニングデータに対する loss 値の plot    
     plt.clf()
     plt.plot(
         range( 0, mlp1._epochs ), mlp1._losses_train,
@@ -205,6 +205,8 @@ def main():
 
     MLPlot.saveFigure( fileName = "MultilayerPerceptron_3-3.png" )
     plt.show()
+
+    # トレーニングデータに対する acurracy 値の plot
 
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)

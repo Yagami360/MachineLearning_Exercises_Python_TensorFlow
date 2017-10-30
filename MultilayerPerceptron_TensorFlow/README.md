@@ -405,14 +405,37 @@ def main():
 
 ## 多層パーセプトロンによる MIST データの識別 : `main3.py`
 
+### トレーニング毎の損失関数の値のグラフ
 ![multilayerperceptron_3-3](https://user-images.githubusercontent.com/25688193/32177674-3c6ee00e-bdce-11e7-93a8-d06cb47a31c8.png)
+> 損失関数の値がうまく minimalize されてない。値自体は収束してるのでエポック数は問題なし。<br>
+> 学習率が大きすぎて、ローカルミニマムを超えている可能性。
+
+条件：
 - MLP : 784-50-50-10
 - epoches : 1000
 - ミニバッチサイズ : 50
 - 学習率 : 0.05
 - loss : cross-entropy
 - activation : rele-relu-softmax
+
+識別結果：
 - accuracy [test data] :  0.1135
+
+⇒ うまく識別出来てない
+
+![multilayerperceptron_3-3-2](https://user-images.githubusercontent.com/25688193/32178670-a924eaca-bdd0-11e7-99f2-73f7ef4eb367.png)
+> 学習率を 0.05 → 0.0001 に変更した結果。うまく収束していることが分かる。但し、過学習している可能性
+
+条件：
+- MLP : 784-50-50-10
+- epoches : 1000
+- ミニバッチサイズ : 50
+- 学習率 : 0.0001
+- loss : cross-entropy
+- activation : rele-relu-softmax
+
+結果：
+- accuracy [test data] :  0.9714
 
 
 
