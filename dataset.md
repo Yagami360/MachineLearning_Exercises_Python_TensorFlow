@@ -132,6 +132,8 @@ URL : http://yann.lecun.com/exdb/mnist/
 
 ![multilayerperceptron_3-2](https://user-images.githubusercontent.com/25688193/32139064-8594a6ce-bc7a-11e7-8081-309c14485b9d.png)
 
+参考URL : https://qiita.com/mine820/items/e9c08439465a5580a9cb
+
 <br>
 
 ### 渦巻きデータ：（csvフォーマット）
