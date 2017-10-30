@@ -327,7 +327,7 @@ class MultilayerPerceptron( object ):
         return self._y_out_op
 
     
-    def loss( self, type = "cross-entropy1", original_loss_op = None ):
+    def loss( self, type = "l2-norm", original_loss_op = None ):
         """
         損失関数の定義を行う。
         
@@ -460,6 +460,7 @@ class MultilayerPerceptron( object ):
 
 
         self._train_step = self._optimizer.minimize( self._loss_op )
+        
         return self._train_step
 
 
