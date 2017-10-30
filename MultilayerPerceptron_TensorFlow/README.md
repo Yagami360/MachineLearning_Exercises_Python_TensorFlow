@@ -208,7 +208,7 @@ def main():
     mlp.models()
 
     # 損失関数を設定する。
-    mlp.loss( type = "cross-entropy1" )
+    mlp.loss( type = "binart-cross-entropy" )
 
     # 最適化アルゴリズムを設定
     mlp.optimizer( type = "gradient-descent" )
@@ -383,17 +383,38 @@ def main():
 
 #### トレーニング回数（エポック）に対する、損失関数（クロス・エントロピー）の値のグラフ
 ![multilayerperceptron_2-1-1](https://user-images.githubusercontent.com/25688193/32129359-42249d9a-bbc1-11e7-96a4-2c43a379ede3.png)
+> 赤線が、入力層：２ノード、隠れ層：５ノード、出力層：３ノードの多層パーセプトロン (2-5-3) で、活性化関数が 隠れ層で sigmid、出力層で softmax のモデルでの損失関数のグラフ。<br>
+> 青線が、入力層：２ノード、隠れ層１：５ノード、隠れ層２：５ノード、出力層：３ノードの多層パーセプトロン (2-5-3) で、活性化関数が 隠れ層で relu、出力層で softmax のモデルでの損失関数のグラフ。<br>
+> ２つ目のモデルの方では、relu 関数のため、損失関数が素早く収束していることが分かる。
 
 #### 識別結果＆境界のグラフ
 ![multilayerperceptron_2-2-1](https://user-images.githubusercontent.com/25688193/32129360-451bfb74-bbc1-11e7-928e-ae2287241c72.png)
-
+> １つ目の図が先の損失関数のグラフの赤線に対応した識別結果、即ち、入力層：２ノード、隠れ層：５ノード、出力層：３ノードの多層パーセプトロン (2-5-3) で、活性化関数が 隠れ層で sigmid、出力層で softmax のモデルでの識別結果。<br>
+> ２つ目の図が先の損失関数のグラフの青線に対応した識別結果、即ち、入力層：２ノード、隠れ層１：５ノード、隠れ層２：５ノード、出力層：３ノードの多層パーセプトロン (2-5-5-3) で、活性化関数が 隠れ層で relu、出力層で softmax のモデルでの識別結果。<br>
+> 損失関数のグラフの結果に応じて、２つ目のモデルのほうがより正確に識別出来ていることが分かる。
 
 |NN model|accuracy [test data]|
 |---|---|
 |Multiplelayer Perceptron<br>(2-5-3)|0.767|
-|Multiplelayer Perceptron<br>(2-5-5-1)|0.933|
+|Multiplelayer Perceptron<br>(2-5-5-3)|0.933|
 
 <br>
+
+
+<a id="ID_3-3"></a>
+
+## 多層パーセプトロンによる MIST データの識別 : `main3.py`
+
+![multilayerperceptron_3-3](https://user-images.githubusercontent.com/25688193/32177674-3c6ee00e-bdce-11e7-93a8-d06cb47a31c8.png)
+- MLP : 784-50-50-10
+- epoches : 1000
+- ミニバッチサイズ : 50
+- 学習率 : 0.05
+- loss : cross-entropy
+- activation : rele-relu-softmax
+- accuracy [test data] :  0.1135
+
+
 
 ---
 

@@ -125,7 +125,7 @@ def main():
                n_outputLayer = 10,
                activate_hiddenLayer = NNActivation( "relu" ),
                activate_outputLayer = NNActivation( "softmax" ),
-               learning_rate = 0.05,
+               learning_rate = 0.0001,
                epochs = 1000,
                batch_size = 50
            )
@@ -192,7 +192,7 @@ def main():
     plt.clf()
     plt.plot(
         range( 0, mlp1._epochs ), mlp1._losses_train,
-        label = 'train data : MLP = 784-50-50-10 (relu-softmax)',
+        label = 'train data : MLP = 784-50-50-10 (relu-relu-softmax)',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
