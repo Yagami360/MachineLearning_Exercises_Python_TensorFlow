@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # TensorFlow ライブラリ
 import tensorflow as tf
 from tensorflow.python.framework import ops
-#from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
+from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 
 # 自作クラス
 from MLPlot import MLPlot                               # 機械学習の plot 処理群を表すクラス
@@ -37,17 +37,18 @@ def main():
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
-    # MSIT データが格納されているフォルダへのパス
-    mist_path = "D:\Data\MachineLearning_DataSet\MIST"
+    # MNIST データが格納されているフォルダへのパス
+    mnist_path = "D:\Data\MachineLearning_DataSet\MNIST"
 
-    X_train, y_train = MLPreProcess.load_mist( mist_path, "train" )
-    X_test, y_test = MLPreProcess.load_mist( mist_path, "t10k" )
+    X_train, y_train = MLPreProcess.load_mnist( mnist_path, "train" )
+    X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )
 
     X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )
     X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )
+
     """
     # TensorFlow のサポート関数を使用して, MNIST データを読み込み
-    mnist = read_data_sets( mist_path )
+    mnist = read_data_sets( mnist_path )
     print( "mnist :\n", mnist )
     X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in mnist.train.images] )
     X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in mnist.test.images] )
@@ -59,6 +60,9 @@ def main():
     print( "y_train.shape : ", y_train.shape )
     print( "X_test.shape : ", X_test.shape )
     print( "y_test.shape : ", y_test.shape )
+
+    print( "X_train : \n", X_train )
+    print( "y_train : \n", y_train )
 
     #---------------------------------------------------------------------
     # MIST 画像を plot
@@ -188,7 +192,7 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    cnn1.optimizer( type = "gradient-descent" )
+    cnn1.optimizer( type = "momentum" )
 
     # トレーニングデータで fitting 処理
     cnn1.fit( X_train, y_train )
@@ -200,23 +204,19 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    """
     predict1 = cnn1.predict( X_test )
     print( "predict1 :\n", predict1 )
 
     # テストデータでの正解率
     accuracy1 = cnn1.accuracy( X_test, y_test )
-
     print( "accuracy [test data] : ", accuracy1 )
-    """
 
-    """
+
     # トレーニング回数に対する loss 値の plot
     plt.clf()
-    plt.subplot( 1, 2, 1 )
     plt.plot(
-        range( 0, 500 ), mlp1._losses_train,
-        label = 'train data : MLP = 2-3-1',
+        range( 0, 500 ), cnn1._losses_train,
+        label = 'train data : CNN1 = [25,50,100]',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
@@ -226,24 +226,9 @@ def main():
     #plt.ylim( [0, 1.05] )
     plt.xlabel( "Epocs" )
     plt.tight_layout()
-
-    plt.subplot( 1, 2, 2 )
-    plt.plot(
-        range( 0, 500 ), mlp2._losses_train,
-        label = 'train data : MLP = 2-3-3-1',
-        linestyle = '-',
-        #linewidth = 2,
-        color = 'red'
-    )
-    plt.title( "loss" )
-    plt.legend( loc = 'best' )
-    #plt.ylim( [0, 1.05] )
-    plt.xlabel( "Epocs" )
-    plt.tight_layout()
-    
+   
     MLPlot.saveFigure( fileName = "CNN_1-1.png" )
     plt.show()
-    """
 
     """
     # 識別結果＆境界の plot

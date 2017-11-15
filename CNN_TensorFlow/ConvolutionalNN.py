@@ -520,11 +520,13 @@ class ConvolutionalNN(object):
         #----------------------------
         # 学習開始処理
         #----------------------------
+        """
         X_eval_holder = tf.placeholder( 
                             tf.float32, 
                             shape = [ X_train.shape[0], self._image_width, self._image_height, self._n_channels ]
                          )
         t_eval_holder = tf.placeholder( tf.int32, shape = X_train.shape[0] )
+        """
 
         # Variable の初期化オペレーター
         self._init_var_op = tf.global_variables_initializer()
@@ -536,15 +538,47 @@ class ConvolutionalNN(object):
         # 学習処理
         #-------------------
         n_batches = len( X_train ) // self._batch_size     # バッチ処理の回数
+        print( "len( X_train ) :", len( X_train ) )
+        print( "n_batches :", n_batches )
 
         # for ループでエポック数分トレーニング
         for epoch in range( self._epochs ):
             # ミニバッチ学習処理のためランダムサンプリング
-            X_train_shuffled, y_train_shuffled = shuffle( X_train, y_train )
-            
+            #X_train_shuffled, y_train_shuffled = shuffle( X_train, y_train )
+            idx_shuffled = numpy.random.choice( len(X_train), size = self._batch_size )
+            X_train_shuffled = X_train[ idx_shuffled ]
+            y_train_shuffled = y_train[ idx_shuffled ]
+
             # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
             X_train_shuffled = numpy.expand_dims( X_train_shuffled, 3 )
-                        
+
+            #print( "X_train_shuffled", X_train_shuffled )
+            #print( "y_train_shuffled", y_train_shuffled )
+
+            # 
+            self._session.run(
+                self._train_step,
+                feed_dict = {
+                    self._X_holder: X_train_shuffled,
+                    self._t_holder: y_train_shuffled
+                }
+            )
+            
+            #
+            loss = self._loss_op.eval(
+                       session = self._session,
+                       feed_dict = {
+                           self._X_holder: X_train_shuffled,
+                           self._t_holder: y_train_shuffled
+                       }
+                   )
+
+            self._losses_train.append( loss )
+
+            print( "loss = ", loss )
+
+            """
+            #
             for i in range( n_batches ):
                 it_start = i * self._batch_size
                 it_end = it_start + self._batch_size
@@ -556,7 +590,8 @@ class ConvolutionalNN(object):
                         self._t_holder: y_train_shuffled[it_start:it_end]
                     }
                 )
-
+            """
+            """
             # 損失関数の値をストック
             # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
             X_train = numpy.expand_dims( X_train, 3 )
@@ -570,7 +605,7 @@ class ConvolutionalNN(object):
                    )
 
             self._losses_train.append( loss )
-        
+            """
 
         return self._y_out_op
 
@@ -588,14 +623,8 @@ class ConvolutionalNN(object):
                 予想結果（分類モデルの場合は、クラスラベル）
         """
 
-        # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
-        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
-            predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
-        # 出力層の活性化関数が softmax のとき（多クラスの識別）
-        elif ( self._activate_outputLayer._activate_type == "softmax" ):
-            predict_op = tf.arg_max( input = self._y_out_op, dimension = 1 )
-        else:
-            predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
+        """
+        predict_op = numpy.argmax( self._y_out_op, axis = 1 )
 
         predict = predict_op.eval( 
                    session = self._session,
@@ -603,8 +632,27 @@ class ConvolutionalNN(object):
                        self._X_holder: X_test
                    }
                )
+        """
+        X_eval_holder = tf.placeholder( 
+                            tf.float32, 
+                            shape = [ None, self._image_width, self._image_height, self._n_channels ]
+                         )
+
+        # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
+        X_test_reshaped = numpy.expand_dims( X_test, 3 )
+
+        predicts = self._session.run(
+                      self._y_out_op,
+                      feed_dict = { X_eval_holder: X_test_reshaped }
+                  )
         
-        
+        print( "predicts :", predicts )
+
+        # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
+        # axis : 最大値を読み取る軸の方向 (1 : 行方向)
+        predict = numpy.argmax( predicts, axis = 1 )
+        print( "predict :", predict )
+
         return predict
 
 
@@ -617,10 +665,18 @@ class ConvolutionalNN(object):
             X_test : numpy.ndarry ( shape = [n_samples, n_features] )
                 予想したい特徴行列
         """
+        X_eval_holder = tf.placeholder( 
+                            tf.float32, 
+                            shape = [ None, self._image_width, self._image_height, self._n_channels ]
+                         )
+
+        # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
+        X_test_reshaped = numpy.expand_dims( X_test, 3 )
+
         prob = self._y_out_op.eval(
                    session = self._session,
                    feed_dict = {
-                       self._X_holder: X_test 
+                       X_eval_holder: X_test_reshaped 
                    }
                )
 
@@ -630,41 +686,34 @@ class ConvolutionalNN(object):
         return prob
 
 
-    def accuracy( self, X_test, y_test):
+    def accuracy( self, X_test, y_test ):
         """
         指定したデータでの正解率 [accuracy] を計算する。
         """
-        # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
-        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
-            correct_predict_op = tf.equal( 
-                                     tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
-                                     self._t_holder 
-                                 )
-        # 出力層の活性化関数が softmax のとき（多クラスの識別）
-        elif (  self._activate_outputLayer._activate_type == "softmax"  ):
-            correct_predict_op = tf.equal(
-                                     tf.arg_max( self._y_out_op, dimension = 1 ),
-                                     tf.arg_max( self._t_holder, dimension = 1 )
-                                 )
-        else:
-            correct_predict_op = tf.equal( 
-                                     tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
-                                     self._t_holder 
-                                 )
+        X_eval_holder = tf.placeholder( 
+                            tf.float32, 
+                            shape = [ None, self._image_width, self._image_height, self._n_channels ]
+                         )
 
+        # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
+        X_test_reshaped = numpy.expand_dims( X_test, 3 )
+
+        correct_predict_op = numpy.equal(
+                                 numpy.argmax( self._y_out_op, axis = 1 ),
+                                 numpy.argmax( self._t_holder, axis = 1 )
+                             )
+        
         # correct_predict_op は、feed_dict で与えるデータ分（全データ）の結果（合っていた数）を返すので、
         # tf.reduce_mean(..) でその平均値を計算すれば、合っていた数 / 全データ数 = 正解率　が求まる。
         accuracy_op = tf.reduce_mean( tf.cast( correct_predict_op, tf.float32 ) )
         
-        # ２クラス分類の場合
-        if (self._n_outputLayer == 1):
-            # shape を (n_samples, → (n_samples,1) に reshape
-            y_test = numpy.transpose( [ y_test ] )
+        # shape を (n_samples, → (n_samples,1) に reshape
+        y_test = numpy.transpose( [ y_test ] )
 
         accuracy = accuracy_op.eval(
                        session = self._session,
                        feed_dict = {
-                           self._X_holder: X_test,
+                           self._X_holder: X_test_reshaped,
                            self._t_holder: y_test
                        }                       
                    )
