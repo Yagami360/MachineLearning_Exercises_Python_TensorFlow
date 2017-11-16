@@ -63,50 +63,6 @@ def main():
 
     print( "X_train : \n", X_train )
     print( "y_train : \n", y_train )
-
-    #---------------------------------------------------------------------
-    # MIST 画像を plot
-    #---------------------------------------------------------------------
-    # 先頭の 0~9 のラベルの画像データを plot
-    """
-    # plt.subplots(...) から,
-    # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
-    figure, axis = plt.subplots( 
-                       nrows = 2, ncols = 5,
-                       sharex = True, sharey = True     # x,y 軸をシャアする
-                   )
-    # 2 × 5 配列を１次元に変換
-    axis = axis.flatten()
-    # 数字の 0~9 の plot 用の for ループ
-    for i in range(10):
-        image = X_train[y_train == i][0]    #
-        image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
-        axis[i].imshow(
-            image,
-            cmap = "Greys",
-            interpolation = "nearest"   # 補間方法
-        )
-    axis[0].set_xticks( [] )
-    axis[0].set_yticks( [] )
-    plt.tight_layout()
-    MLPlot.saveFigure( fileName = "MultilayerPerceptron_3-1.png" )
-    plt.show()
-    """
-
-    """
-    # 特定のラベルの 25 枚の画像データを plot
-    figure, axis = plt.subplots( nrows = 5, ncols = 5, sharex = True, sharey = True )
-    axis = axis.flatten()
-    for i in range(25):
-        image = X_train[y_train == 7][i].reshape(28,28)    
-        axis[i].imshow( image, cmap = "Greys", interpolation = "nearest" )
-    
-    axis[0].set_xticks( [] )
-    axis[0].set_yticks( [] )
-    plt.tight_layout()
-    MLPlot.saveFigure( fileName = "MultilayerPerceptron_3-2.png" )
-    plt.show()
-    """
     
     #======================================================================
     # データを変換、正規化
@@ -204,15 +160,23 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    predict1 = cnn1.predict( X_test )
-    print( "predict1 :\n", predict1 )
-
+    #--------------------------------------------------------------------
     # テストデータでの正解率
+    #--------------------------------------------------------------------
+    predict1 = cnn1.predict( X_test )
+    print( "predict1 : ", predict1 )
+
     accuracy1 = cnn1.accuracy( X_test, y_test )
-    print( "accuracy [test data] : ", accuracy1 )
+    print( "accuracy [test data] : %0.3f" % accuracy1 )
 
+    print( "accuracy labels [test data]" )
+    accuracys1 = cnn1.accuracy_labels( X_test, y_test )
+    for i in range( len(accuracys1) ):
+        print( "label %d : %.3f" % ( i, accuracys1[i] ) )
 
+    #-------------------------------------------------------------------
     # トレーニング回数に対する loss 値の plot
+    #-------------------------------------------------------------------
     plt.clf()
     plt.plot(
         range( 0, 500 ), cnn1._losses_train,
@@ -247,6 +211,50 @@ def main():
     plt.show()
     """
     
+    #---------------------------------------------------------------------
+    # MIST 画像を plot
+    #---------------------------------------------------------------------
+    # 先頭の 0~9 のラベルの画像データを plot
+    """
+    # plt.subplots(...) から,
+    # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
+    figure, axis = plt.subplots( 
+                       nrows = 2, ncols = 5,
+                       sharex = True, sharey = True     # x,y 軸をシャアする
+                   )
+    # 2 × 5 配列を１次元に変換
+    axis = axis.flatten()
+    # 数字の 0~9 の plot 用の for ループ
+    for i in range(10):
+        image = X_train[y_train == i][0]    #
+        image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
+        axis[i].imshow(
+            image,
+            cmap = "Greys",
+            interpolation = "nearest"   # 補間方法
+        )
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
+    plt.tight_layout()
+    MLPlot.saveFigure( fileName = "MultilayerPerceptron_3-1.png" )
+    plt.show()
+    """
+
+    """
+    # 特定のラベルの 25 枚の画像データを plot
+    figure, axis = plt.subplots( nrows = 5, ncols = 5, sharex = True, sharey = True )
+    axis = axis.flatten()
+    for i in range(25):
+        image = X_train[y_train == 7][i].reshape(28,28)    
+        axis[i].imshow( image, cmap = "Greys", interpolation = "nearest" )
+    
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
+    plt.tight_layout()
+    MLPlot.saveFigure( fileName = "MultilayerPerceptron_3-2.png" )
+    plt.show()
+    """
+
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================

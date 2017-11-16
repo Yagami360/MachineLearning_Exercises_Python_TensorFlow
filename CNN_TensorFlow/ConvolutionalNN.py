@@ -577,7 +577,7 @@ class ConvolutionalNN(object):
 
             self._losses_train.append( loss )
 
-            print( "loss = ", loss )
+            print( "epoch %d / loss = %f" % ( epoch, loss ) )
 
             """
             #
@@ -623,17 +623,6 @@ class ConvolutionalNN(object):
         [Output]
             results : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
-        """
-
-        """
-        predict_op = numpy.argmax( self._y_out_op, axis = 1 )
-
-        predict = predict_op.eval( 
-                   session = self._session,
-                   feed_dict = {
-                       self._X_holder: X_test
-                   }
-               )
         """
         # shape を (n_samples, image_width, image_height) → (n_samples, image_width, image_height, 1) に reshape
         X_test_reshaped = numpy.expand_dims( X_test, 3 )
@@ -682,15 +671,44 @@ class ConvolutionalNN(object):
         """
         指定したデータでの正解率 [accuracy] を計算する。
         """
-        # 予想ラベル
+        # 予想ラベルを算出する。
         predict = self.predict( X_test )
 
         # 正解数
         n_correct = numpy.sum( numpy.equal( predict, y_test ) )
-        print( "numpy.equal( predict, y_test ) :", numpy.equal( predict, y_test ) )
-        print( "n_correct :", n_correct )
+        #print( "numpy.equal( predict, y_test ) :", numpy.equal( predict, y_test ) )
+        #print( "n_correct :", n_correct )
 
         # 正解率 = 正解数 / データ数
         accuracy = n_correct / X_test.shape[0]
 
         return accuracy
+
+    def accuracy_labels( self, X_test, y_test ):
+        """
+        指定したデータでのラベル毎の正解率 [acuuracy] を算出する。
+        """
+        # 予想ラベルを算出する。
+        predict = self.predict( X_test )
+
+        # ラベル毎の正解率のリスト
+        n_labels = len( numpy.unique( y_test ) )    # ユニークな要素数
+        accuracys = []
+
+        for label in range(n_labels):
+            # label 値に対応する正解数
+            # where(...) : 条件を満たす要素番号を抽出
+            n_correct = len( numpy.where( predict == label )[0] )
+            
+            # サンプル数
+            n_sample = len( numpy.where( y_test == label )[0] )
+
+            accuracy = float(n_correct) / float(n_sample)
+            accuracys.append( accuracy )
+            
+            #print( "numpy.where( predict == label ) :", numpy.where( predict == label ) )
+            #print( "numpy.where( predict == label )[0] :", numpy.where( predict == label )[0] )
+            print( "n_sample[ %d ] : %d" % ( label, n_sample ) )
+
+
+        return accuracys
