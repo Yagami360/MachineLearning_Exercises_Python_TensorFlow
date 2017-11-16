@@ -140,12 +140,12 @@ class ConvolutionalNN(object):
         # shape の行は、None にして汎用性を確保
         self._X_holder = tf.placeholder( 
                              tf.float32, 
-                             shape = [ batch_size, image_width, image_height, n_channels ]
+                             shape = [ None, image_width, image_height, n_channels ]
                          )
 
         self._t_holder = tf.placeholder( 
                              tf.int32, 
-                             shape = [ batch_size ]
+                             shape = [ None ]
                          )
 
         self._keep_prob_holder = tf.placeholder( tf.float32 )
@@ -315,7 +315,7 @@ class ConvolutionalNN(object):
         # ~ 全結合層
         #----------------------------------------------------------------------
         # 全結合層の入力側
-        # 重み & バイアス項のの Variable の list に、全結合層の入力側に対応する値を追加
+        # 重み & バイアス項の Variable の list に、全結合層の入力側に対応する値を追加
         fullyLayers_width = self._image_width // (2*2)    # ? (2 * 2 : pooling 処理の範囲)
         fullyLayers_height = self._image_height // (2*2)  # ?
         fullyLayers_input_size = fullyLayers_width * fullyLayers_height * self._n_ConvLayer_features[-1] # ?
@@ -339,10 +339,12 @@ class ConvolutionalNN(object):
 
         # 全結合層への入力
         # 1 * N のユニットに対応するように reshape
-        pool_op_shape = pool_op2.get_shape().as_list()      # ? [100, 7, 7, 50]
+        pool_op_shape = pool_op2.get_shape().as_list()      # ? [batch_size, 7, 7, _n_ConvLayer_features[-1] ]
         print( "pool_op2.get_shape().as_list() :\n", pool_op_shape )
         fullyLayers_shape = pool_op_shape[1] * pool_op_shape[2] * pool_op_shape[3]
-        flatted_input = tf.reshape( pool_op2, [ pool_op_shape[0], fullyLayers_shape ] )    # 1 * N に平坦化 (reshape) された値
+        flatted_input = tf.reshape( pool_op2, [ -1, fullyLayers_shape ] )    # 1 * N に平坦化 (reshape) された値
+        #flatted_input = numpy.reshape( pool_op2, (None, fullyLayers_shape) )
+        print( "flatted_input :", flatted_input )
 
         # 全結合層の入力側へのオペレーター
         fullyLayers_in_op = NNActivation( activate_type = "relu" ).activate(
@@ -633,17 +635,12 @@ class ConvolutionalNN(object):
                    }
                )
         """
-        X_eval_holder = tf.placeholder( 
-                            tf.float32, 
-                            shape = [ None, self._image_width, self._image_height, self._n_channels ]
-                         )
-
-        # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
+        # shape を (n_samples, image_width, image_height) → (n_samples, image_width, image_height, 1) に reshape
         X_test_reshaped = numpy.expand_dims( X_test, 3 )
 
         predicts = self._session.run(
                       self._y_out_op,
-                      feed_dict = { X_eval_holder: X_test_reshaped }
+                      feed_dict = { self._X_holder: X_test_reshaped }
                   )
         
         print( "predicts :", predicts )
@@ -665,18 +662,13 @@ class ConvolutionalNN(object):
             X_test : numpy.ndarry ( shape = [n_samples, n_features] )
                 予想したい特徴行列
         """
-        X_eval_holder = tf.placeholder( 
-                            tf.float32, 
-                            shape = [ None, self._image_width, self._image_height, self._n_channels ]
-                         )
-
-        # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
+        # shape を (n_samples, image_width, image_height) → (n_samples, image_width, image_height, 1) に reshape
         X_test_reshaped = numpy.expand_dims( X_test, 3 )
 
         prob = self._y_out_op.eval(
                    session = self._session,
                    feed_dict = {
-                       X_eval_holder: X_test_reshaped 
+                       self._X_holder: X_test_reshaped 
                    }
                )
 
@@ -690,32 +682,15 @@ class ConvolutionalNN(object):
         """
         指定したデータでの正解率 [accuracy] を計算する。
         """
-        X_eval_holder = tf.placeholder( 
-                            tf.float32, 
-                            shape = [ None, self._image_width, self._image_height, self._n_channels ]
-                         )
+        # 予想ラベル
+        predict = self.predict( X_test )
 
-        # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
-        X_test_reshaped = numpy.expand_dims( X_test, 3 )
+        # 正解数
+        n_correct = numpy.sum( numpy.equal( predict, y_test ) )
+        print( "numpy.equal( predict, y_test ) :", numpy.equal( predict, y_test ) )
+        print( "n_correct :", n_correct )
 
-        correct_predict_op = numpy.equal(
-                                 numpy.argmax( self._y_out_op, axis = 1 ),
-                                 numpy.argmax( self._t_holder, axis = 1 )
-                             )
-        
-        # correct_predict_op は、feed_dict で与えるデータ分（全データ）の結果（合っていた数）を返すので、
-        # tf.reduce_mean(..) でその平均値を計算すれば、合っていた数 / 全データ数 = 正解率　が求まる。
-        accuracy_op = tf.reduce_mean( tf.cast( correct_predict_op, tf.float32 ) )
-        
-        # shape を (n_samples, → (n_samples,1) に reshape
-        y_test = numpy.transpose( [ y_test ] )
-
-        accuracy = accuracy_op.eval(
-                       session = self._session,
-                       feed_dict = {
-                           self._X_holder: X_test_reshaped,
-                           self._t_holder: y_test
-                       }                       
-                   )
+        # 正解率 = 正解数 / データ数
+        accuracy = n_correct / X_test.shape[0]
 
         return accuracy
