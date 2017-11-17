@@ -160,20 +160,6 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    #--------------------------------------------------------------------
-    # テストデータでの正解率
-    #--------------------------------------------------------------------
-    predict1 = cnn1.predict( X_test )
-    print( "predict1 : ", predict1 )
-
-    accuracy1 = cnn1.accuracy( X_test, y_test )
-    print( "accuracy [test data] : %0.3f" % accuracy1 )
-
-    print( "accuracy labels [test data]" )
-    accuracys1 = cnn1.accuracy_labels( X_test, y_test )
-    for i in range( len(accuracys1) ):
-        print( "label %d : %.3f" % ( i, accuracys1[i] ) )
-
     #-------------------------------------------------------------------
     # トレーニング回数に対する loss 値の plot
     #-------------------------------------------------------------------
@@ -194,23 +180,50 @@ def main():
     MLPlot.saveFigure( fileName = "CNN_1-1.png" )
     plt.show()
 
-    """
-    # 識別結果＆境界の plot
-    plt.clf()
-    plt.subplot( 1, 2, 1 )
-    MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp1 )
-    plt.title( "Mulutiplelayer Perceptron : 2-3-1" )
-    plt.legend( loc = 'best' )
+    #--------------------------------------------------------------------
+    # テストデータでの正解率
+    #--------------------------------------------------------------------
+    predict1 = cnn1.predict( X_test )
+    print( "predict1 : ", predict1 )
 
-    plt.subplot( 1, 2, 2 )
-    MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp2 )
-    plt.title( "Mulutiplelayer Perceptron : 2-3-3-1" )
-    plt.legend( loc = 'best' )
+    accuracy1 = cnn1.accuracy( X_test, y_test )
+    print( "accuracy [test data] : %0.3f" % accuracy1 )
 
-    MLPlot.saveFigure( fileName = "CNN_1-2.png" )
-    plt.show()
-    """
+    print( "accuracy labels [test data]" )
+    accuracys1 = cnn1.accuracy_labels( X_test, y_test )
+    for i in range( len(accuracys1) ):
+        print( "label %d : %.3f" % ( i, accuracys1[i] ) )
+
+
+    #-------------------------------------------------------------------
+    # 正解画像＆誤識別画像の plot
+    #-------------------------------------------------------------------
+    figure, axis = plt.subplots( 
+                       nrows = 5, ncols = 8,
+                       sharex = True, sharey = True     # x,y 軸をシャアする
+                   )
     
+    # ２次元配列を１次元に変換
+    axis = axis.flatten()
+
+    corrects = y_test[0:40] 
+    predicts = cnn1.predict( X_test )[0:40]
+
+    for i in range(40):
+        image = X_test[ y_test == predicts[i] ]
+        #image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
+        axis[i].imshow(
+            image,
+            cmap = "Greys",
+            interpolation = "nearest"   # 補間方法
+        )
+
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
+    plt.tight_layout()
+    MLPlot.saveFigure( fileName = "CNN_2-1.png" )
+    plt.show()
+
     #---------------------------------------------------------------------
     # MIST 画像を plot
     #---------------------------------------------------------------------
