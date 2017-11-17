@@ -8,6 +8,11 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 この README.md ファイルには、各コードの実行結果、概要、CNN の背景理論の説明を記載しています。<br>
 分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
 
+参考サイト :
+- [Tensorflow での MINIST チュートリアル（公式）](https://www.tensorflow.org/get_started/mnist/beginners)
+- [Tensorflow での CIFAR-10 チュートリアル（公式）](https://www.tensorflow.org/tutorials/deep_cnn)
+
+
 ## 項目 [Contents]
 
 1. [使用するライブラリ](#ID_1)
@@ -36,6 +41,9 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 ## 使用するライブラリ
 
 > TensorFlow ライブラリ </br>
+>> 参考サイト<br>
+>> https://qiita.com/tadOne/items/b484ce9f973a9f80036e<br>
+
 >> `tf.nn.conv2d(...)` : ２次元の画像の畳み込み処理のオペレーター<br>
 >> https://www.tensorflow.org/api_docs/python/tf/nn/conv2d<br>
 
@@ -48,13 +56,23 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 >> `tf.train.MomentumOptimizer(...)` : モーメンタムアルゴリズムの Optimizer
 >> https://www.tensorflow.org/api_docs/python/tf/train/MomentumOptimizer
 
+>> ファイル＆画像処理関連
+>>> 参考サイト : <br>
+http://tensorflow.classcat.com/2016/02/13/tensorflow-how-tos-reading-data/<br>
+https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
+>>> `tf.FixedLengthRecordReader(...)` : 固定の長さのバイトを読み取るレコードリーダー<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/FixedLengthRecordReader<br>
+>>> `tf.train.string_input_producer(...)` : ファイル名（のキュー）を渡すことで、ファイルの内容（の一部（を表す tensor））が得られる<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/train/string_input_producer<br>
+>>> `tf.decode_raw(...)` : 文字列から uint8 の Tensor に変換する。<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/decode_raw<br>
+
+
 > Numpy ライブラリ
 >> `numpy.argmax(...)` : 指定した配列の中で最大要素を含むインデックスを返す関数<br>
 >> https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.argmax.html
 
-参考サイト
-> https://qiita.com/tadOne/items/b484ce9f973a9f80036e<br>
-> http://www.mwsoft.jp/programming/tensor/tutorial_mnist.html<br>
+
 
 <a id="ID_2"></a>
 
@@ -138,11 +156,11 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
         #----------------------------------------------------------------------
         # 畳み込み層 ~ 活性化関数 ~ プーリング層 ~
         #----------------------------------------------------------------------
-        # 重みの Variable の list に、１つ目の畳み込み層の重み（フィルタ行列）を追加
-        # この重みは、畳み込み処理の画像データに対するフィルタ処理に使う Tensor のことである。
+        # 重みの Variable の list に、１つ目の畳み込み層の重み（カーネル）を追加
+        # この重みは、畳み込み処理の画像データに対するフィルタ処理に使うカーネルを表す Tensor のことである。
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [4, 4, self._n_channels, self._n_ConvLayer_features[0] ]  # 4, 4 : フィルタ処理後の出力 pixcel サイズ（幅、高さ） 
+                input_shape = [4, 4, self._n_channels, self._n_ConvLayer_features[0] ]  # 4, 4 : カーネルの pixcel サイズ（幅、高さ） 
             ) 
         )
         
@@ -174,14 +192,14 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
         # ２つ目の畳み込み層
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [4, 4, self._n_ConvLayer_features[0], self._n_ConvLayer_features[1] ]  # 4, 4 : フィルタ処理後の出力 pixcel サイズ（幅、高さ） 
+                input_shape = [4, 4, self._n_ConvLayer_features[0], self._n_ConvLayer_features[1] ]  # 4, 4 : カーネルの出力 pixcel サイズ（幅、高さ） 
             ) 
         )
         self._biases.append( self.init_bias_variable( input_shape = [ self._n_ConvLayer_features[1] ] ) )
 
         conv_op2 = tf.nn.conv2d(
                        input = pool_op1,
-                       filter = self._weights[1],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列 (Tensor)
+                       filter = self._weights[1],   # 畳込み処理で input で指定した Tensor との積和に使用する カーネル行列 (Tensor)
                        strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
                        padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
                    )
@@ -341,7 +359,17 @@ def main():
 > 学習率 0.0005 の CNN モデルにおいて、<br>
 > 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 
+<br>
 
+<a id="ID_3-2"></a>
+
+### CNN による CIFAR-10 データの識別 : `main2.py`
+> コード実装中...
+
+- CIFAR-10 データセットを使用
+- **画像は、ランダムに加工した上でトレーニングデータとして利用する**
+    - 加工は、画像の一部の切り出し、左右の反転、明るさの変更からなる。
+    - 画像の分類精度を向上させるには、画像の枚数が必要となるが、画像を加工することで画像を水増しすることが出来るため、このような処理を行う。
 
 
 

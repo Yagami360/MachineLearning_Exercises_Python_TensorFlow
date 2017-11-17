@@ -6,16 +6,22 @@
     [17/08/16] : 検証用のサンプルデータセット生成関数を追加
     [17/08/31] : クラス名を DataPreProcess → MLDreProcess に改名
     [17/10/21] : アヤメデータの読み込み関数 load_iris(...) を追加
-    [17/10/28] : MIST データの読み込み関数 load_mist(...) を追加
+    [17/10/28] : MNIST データの読み込み関数 load_mnist(...) を追加
+    [17/11/17] : CIFAR-10 データの読み込み関数 load_cifar10(...) を追加
+               : CIFAR-10 データのランダムに加工した読み込み関数 load_cifar10_with_trasform(...) を追加
 """
 
 import os
+import sys
+
 import struct
 import numpy
 
 # Data Frame & IO 関連
 import pandas
 from io import StringIO
+import tarfile
+
 
 # scikit-learn ライブラリ関連
 from sklearn import datasets                            # scikit-learn ライブラリのデータセット群
@@ -33,6 +39,9 @@ from sklearn.preprocessing import MinMaxScaler          # scikit-learn の prepr
 from sklearn.preprocessing import StandardScaler        # scikit-learn の preprocessing モジュールの StandardScaler クラス
 
 from sklearn.pipeline import Pipeline                   # パイプライン
+
+# TensorFlow ライブラリ関連
+import tensorflow as tf
 
 
 class MLPreProcess( object ):
@@ -229,12 +238,12 @@ class MLPreProcess( object ):
 
 
     @staticmethod
-    def load_mist( path, kind = "train" ):
+    def load_mnist( path, kind = "train" ):
         """
-        トレーニングデータ用の MIST データを読み込む。
+        検証データ用の MNIST データを読み込む。
         [Input]
             path : str
-                MIST データセットが格納されているフォルダへのパス
+                MNIST データセットが格納されているフォルダへのパス
             kind : str
                 読み込みたいデータの種類（トレーニング用データ or テスト用データ）
                 "train" : トレーニング用データ
@@ -294,6 +303,111 @@ class MLPreProcess( object ):
             
         return images, labels
     
+
+    @staticmethod
+    def load_cifar10( path, kind = "tain", bReshape = False, bTensor = False ):
+        """
+        検証データ用の CIFAR データを読み込む。
+        [Input]
+            path : str
+                CIFAR-10 データセットが格納されているフォルダへのパス
+            kind : str
+                読み込みたいデータの種類（トレーニング用データ or テスト用データ）
+                "train" : トレーニング用データ
+                "test" : テスト用データ
+            bReshape : Bool
+                image データの reshape を行うか否か
+            bTensor : Bool
+                戻り値を Tensor のままにするか否か
+                
+        [Output]
+            images : Tensor / shape = [n_samples = 60,000, n_features = 3*32*32 = 3*1024]
+                トレーニングデータ用の画像データ
+                n_features = n_channels * image_height * image_width
+            labels : Tensor / [n_samples = 60,000,]
+                トレーニングデータ用のラベルデータ（教師データ）
+                0~9 の数字ラベル
+                0 : [] 
+                1 :
+                2 :
+        """
+        # 読み込みファイル名の設定
+        # トレーニング用のデータ
+        if( kind == "train" ):
+            # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5
+            files = [ os.path.join( path, "data_batch_{}".format(i) ) for i in range(1,6) ]
+        # テスト用のデータ
+        elif( kind == "test" ):
+            # test_batch
+            files = [ os.path.join( path, "test_batch") ]
+        else:
+            files = [ os.path.join( path, "data_batch_{}".format(i) ) for i in range(1,6) ]
+
+        print( "files :", files )
+
+        # 内部データサイズの設定 
+        image_height = 32   # CIFAR-10 画像の高さ (pixel)
+        image_width = 32    #
+        n_channels = 3      # RGB の 3 チャンネル
+
+        image_size = image_height * image_width * n_channels
+        record_size = 1 + image_size    # 1 は、ラベル (0~9) に対応する値
+        
+        # 固定の長さのバイトを読み取るレコードリーダーオブジェクトを作成
+        reader = tf.FixedLengthRecordReader( record_bytes = record_size )
+        #print( "reader :", reader)
+
+        # tf.FixedLengthRecordReader.read(...) で key と string の Tensor を生成
+        # Returns the next record (key, value) pair produced by a reader.
+        # queue: A Queue or a mutable string Tensor representing a handle to a Queue, with string work items.
+        # ファイル名（のキュー）を渡すことで、ファイルの内容（の一部（を表す tensor））が得られる
+        filename_queue = tf.train.string_input_producer( files )     # 1ファイルでもキュー生成が必要
+        key_tsr, record_str_tsr = reader.read( queue = filename_queue )
+        # tf.decode_raw(...) : 文字列から uint8 Tensor に変換
+        record_bytes_tsr = tf.decode_raw( record_str_tsr, tf.uint8 )
+        #print( "filename_queue :", filename_queue )
+        #print( "key_tsr :", key_tsr )
+        #print( "record_str_tsr :", record_str_tsr )
+
+        # ラベルを抽出
+        # tf.slice(...) : Tensorの一部分を取り出す。beginで開始場所、sizeで切り出す大きさを指定する。
+        labels = tf.cast( 
+                     tf.slice( input_ = record_bytes_tsr, begin = [0], size = [1] ),         # ?
+                     tf.int32 
+                 )
+        # 画像データを抽出
+        images = tf.slice( input_ = record_bytes_tsr, begin = [1], size = [image_size] )     # ?
+        if ( bReshape == True ):
+            image = tf.reshape( image, [n_channels, image_height, image_width] )
+
+        if( bTensor == False ):
+            # Session を生成＆run() して、Tensor の実際の値を取得
+            session = tf.Session()
+            images = session.run( images )
+            labels = session.run( labels )
+
+        return images, labels
+
+
+    @staticmethod
+    def load_cifar10_with_transform( path, kind = "tain", bTensor = False ):
+        """
+        検証データ用の CIFAR-10 データを読み込み、ランダムに加工する。
+        """
+        # Tensor の状態のままの images, labels データを読み込み
+        image, labels = load_cifar10( path, kind, bReshape = True, bTensor = True )
+
+
+
+        if( bTensor == False ):
+            # Session を生成＆run() して、Tensor の実際の値を取得
+            session = tf.Session()
+            images = session.run( images )
+            labels = session.run( labels )
+
+        return image, labels
+
+
     #---------------------------------------------------------
     # 欠損値の処理を行う関数群
     #---------------------------------------------------------
