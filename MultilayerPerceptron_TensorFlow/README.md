@@ -2,7 +2,7 @@
 
 TensorFlow での多層パーセプトロンの練習用実装コード集。<br>
 
-TensorFlow での多層パーセプトロンの処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス `MultilayerPerceptron` を使用。<br>
+TensorFlow での多層パーセプトロンの処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のあるようにした自作クラス `MultilayerPerceptron` を使用。<br>
 
 
 この README.md ファイルには、各コードの実行結果、概要、ニューラルネットワーク（パーセプトロン）の背景理論の説明を記載しています。<br>
@@ -16,7 +16,7 @@ TensorFlow での多層パーセプトロンの処理をクラス（任意の層
 1. [コード実行結果](#ID_3)
     1. [多層パーセプトロンによる２クラスの識別 : `main1.py`](#ID_3-1)
     1. [多層パーセプトロンによる多クラスの識別 : `main2.py`](#ID_3-2)
-    1. [多層パーセプトロンによる MIST データの識別 : `main3.py`](#ID_3-3)
+    1. [多層パーセプトロンによる MNIST データの識別 : `main3.py`](#ID_3-3)
 1. [背景理論](#ID_4)
     1. [ニューラルネットワークの概要](#ID_4-1)
     1. [活性化関数](#ID_4-2)
@@ -60,14 +60,8 @@ https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/activation_function
 https://www.tensorflow.org/versions/r1.1/api_docs/python/tf/nn/relu</br>
 >>>> ReLu6 関数 : `tf.nn.relu6(...)` </br>
 https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/activation_functions_#relu6</br>
->>>> ソフトプラス関数 : `tf.nn.softplus(...)`</br>
-https://www.tensorflow.org/api_docs/python/tf/nn/softplus </br>
->>>> ELU 関数 : `tf.nn.elu(...)` </br>
-https://www.tensorflow.org/api_docs/python/tf/nn/elu </br>
 >>>> シグモイド関数 : `tf.nn.sigmoid(x)` or `tf.sigmoid(x)` </br>
 https://www.tensorflow.org/api_docs/python/tf/sigmoid </br>
->>>> tanh 関数 : `tf.nn.tanh(x)` or `tf.tanh(x)` </br>
-https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 > scikit-learn ライブラリ </br>
 
@@ -79,12 +73,14 @@ https://www.tensorflow.org/api_docs/python/tf/tanh </br>
 
 ## 使用するデータセット
 
-- 半月状データ : ２クラスの識別 
-- 円状データ : ２クラスの識別
-- Iris データ : 
-    - ３クラスの識別処理 `main2.py` で使用
-- MIST データセット
-    - 多クラスの識別＆パターン認識
+- [半月状データ : `sklearn.datasets.make_moons(...)`](http://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_moons.html)
+    - ２クラスの識別処理である `main1.py` で使用
+- [円状データ : `sklearn.datasets.make_circles(...)`](http://scikit-learn.org/stable/modules/generated/sklearn.datasets.make_circles.html#sklearn.datasets.make_circles)
+    - ２クラスの識別処理である `main1.py` で使用
+- [Iris データ](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#iris-データセット--csvフォーマット) 
+    - ３クラスの識別処理である `main2.py` で使用
+- [MNIST データセット](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#mnist手書き数字文字画像データ)
+    - 多クラスの識別＆パターン認識処理である `main3.py` で使用
 
 <br>
 
@@ -207,7 +203,7 @@ def main():
     mlp.models()
 
     # 損失関数を設定する。
-    mlp.loss( type = "binart-cross-entropy" )
+    mlp.loss( type = "binary-cross-entropy" )
 
     # 最適化アルゴリズムを設定
     mlp.optimizer( type = "gradient-descent" )
@@ -282,10 +278,10 @@ def main():
         - `self._y_out_op = self._activate_outputLayer.activate( y_in_op )`
 - `MultilayerPerceptron.loss()` メソッドにて、このモデルの損失関数を設定。<br>このモデルの損失関数は、クロス・エントロピー関数
     ```python
-    def loss( self, type = "cross-entropy1", original_loss_op = None ):
+    def loss( self, type = "l2-norm", original_loss_op = None ):
         ...
         # クロス・エントロピー（２クラスの分類問題）
-        elif ( type == "cross-entropy1" ):
+        elif ( type == "binary-cross-entropy" ):
             self._loss_op = -tf.reduce_sum( 
                                 self._t_holder * tf.log(self._y_out_op) + 
                                 ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
@@ -408,7 +404,7 @@ def main():
 
 <a id="ID_3-3"></a>
 
-## 多層パーセプトロンによる MIST データの識別 : `main3.py`
+## 多層パーセプトロンによる MNIST データの識別 : `main3.py`
 
 ### トレーニング毎の損失関数の値のグラフ
 ![multilayerperceptron_3-3](https://user-images.githubusercontent.com/25688193/32177674-3c6ee00e-bdce-11e7-93a8-d06cb47a31c8.png)
