@@ -104,7 +104,22 @@ def main():
                n_labels = 10
            )
 
-    cnn1.print( "after __init__()" )
+    cnn2 = ConvolutionalNN(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               learning_rate = 0.0005,
+               epochs = 500,
+               batch_size = 100,
+               eval_step = 1,
+               image_width = 28,                    # 28 pixel
+               image_height = 28,                   # 28 pixel
+               n_ConvLayer_features = [25, 50],     #
+               n_channels = 1,                      # グレースケール
+               n_strides = 1,
+               n_fullyLayers = 100,
+               n_labels = 10
+           )
+
+    #cnn1.print( "after __init__()" )
 
     #======================================================================
     # 変数とプレースホルダを設定
@@ -126,6 +141,7 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     cnn1.model()
+    cnn2.model()
     #cnn1.print( "after model()" )
 
     #======================================================================
@@ -133,6 +149,7 @@ def main():
     # Declare the loss functions.
     #======================================================================
     cnn1.loss( type = "sparse-softmax-cross-entropy" )
+    cnn2.loss( type = "sparse-softmax-cross-entropy" )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -150,9 +167,11 @@ def main():
     #======================================================================
     # モデルの最適化アルゴリズムを設定
     cnn1.optimizer( type = "momentum" )
+    cnn2.optimizer( type = "momentum" )
 
     # トレーニングデータで fitting 処理
     cnn1.fit( X_train, y_train )
+    cnn2.fit( X_train, y_train )
 
     cnn1.print( "after fit()" )
     #print( mlp1._session.run( mlp1._weights[0] ) )
@@ -167,10 +186,17 @@ def main():
     plt.clf()
     plt.plot(
         range( 0, 500 ), cnn1._losses_train,
-        label = 'train data : CNN1 = [25,50,100]',
+        label = 'train data : CNN1 = [25,50,100], learning_rate = 0.0001',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
+    )
+    plt.plot(
+        range( 0, 500 ), cnn2._losses_train,
+        label = 'train data : CNN2 = [25,50,100], learning_rate = 0.0005',
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'blue'
     )
     plt.title( "loss" )
     plt.legend( loc = 'best' )
@@ -184,21 +210,29 @@ def main():
     #--------------------------------------------------------------------
     # テストデータでの正解率
     #--------------------------------------------------------------------
-    predict1 = cnn1.predict( X_test )
-    print( "predict1 : ", predict1 )
-
     accuracy1 = cnn1.accuracy( X_test, y_test )
-    print( "accuracy [test data] : %0.3f" % accuracy1 )
+    accuracy2 = cnn2.accuracy( X_test, y_test )
+    print( "accuracy1 [test data] : %0.3f" % accuracy1 )
+    print( "accuracy2 [test data] : %0.3f" % accuracy2 )
 
-    print( "accuracy labels [test data]" )
+    print( "accuracy1 labels [test data]" )
     accuracys1 = cnn1.accuracy_labels( X_test, y_test )
     for i in range( len(accuracys1) ):
         print( "label %d : %.3f" % ( i, accuracys1[i] ) )
 
+    print( "accuracy2 labels [test data]" )
+    accuracys2 = cnn2.accuracy_labels( X_test, y_test )
+    for i in range( len(accuracys2) ):
+        print( "label %d : %.3f" % ( i, accuracys2[i] ) )
 
     #-------------------------------------------------------------------
     # 正解画像＆誤識別画像の plot
     #-------------------------------------------------------------------
+    predict1 = cnn1.predict( X_test )
+    predict2 = cnn2.predict( X_test )
+    print( "predict1 : ", predict1 )
+    print( "predict2 : ", predict2 )
+
     figure1, axis1 = plt.subplots( 
                         nrows = 5, ncols = 8,
                         sharex = True, sharey = True     # x,y 軸をシャアする
@@ -208,7 +242,7 @@ def main():
     axis1 = axis1.flatten()
 
     # 正解・不正解のリスト [True or False]
-    corrects = numpy.equal( predict1, y_test )
+    corrects = numpy.equal( predict2, y_test )
     print( "corrects", corrects )
 
     # 正解画像の plot のための loop
@@ -221,7 +255,7 @@ def main():
             cmap = "Greys",
             interpolation = "nearest"   # 補間方法
         )
-        axis1[idx].set_title( "Actual: " + str( y_test[corrects][idx] ) + " Pred: " + str( predict1[corrects][idx] ), fontsize = 8 )
+        axis1[idx].set_title( "Actual: " + str( y_test[corrects][idx] ) + " Pred: " + str( predict2[corrects][idx] ), fontsize = 8 )
 
     axis1[0].set_xticks( [] )
     axis1[0].set_yticks( [] )

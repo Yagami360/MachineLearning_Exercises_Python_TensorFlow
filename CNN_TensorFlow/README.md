@@ -45,11 +45,11 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 >> `tf.nn.sparse_softmax_cross_entropy_with_logits(...)` : 疎なソフトマックス・クロス・エントロピー関数のオペレーター
 >> https://www.tensorflow.org/api_docs/python/tf/nn/sparse_softmax_cross_entropy_with_logits
 
->> `tf.train.MomentumOptimizer(...)` : モーメンタムアルゴリズムのオペレーター
+>> `tf.train.MomentumOptimizer(...)` : モーメンタムアルゴリズムの Optimizer
 >> https://www.tensorflow.org/api_docs/python/tf/train/MomentumOptimizer
 
 > Numpy ライブラリ
->> `numpy.argmax(...)` : 指定した配列の中で最大要素を含むインデックスを返す関数
+>> `numpy.argmax(...)` : 指定した配列の中で最大要素を含むインデックスを返す関数<br>
 >> https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.argmax.html
 
 参考サイト
@@ -85,7 +85,7 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
     - `Sigmoid` クラス : `NNActivation` の子クラス。シグモイド関数を表す。
     - `ReLu` クラス : `NNActivation` の子クラス。。Relu関数を表す。
     - xxx
-- `NNOptimizer` クラス : ニューラルネットワークモデルの最適化アルゴリズムを表す親クラス<br>
+- `NNOptimizer` クラス : ニューラルネットワークモデルの最適化アルゴリズム Optimizer を表す親クラス<br>
     ポリモーフィズムを実現するための親クラス
     - `GDNNOptimizer` クラス : `NNOptimizer` クラスの子クラス。勾配降下法を表すクラス。
     - xxx
@@ -112,13 +112,13 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 - モデルの構造は、<br>
   畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２
     - 畳み込み層１：<br>
-    画像の幅 (image_width)=28, (image_height)=28, チャンネル数 (n_channels) =1, 特徴数 (n_features) = 25, ストライド幅 (n_strides)=1, padding = SAME
+    画像の幅 (image_width)=28, (image_height)=28, チャンネル数 (n_channels) =1, 特徴数 (n_features) = 25, ストライド幅 (n_strides)=1, ゼロパディング
     - プーリング層１：<br>
     マックスプーリング、ストライド幅 (n_pool_strides) = 2
     - 畳み込み層２：<br>
     xxx
     - プーリング層２：<br>
-    xxx
+    マックスプーリング、ストライド幅 (n_pool_strides) = 2
     - 全結合層１：<br>
     xxx
     - 全結合層２：<br>
@@ -245,6 +245,7 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
     - `cnn1.loss( type = "sparse-softmax-cross-entropy" )`
 - モデルの最適化アルゴリズムは、モーメンタムを使用
     - `cnn1.optimizer( type = "momentum" )`
+- 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで検証
 
 ```python
 def main():
@@ -264,15 +265,33 @@ def main():
                n_fullyLayers = 100,
                n_labels = 10
            )
+
+    cnn2 = ConvolutionalNN(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               learning_rate = 0.0005,
+               epochs = 500,
+               batch_size = 100,
+               eval_step = 1,
+               image_width = 28,                    # 28 pixel
+               image_height = 28,                   # 28 pixel
+               n_ConvLayer_features = [25, 50],     #
+               n_channels = 1,                      # グレースケール
+               n_strides = 1,
+               n_fullyLayers = 100,
+               n_labels = 10
+           )
 ```
 
 #### 損失関数のグラフ
-![cnn_1-1](https://user-images.githubusercontent.com/25688193/32879404-2a44a202-caed-11e7-97ea-6fdbd8a19ed5.png)
+![cnn_1-2-2](https://user-images.githubusercontent.com/25688193/32940343-b5638ec4-cbc5-11e7-88e7-ec023053d917.png)
+> 損失関数として、疎なソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。<br>
+> 赤線が学習率 0.0001 の CNN モデル（最適化アルゴリズムとして、モーメンタムアルゴリズム使用）。
+> 青線が学習率 0.0005 の CNN モデル（最適化アルゴリズムとして、モーメンタムアルゴリズム使用）。
+> 学習率が 0.0001 の場合、エポック数 500 で損失関数が収束しきれていないことが分かる。
 
+#### 学習済みモデルでの正解率の値
 
-#### 正解率の値
-
-- テストデータ `X_test` , `y_test` での正解率
+- 学習済みモデルでのテストデータでの正解率 : 学習率=0.0001 の場合
 
 |ラベル|Acuraccy [test data]|サンプル数|
 |---|---|---|
@@ -290,6 +309,23 @@ def main():
 
 → ５の識別率が低い傾向がある。
 
+- 学習済みモデルでのテストデータでの正解率 : 学習率=0.0005 の場合
+
+|ラベル|Acuraccy [test data]|サンプル数|
+|---|---|---|
+|全ラベルでの平均|0.958|10,000 個|
+|0|1.000|980<br>※全サンプル数でない|
+|1|1.000|1135<br>※全サンプル数でない|
+|2|0.989|1032<br>※全サンプル数でない|
+|3|0.955|1010<br>※全サンプル数でない|
+|4|0.975|982<br>※全サンプル数でない|
+|5|1.000|892<br>※全サンプル数でない|
+|6|1.000|958<br>※全サンプル数でない|
+|7|0.977|1028<br>※全サンプル数でない|
+|8|0.962|974<br>※全サンプル数でない|
+|9|1.000|1009<br>※全サンプル数でない|
+
+
 #### 識別に正解した画像
 ![cnn_1-2-1](https://user-images.githubusercontent.com/25688193/32935286-c8eed470-cbb2-11e7-9188-cec154cc50e2.png)
 > 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
@@ -297,9 +333,13 @@ def main():
 
 #### 識別に失敗した画像
 ![cnn_1-3-1](https://user-images.githubusercontent.com/25688193/32937266-1a142abe-cbbb-11e7-81fd-1a66077ae3c5.png)
-> 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
+> 学習率 0.0001 の CNN モデルにおいて、<br>
+> 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 > 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
+![cnn_1-3-2](https://user-images.githubusercontent.com/25688193/32940429-fa1ec984-cbc5-11e7-842d-f3bfc30a8f21.png)
+> 学習率 0.0005 の CNN モデルにおいて、<br>
+> 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 
 
 
