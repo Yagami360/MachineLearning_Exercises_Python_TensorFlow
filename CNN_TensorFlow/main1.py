@@ -94,8 +94,9 @@ def main():
                learning_rate = 0.0001,
                epochs = 500,
                batch_size = 100,
-               image_width = 28,      # 28 pixel
-               image_height = 28,     # 28 pixel
+               eval_step = 1,
+               image_width = 28,                    # 28 pixel
+               image_height = 28,                   # 28 pixel
                n_ConvLayer_features = [25, 50],     #
                n_channels = 1,                      # グレースケール
                n_strides = 1,
@@ -198,34 +199,60 @@ def main():
     #-------------------------------------------------------------------
     # 正解画像＆誤識別画像の plot
     #-------------------------------------------------------------------
-    figure, axis = plt.subplots( 
-                       nrows = 5, ncols = 8,
-                       sharex = True, sharey = True     # x,y 軸をシャアする
-                   )
+    figure1, axis1 = plt.subplots( 
+                        nrows = 5, ncols = 8,
+                        sharex = True, sharey = True     # x,y 軸をシャアする
+                     )
     
     # ２次元配列を１次元に変換
-    axis = axis.flatten()
+    axis1 = axis1.flatten()
 
-    corrects = y_test[0:40] 
-    predicts = cnn1.predict( X_test )[0:40]
+    # 正解・不正解のリスト [True or False]
+    corrects = numpy.equal( predict1, y_test )
+    print( "corrects", corrects )
 
-    for i in range(40):
-        image = X_test[ y_test == predicts[i] ]
-        #image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
-        axis[i].imshow(
+    # 正解画像の plot のための loop
+    #plt.clf()
+    for (idx, image) in enumerate( X_test[ corrects ][0:40] ):
+        #print( "idx", idx )
+        image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
+        axis1[idx].imshow(
             image,
             cmap = "Greys",
             interpolation = "nearest"   # 補間方法
         )
+        axis1[idx].set_title( "Actual: " + str( y_test[corrects][idx] ) + " Pred: " + str( predict1[corrects][idx] ), fontsize = 8 )
 
-    axis[0].set_xticks( [] )
-    axis[0].set_yticks( [] )
-    plt.tight_layout()
-    MLPlot.saveFigure( fileName = "CNN_2-1.png" )
+    axis1[0].set_xticks( [] )
+    axis1[0].set_yticks( [] )
+    #plt.tight_layout()
+    MLPlot.saveFigure( fileName = "CNN_1-2.png" )
+    plt.show()
+    
+
+    # 誤識別画像の plot のための loop
+    figure2, axis2 = plt.subplots( 
+                        nrows = 5, ncols = 8,
+                        sharex = True, sharey = True     # x,y 軸をシャアする
+                     )
+
+    for (idx, image) in enumerate( X_test[ ~corrects ][0:40] ):
+        image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
+        axis2[idx].imshow(
+            image,
+            cmap = "Greys",
+            interpolation = "nearest"   # 補間方法
+        )
+        axis2[idx].set_title( "Actual: " + str( y_test[~corrects][idx] ) + " Pred: " + str( predict1[~corrects][idx] ), fontsize = 8 )
+
+    axis2[0].set_xticks( [] )
+    axis2[0].set_yticks( [] )
+    #plt.tight_layout()
+    MLPlot.saveFigure( fileName = "CNN_1-3.png" )
     plt.show()
 
     #---------------------------------------------------------------------
-    # MIST 画像を plot
+    # MNIST 画像を plot
     #---------------------------------------------------------------------
     # 先頭の 0~9 のラベルの画像データを plot
     """

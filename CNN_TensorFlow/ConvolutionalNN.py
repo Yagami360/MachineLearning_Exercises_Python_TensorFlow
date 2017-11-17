@@ -55,6 +55,8 @@ class ConvolutionalNN(object):
             エポック数（トレーニング回数）
         _batch_size : int
             ミニバッチ学習でのバッチサイズ
+        _eval_step : int
+            学習処理時に評価指数の算出処理を行う step 間隔
 
         _image_width : int
             入力画像データの幅（ピクセル単位）
@@ -96,6 +98,7 @@ class ConvolutionalNN(object):
             learning_rate = 0.01, 
             epochs = 1000,
             batch_size = 1,
+            eval_step = 1,
             image_width = 28,
             image_height = 28,
             n_ConvLayer_features = [25, 50],
@@ -126,6 +129,7 @@ class ConvolutionalNN(object):
         self._learning_rate = learning_rate
         self._epochs = epochs
         self._batch_size = batch_size
+        self._eval_step = eval_step
         
         self._image_width = image_width
         self._image_height = image_height
@@ -172,6 +176,7 @@ class ConvolutionalNN(object):
         print( "_learning_rate : ", self._learning_rate )
         print( "_epoches : ", self._epochs )
         print( "_batch_size : ", self._batch_size )
+        print( "_eval_step : ", self._eval_step )
 
         print( "_image_width : " , self._image_width )
         print( "_image_height : " , self._image_height )
@@ -522,14 +527,6 @@ class ConvolutionalNN(object):
         #----------------------------
         # 学習開始処理
         #----------------------------
-        """
-        X_eval_holder = tf.placeholder( 
-                            tf.float32, 
-                            shape = [ X_train.shape[0], self._image_width, self._image_height, self._n_channels ]
-                         )
-        t_eval_holder = tf.placeholder( tf.int32, shape = X_train.shape[0] )
-        """
-
         # Variable の初期化オペレーター
         self._init_var_op = tf.global_variables_initializer()
 
@@ -540,8 +537,8 @@ class ConvolutionalNN(object):
         # 学習処理
         #-------------------
         n_batches = len( X_train ) // self._batch_size     # バッチ処理の回数
-        print( "len( X_train ) :", len( X_train ) )
-        print( "n_batches :", n_batches )
+        #print( "len( X_train ) :", len( X_train ) )
+        #print( "n_batches :", n_batches )
 
         # for ループでエポック数分トレーニング
         for epoch in range( self._epochs ):
@@ -566,8 +563,11 @@ class ConvolutionalNN(object):
                 }
             )
             
-            #
-            loss = self._loss_op.eval(
+            # 評価処理を行う loop か否か
+            # % : 割り算の余りが 0 で判断
+            if ( ( (epoch+1) % self._eval_step ) == 0 ):
+                # 損失関数値の算出
+                loss = self._loss_op.eval(
                        session = self._session,
                        feed_dict = {
                            self._X_holder: X_train_shuffled,
@@ -575,39 +575,8 @@ class ConvolutionalNN(object):
                        }
                    )
 
-            self._losses_train.append( loss )
-
-            print( "epoch %d / loss = %f" % ( epoch, loss ) )
-
-            """
-            #
-            for i in range( n_batches ):
-                it_start = i * self._batch_size
-                it_end = it_start + self._batch_size
-
-                self._session.run(
-                    self._train_step,
-                    feed_dict = {
-                        self._X_holder: X_train_shuffled[it_start:it_end],
-                        self._t_holder: y_train_shuffled[it_start:it_end]
-                    }
-                )
-            """
-            """
-            # 損失関数の値をストック
-            # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
-            X_train = numpy.expand_dims( X_train, 3 )
-
-            loss = self._loss_op.eval(
-                       session = self._session,
-                       feed_dict = {
-                           X_eval_holder: X_train,
-                           t_eval_holder: y_train
-                       }
-                   )
-
-            self._losses_train.append( loss )
-            """
+                self._losses_train.append( loss )
+                print( "epoch %d / loss = %f" % ( epoch, loss ) )
 
         return self._y_out_op
 
@@ -627,17 +596,17 @@ class ConvolutionalNN(object):
         # shape を (n_samples, image_width, image_height) → (n_samples, image_width, image_height, 1) に reshape
         X_test_reshaped = numpy.expand_dims( X_test, 3 )
 
-        predicts = self._session.run(
-                      self._y_out_op,
-                      feed_dict = { self._X_holder: X_test_reshaped }
-                  )
+        prob = self._session.run(
+                   self._y_out_op,
+                   feed_dict = { self._X_holder: X_test_reshaped }
+               )
         
-        print( "predicts :", predicts )
+        #print( "predicts :", predicts )
 
         # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
         # axis : 最大値を読み取る軸の方向 (1 : 行方向)
-        predict = numpy.argmax( predicts, axis = 1 )
-        print( "predict :", predict )
+        predict = numpy.argmax( prob, axis = 1 )
+        #print( "predict :", predict )
 
         return predict
 
@@ -660,10 +629,7 @@ class ConvolutionalNN(object):
                        self._X_holder: X_test_reshaped 
                    }
                )
-
-        # X_test のデータ数、特徴数に応じて reshape
-        #prob = prob.reshape( (len[X_test], len[X_test[0]]) )
-
+        
         return prob
 
 
@@ -699,16 +665,23 @@ class ConvolutionalNN(object):
             # label 値に対応する正解数
             # where(...) : 条件を満たす要素番号を抽出
             n_correct = len( numpy.where( predict == label )[0] )
-            
+            """
+            n_correct = numpy.sum( 
+                            numpy.equal( 
+                                numpy.where( predict == label )[0], 
+                                numpy.where( y_test == label )[0]
+                            ) 
+                        )
+            """
+
             # サンプル数
             n_sample = len( numpy.where( y_test == label )[0] )
 
-            accuracy = float(n_correct) / float(n_sample)
+            accuracy = n_correct / n_sample
             accuracys.append( accuracy )
             
             #print( "numpy.where( predict == label ) :", numpy.where( predict == label ) )
             #print( "numpy.where( predict == label )[0] :", numpy.where( predict == label )[0] )
-            print( "n_sample[ %d ] : %d" % ( label, n_sample ) )
-
+            print( " %d / n_correct = %d / n_sample = %d" % ( label, n_correct, n_sample ) )
 
         return accuracys

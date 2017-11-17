@@ -2,7 +2,7 @@
 
 TensorFlow での CNN の練習用実装コード集。<br>
 
-TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス `ConvolutionalNN` を使用。<br>
+TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のあるようにした自作クラス `ConvolutionalNN` を使用する。<br>
 
 
 この README.md ファイルには、各コードの実行結果、概要、CNN の背景理論の説明を記載しています。<br>
@@ -31,6 +31,70 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
         1. [Lp プーリング [Lp pooling]](#ID_4-3-3)
 
 
+<a id="ID_1"></a>
+
+## 使用するライブラリ
+
+> TensorFlow ライブラリ </br>
+>> `tf.nn.conv2d(...)` : ２次元の画像の畳み込み処理のオペレーター<br>
+>> https://www.tensorflow.org/api_docs/python/tf/nn/conv2d<br>
+
+>> `tf.nn.max_pool(...)` : マックスプーリング処理のオペレーター<br>
+>> https://www.tensorflow.org/api_docs/python/tf/nn/max_pool<br>
+
+>> `tf.nn.sparse_softmax_cross_entropy_with_logits(...)` : 疎なソフトマックス・クロス・エントロピー関数のオペレーター
+>> https://www.tensorflow.org/api_docs/python/tf/nn/sparse_softmax_cross_entropy_with_logits
+
+>> `tf.train.MomentumOptimizer(...)` : モーメンタムアルゴリズムのオペレーター
+>> https://www.tensorflow.org/api_docs/python/tf/train/MomentumOptimizer
+
+> Numpy ライブラリ
+>> `numpy.argmax(...)` : 指定した配列の中で最大要素を含むインデックスを返す関数
+>> https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.argmax.html
+
+参考サイト
+> https://qiita.com/tadOne/items/b484ce9f973a9f80036e<br>
+> http://www.mwsoft.jp/programming/tensor/tutorial_mnist.html<br>
+
+<a id="ID_2"></a>
+
+## 使用するデータセット
+- [MNIST データセット](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#mnist手書き数字文字画像データ)
+    - 多クラスの識別＆パターン認識処理である `main1.py` で使用
+- CIFAR-10 データセット
+    - 多クラスの識別＆パターン認識処理である `main2.py` で使用
+
+
+<a id="ID_3-0"></a>
+
+## ニューラルネットワークのフレームワークのコードの説明
+> 記載中...<br>
+> sphinx or API Blueprint で HTML 形式の API 仕様書作成予定...
+
+- `NeuralNetworkBase` クラス
+    - TensorFlow ライブラリを使用
+    - ニューラルネットワークの基本的なフレームワークを想定した仮想メソッドからなる抽象クラス。<br>
+    実際のニューラルネットワークを表すクラスの実装は、このクラスを継承し、オーバーライドするを想定している。
+- `ConvolutionalNN` クラス
+    - `NeuralNetworkBase` クラスの子クラス。
+    - 畳み込みニューラルネットワーク [CNN : Convolutional Neural Network] を表すクラス。<br>
+    TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス
+
+- `NNActivation` クラス : ニューラルネットワークの活性化関数を表す親クラス。<br>
+    ポリモーフィズムを実現するための親クラス
+    - `Sigmoid` クラス : `NNActivation` の子クラス。シグモイド関数を表す。
+    - `ReLu` クラス : `NNActivation` の子クラス。。Relu関数を表す。
+    - xxx
+- `NNOptimizer` クラス : ニューラルネットワークモデルの最適化アルゴリズムを表す親クラス<br>
+    ポリモーフィズムを実現するための親クラス
+    - `GDNNOptimizer` クラス : `NNOptimizer` クラスの子クラス。勾配降下法を表すクラス。
+    - xxx
+- `NNLoss` クラス : ニューラルネットワークにおける損失関数を表す親クラス。<br>
+    ポリモーフィズムを実現するための親クラス
+    - `L1NormNNLoss` : `NNLoss` クラスの子クラス。損失関数である L1ノルムを表すクラス。
+    - xxx
+- xxx
+
 <a id="ID_3"></a>
 
 ## コードの実行結果
@@ -45,13 +109,162 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
         - `X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )`
         - `X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )`
         - `X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )`
-- モデルの構造は、畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２
-    - 畳み込み層１：
+- モデルの構造は、<br>
+  畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２
+    - 畳み込み層１：<br>
+    画像の幅 (image_width)=28, (image_height)=28, チャンネル数 (n_channels) =1, 特徴数 (n_features) = 25, ストライド幅 (n_strides)=1, padding = SAME
+    - プーリング層１：<br>
+    マックスプーリング、ストライド幅 (n_pool_strides) = 2
+    - 畳み込み層２：<br>
+    xxx
+    - プーリング層２：<br>
+    xxx
+    - 全結合層１：<br>
+    xxx
+    - 全結合層２：<br>
+    xxx
+    ```python
+    class ConvolutionalNN(object):
+    def model( self ):
+        """
+        モデルの定義（計算グラフの構築）を行い、
+        最終的なモデルの出力のオペレーターを設定する。
+
+        [Output]
+            self._y_out_op : Operator
+                モデルの出力のオペレーター
+        """
+        # 計算グラフの構築
+        #----------------------------------------------------------------------
+        # 畳み込み層 ~ 活性化関数 ~ プーリング層 ~
+        #----------------------------------------------------------------------
+        # 重みの Variable の list に、１つ目の畳み込み層の重み（フィルタ行列）を追加
+        # この重みは、畳み込み処理の画像データに対するフィルタ処理に使う Tensor のことである。
+        self._weights.append( 
+            self.init_weight_variable( 
+                input_shape = [4, 4, self._n_channels, self._n_ConvLayer_features[0] ]  # 4, 4 : フィルタ処理後の出力 pixcel サイズ（幅、高さ） 
+            ) 
+        )
+        
+        # バイアス項の Variable の list に、畳み込み層のバイアス項を追加
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_ConvLayer_features[0] ] ) )
+
+        # 畳み込み層のオペレーター
+        conv_op1 = tf.nn.conv2d(
+                       input = self._X_holder,
+                       filter = self._weights[0],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列 (Tensor)
+                       strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                   )
+
+        # 畳み込み層からの出力（活性化関数）オペレーター
+        # バイアス項を加算したものを活性化関数に通す
+        conv_out_op1 = NNActivation( activate_type = "relu" ).activate( 
+                           tf.nn.bias_add( conv_op1, self._biases[0] ) 
+                       )
+        
+        # プーリング層のオペレーター
+        pool_op1 = tf.nn.max_pool(
+                       value = conv_out_op1,
+                       ksize = [ 1, 2, 2, 1 ],  # プーリングする範囲のサイズ
+                       strides = [ 1, 2, 2, 1 ], # strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                   )
+
+        # ２つ目の畳み込み層
+        self._weights.append( 
+            self.init_weight_variable( 
+                input_shape = [4, 4, self._n_ConvLayer_features[0], self._n_ConvLayer_features[1] ]  # 4, 4 : フィルタ処理後の出力 pixcel サイズ（幅、高さ） 
+            ) 
+        )
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_ConvLayer_features[1] ] ) )
+
+        conv_op2 = tf.nn.conv2d(
+                       input = pool_op1,
+                       filter = self._weights[1],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列 (Tensor)
+                       strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                   )
+        conv_out_op2 = NNActivation( activate_type = "relu" ).activate( 
+                           tf.nn.bias_add( conv_op2, self._biases[1] ) 
+                       )
+        pool_op2 = tf.nn.max_pool(
+                       value = conv_out_op2,
+                       ksize = [ 1, 2, 2, 1 ],  # プーリングする範囲のサイズ
+                       strides = [ 1, 2, 2, 1 ], # strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                   )
+        #----------------------------------------------------------------------
+        # ~ 全結合層
+        #----------------------------------------------------------------------
+        # 全結合層の入力側
+        # 重み & バイアス項の Variable の list に、全結合層の入力側に対応する値を追加
+        fullyLayers_width = self._image_width // (2*2)    # ? (2 * 2 : pooling 処理の範囲)
+        fullyLayers_height = self._image_height // (2*2)  # ?
+        fullyLayers_input_size = fullyLayers_width * fullyLayers_height * self._n_ConvLayer_features[-1] # ?
+        print( "fullyLayers_input_size : ", fullyLayers_input_size )
+
+        self._weights.append( 
+            self.init_weight_variable( 
+                input_shape = [ fullyLayers_input_size, self._n_fullyLayers ] 
+            )
+        )
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_fullyLayers ] ) )
+
+        # 全結合層の出力側
+        # 重み & バイアス項のの Variable の list に、全結合層の出力側に対応する値を追加
+        self._weights.append( 
+            self.init_weight_variable( 
+                input_shape = [ self._n_fullyLayers, self._n_labels ] 
+            )
+        )
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_labels ] ) )
+
+        # 全結合層への入力
+        # 1 * N のユニットに対応するように reshape
+        pool_op_shape = pool_op2.get_shape().as_list()      # ? [batch_size, 7, 7, _n_ConvLayer_features[-1] ]
+        print( "pool_op2.get_shape().as_list() :\n", pool_op_shape )
+        fullyLayers_shape = pool_op_shape[1] * pool_op_shape[2] * pool_op_shape[3]
+        flatted_input = tf.reshape( pool_op2, [ -1, fullyLayers_shape ] )    # 1 * N に平坦化 (reshape) された値
+        #flatted_input = numpy.reshape( pool_op2, (None, fullyLayers_shape) )
+        print( "flatted_input :", flatted_input )
+
+        # 全結合層の入力側へのオペレーター
+        fullyLayers_in_op = NNActivation( activate_type = "relu" ).activate(
+                                tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] )
+                            )
+
+        # 全結合層の出力側へのオペレーター
+        fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_in_op, self._weights[-1] ), self._biases[-1] )
+
+        self._y_out_op = fullyLayers_out_op
+
+        return self._y_out_op
+    ```
 - 損失関数は、疎なソフトマックス・クロス・エントロピー関数を使用
     - `cnn1.loss( type = "sparse-softmax-cross-entropy" )`
 - モデルの最適化アルゴリズムは、モーメンタムを使用
     - `cnn1.optimizer( type = "momentum" )`
 
+```python
+def main():
+    ...
+    # CNN クラスのオブジェクト生成
+    cnn1 = ConvolutionalNN(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               learning_rate = 0.0001,
+               epochs = 500,
+               batch_size = 100,
+               eval_step = 1,
+               image_width = 28,                    # 28 pixel
+               image_height = 28,                   # 28 pixel
+               n_ConvLayer_features = [25, 50],     #
+               n_channels = 1,                      # グレースケール
+               n_strides = 1,
+               n_fullyLayers = 100,
+               n_labels = 10
+           )
+```
 
 #### 損失関数のグラフ
 ![cnn_1-1](https://user-images.githubusercontent.com/25688193/32879404-2a44a202-caed-11e7-97ea-6fdbd8a19ed5.png)
@@ -59,21 +272,40 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 
 #### 正解率の値
 
-- テストデータ（サンプル数 : 10,000 ）での正解率
+- テストデータ `X_test` , `y_test` での正解率
 
 |ラベル|Acuraccy [test data]|サンプル数|
 |---|---|---|
 |全ラベルでの平均|0.857|10,000 個|
-|0|1.087|980|
-|1|1.002|1135|
-|2|1.054|1032|
-|3|1.010|1010|
-|4|0.961|982|
-|5|0.768|892|
-|6|0.999|958|
-|7|0.748|1028|
-|8|0.758|974|
-|9|1.583|1009|
+|0|1.000|980<br>※全サンプル数でない|
+|1|1.000|1135<br>※全サンプル数でない|
+|2|1.000|1032<br>※全サンプル数でない|
+|3|1.000|1010<br>※全サンプル数でない|
+|4|0.982|982<br>※全サンプル数でない|
+|5|0.683|892<br>※全サンプル数でない|
+|6|1.000|958<br>※全サンプル数でない|
+|7|0.948|1028<br>※全サンプル数でない|
+|8|0.859|974<br>※全サンプル数でない|
+|9|1.000|1009<br>※全サンプル数でない|
+
+→ ５の識別率が低い傾向がある。
+
+#### 識別に正解した画像
+![cnn_1-2-1](https://user-images.githubusercontent.com/25688193/32935286-c8eed470-cbb2-11e7-9188-cec154cc50e2.png)
+> 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
+> 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
+
+#### 識別に失敗した画像
+![cnn_1-3-1](https://user-images.githubusercontent.com/25688193/32937266-1a142abe-cbbb-11e7-81fd-1a66077ae3c5.png)
+> 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
+> 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
+
+
+
+
+
+
+
 
 ---
 
