@@ -87,6 +87,8 @@ https://www.tensorflow.org/api_docs/python/tf/sigmoid </br>
 <a id="ID_3-0"></a>
 
 ## ニューラルネットワークのフレームワークのコードの説明
+> 記載中...<br>
+> sphinx or API Blueprint で HTML 形式の API 仕様書作成予定...
 
 <!--
 - `NeuralNetworkBase`
