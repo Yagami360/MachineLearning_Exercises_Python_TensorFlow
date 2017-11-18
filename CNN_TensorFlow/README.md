@@ -150,6 +150,39 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         - `X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )`
         - `X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )`
         - `X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )`
+- エポック数は 500、ミニバッチサイズは 100 で学習
+    ```python
+    def main():
+        ...
+        # CNN クラスのオブジェクト生成
+        cnn1 = ConvolutionalNN(
+                   session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+                   epochs = 500,
+                   batch_size = 100,
+                   eval_step = 1,
+                   image_height = 28,                   # 28 pixel
+                   image_width = 28,                    # 28 pixel
+                   n_channels = 1,                      # グレースケール
+                   n_ConvLayer_features = [25, 50],     #
+                   n_strides = 1,
+                   n_fullyLayers = 100,
+                   n_labels = 10
+               )
+
+        cnn2 = ConvolutionalNN(
+                   session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+                   epochs = 500,
+                   batch_size = 100,
+                   eval_step = 1,
+                   image_height = 28,                   # 28 pixel
+                   image_width = 28,                    # 28 pixel
+                   n_channels = 1,                      # グレースケール
+                   n_ConvLayer_features = [25, 50],     #
+                   n_strides = 1,
+                   n_fullyLayers = 100,
+                   n_labels = 10
+               )
+    ```
 - モデルの構造は、<br>
   畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２
     - 畳み込み層１：<br>
@@ -165,7 +198,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     - 全結合層２：<br>
     xxx
     ```python
-    class ConvolutionalNN(object):
+    class ConvolutionalNN( NeuralNetworkBase ):
+    ...
     def model( self ):
         """
         モデルの定義（計算グラフの構築）を行い、
@@ -284,39 +318,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
     - `cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )`
     - `cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )`
-- エポック数は 500、ミニバッチサイズは 100 で学習
-    ```python
-    def main():
-        ...
-        # CNN クラスのオブジェクト生成
-        cnn1 = ConvolutionalNN(
-                   session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-                   epochs = 500,
-                   batch_size = 100,
-                   eval_step = 1,
-                   image_height = 28,                   # 28 pixel
-                   image_width = 28,                    # 28 pixel
-                   n_channels = 1,                      # グレースケール
-                   n_ConvLayer_features = [25, 50],     #
-                   n_strides = 1,
-                   n_fullyLayers = 100,
-                   n_labels = 10
-               )
 
-        cnn2 = ConvolutionalNN(
-                   session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-                   epochs = 500,
-                   batch_size = 100,
-                   eval_step = 1,
-                   image_height = 28,                   # 28 pixel
-                   image_width = 28,                    # 28 pixel
-                   n_channels = 1,                      # グレースケール
-                   n_ConvLayer_features = [25, 50],     #
-                   n_strides = 1,
-                   n_fullyLayers = 100,
-                   n_labels = 10
-               )
-    ```
 
 #### 損失関数のグラフ
 ![cnn_1-2-2](https://user-images.githubusercontent.com/25688193/32940343-b5638ec4-cbc5-11e7-88e7-ec023053d917.png)
