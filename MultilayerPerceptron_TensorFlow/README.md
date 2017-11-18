@@ -4,7 +4,6 @@ TensorFlow での多層パーセプトロンの練習用実装コード集。<br
 
 TensorFlow での多層パーセプトロンの処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のあるようにした自作クラス `MultilayerPerceptron` を使用。<br>
 
-
 この README.md ファイルには、各コードの実行結果、概要、ニューラルネットワーク（パーセプトロン）の背景理論の説明を記載しています。<br>
 分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
 
@@ -87,88 +86,59 @@ https://www.tensorflow.org/api_docs/python/tf/sigmoid </br>
 <a id="ID_3-0"></a>
 
 ## ニューラルネットワークのフレームワークのコードの説明
-> 記載中...<br>
 > sphinx or API Blueprint で HTML 形式の API 仕様書作成予定...
 
-<!--
-- `NeuralNetworkBase`
-    - TensorFlow でのニューラルネットワークの処理のラッピングした基底クラス
-    - このクラスを継承するクラスの共通メソッド（インターフェイス）として、以下のメソッドを抽象メソッドで定義している。このクラスを継承したクラスは、これらのメソッドの具体的な実装（オーバーライド）を行わなければならない。
-        - `models()` : モデルの定義を行い、最終的なモデルの出力のオペレーターを設定する。
-        - `loss()` : 損失関数（誤差関数、コスト関数）の定義を行う。
-        - `optimizer()` : モデルの最適化アルゴリズムの設定を行う。
--->
-### `MultilayerPerceptron` クラス : `MultilayerPerceptron.py`
-- TensorFlow での多層パーセプトロンの処理をクラス（任意の層数に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス。<br>
-これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
-- 具体的には、scikit-learn ライブラリの classifier, estimator と同じく、fitting 処理するメソッドとして、`fit( X_train, y_train )` 及び、fitting 処理後の推定を行う `predict( X_test )` メソッド（インターフェイス）等を実装している。
-    - `fit( X_train, y_train )` : 指定されたトレーニングデータで、モデルの fitting 処理を行う。
-        - `X_train` : numpy.ndarray ( shape = [n_samples, n_features] )<br>
-        トレーニングデータ（特徴行列）
-        - `y_train` : numpy.ndarray ( shape = [n_samples] ) <br>
-        トレーニングデータ用のクラスラベル（教師データ）のリスト
-    - `predict( X_test )` : fitting 処理したモデルで、推定を行い、予想クラスラベル値を返す。
-        - `X_test` : numpy.ndarry ( shape = [n_samples, n_features] )<br>
-        予想したい特徴行列
-    - `predict_proba( X_test )` : fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
-        - `X_test` : numpy.ndarry ( shape = [n_samples, n_features] )<br>
-        予想したい特徴行列
-- ニューラルネットワークモデルに共通する処理を行うメソッド
-    - `model()` : モデルの定義（計算グラフの構築）を行い、最終的なモデルの出力のオペレーターを設定する。
-    - `loss( type = "cross-entropy1", original_loss_op = None )` : 損失関数の定義を行う。
-        - `type` : str<br>
-        損失関数の種類
-            - `"original"` : 独自の損失関数
-            - `"l1-norm"` : L1 損失関数（L1ノルム）
-            - `"l2-norm"` : L2 損失関数（L2ノルム）
-            - `"binary-cross-entropy"` : クロス・エントロピー交差関数（２クラスの分類問題）
-            - `"cross-entropy"` : クロス・エントロピー交差関数（多クラスの分類問題）
-            - `"softmax-cross-entrpy"` : ソフトマックス クロス・エントロピー損失関数
-            - `"sigmoid-cross-entropy"` : シグモイド・クロス・エントロピー損失関数
-            - `"weighted-cross-entropy"` : 重み付きクロス・エントロピー損失関数
-            - `"sparse-softmax-cross-entrpy"` : 疎なソフトマックスクロス・エントロピー損失関数
-        - `original_loss_op` : Operator<br>
-        type = "original" で独自の損失関数とした場合の損失関数を表すオペレーター
-    - `optimizer( type ) :` モデルの最適化アルゴリズムの設定を行う。
-        - `type` : str<br>
-        最適化アルゴリズムの種類
-            - `"original"` : 独自の最適化アルゴリズム
-            - `"gradient-descent"` : 最急降下法 `tf.train.GradientDescentOptimizer(...)`
-            - `"momentum"` : モメンタム `tf.train.MomentumOptimizer( ..., use_nesterov = False )`
-            - `"momentum-nesterov"` : Nesterov モメンタム `tf.train.MomentumOptimizer( ..., use_nesterov = True )`
-            - `"ada-grad"` : Adagrad `tf.train.AdagradOptimizer(...)`
-            - `"ada-delta"` : Adadelta `tf.train.AdadeletaOptimizer(...)`
-- 多層パーセプトロン固有の処理を行うメソッド
-    - `init_weight_variable( input_shape )` : 重みの初期化を行う。重みは TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。尚、初期化の値は、正規分布に従う乱数に基いて初期化する。
-        - `input_shape` : [int,int] <br>重みの Variable を初期化するための Tensor の形状
-    - `init_bias_variable( input_shape )` : バイアス項 b の初期化を行う。バイアス項は TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。尚、初期化の値は、正規分布に従う乱数に基いて初期化する。
-        - `input_shape` : [int,int] <br>バイアス項の Variable を初期化するための Tensor の形状
-- その他、評価のためのメソッド
-    - `accuracy( X_test, y_test )` : 引数で指定されたデータから正解率を算出する。
-<!--
-    - ニューラルネットワークの自作基底クラス `NeuralNetworkBase` を継承し、各ニューラルネットワーク用の抽象メソッドに対し、この多層パーセプトロンに固有な具体的な実装（オーバーライド）を行なっている<br>
--->
+- `NeuralNetworkBase` クラス
+    - TensorFlow ライブラリを使用
+    - ニューラルネットワークの基本的なフレームワークを想定した仮想メソッドからなる抽象クラス。<br>
+    実際のニューラルネットワークを表すクラスの実装は、このクラスを継承し、オーバーライドするを想定している。
+        - `model()` : モデルの定義を行い、最終的なモデルの出力のオペレーターを設定する。
+        - `loss( nnLoss )` : 損失関数（誤差関数、コスト関数）の定義を行う。
+        - `optimizer( nnOptimize )` : モデルの最適化アルゴリズムの設定を行う。
+        - `fit( X_test, y_test )` : 指定されたトレーニングデータで、モデルの fitting 処理を行う。
+        - `predict( X_test, y_test )` : fitting 処理したモデルで、推定を行い、予想値を返す。
+        - `predict_prob( X_test, y_test )` : fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
+        - `accuracy( X_test )` : 指定したデータでの正解率を算出する。
+        - `accuracy_labels( X_test )` : 指定したデータでのラベル毎の正解率を算出する。
 
-### `NNActivation` クラス : `NNActivation.py`
-- ニューラルネットワークの活性化関数を表すクラス。
-- コンストラクタ `__init( activate_type )__` の引数 `activate_type` で活性化関数の種類を指定。ここで指定された活性化関数の種類に応じて、`NNActivation.activate(...)` メソッド内の活性化関数のオペレーターが指定される。
-- `activate_type` の種類
-    - `"original"` : 外部で定義した独自の活性化関数を指定する場合に設定
-    - `"sigmoid"` : シグモイド関数 `tf.nn.sigmoid(...)`
-    - `"relu"` : Relu 関数 `tf.nn.relu(...)`
-    - `"softmax"` : softmax 関数 `tf.nn.softmax(...)`
-- `activate( input, original_activate_op = None )` : 指定されている activate_type に応じた、活性化関数のオペレーターを返す。
-    - `input` : Operator or placeholder <br>
-    活性化関数の入力となる Operatore、又は placeholder
-    - `original_activate_op` : 外部で定義した独自の活性化関数を指定したい場合に設定。
+- `MultilayerPerceptron` クラス
+    - TensorFlow での多層パーセプトロンの処理をクラス（任意の層数に DNN 化可能な柔軟なクラス）でラッピングし、scikit-learn ライブラリの classifier, estimator とインターフェイスを共通化することで、scikit-learn ライブラリとの互換性のある自作クラス。<br>
+これにより、scikit-learn ライブラリを使用した自作クラス `MLPlot` 等が再利用可能になる。
+    - 具体的には、scikit-learn ライブラリの classifier, estimator と同じく、fitting 処理するメソッドとして、`fit( X_train, y_train )` 及び、fitting 処理後の推定を行う `predict( X_test )` メソッド（インターフェイス）等を実装している。
+    - 多層パーセプトロン固有の処理を行うメソッド
+        - `init_weight_variable( input_shape )` : 重みの初期化を行う。重みは TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。尚、初期化の値は、正規分布に従う乱数に基いて初期化する。
+            - `input_shape` : [int,int] <br>重みの Variable を初期化するための Tensor の形状
+        - `init_bias_variable( input_shape )` : バイアス項 b の初期化を行う。バイアス項は TensorFlow の Variable で定義することで、学習過程（最適化アルゴリズム Optimizer の session.run(...)）で自動的に TensorFlow により、変更される値となる。尚、初期化の値は、正規分布に従う乱数に基いて初期化する。
+            - `input_shape` : [int,int] <br>バイアス項の Variable を初期化するための Tensor の形状
+
+
+- `NNActivation` クラス : ニューラルネットワークの活性化関数を表す親クラス。<br>
+    ポリモーフィズムを実現するための親クラス
+    - `Sigmoid` クラス : `NNActivation` の子クラス。シグモイド関数の活性化関数を表す
+    - `ReLu` クラス : `NNActivation` の子クラス。Relu 関数の活性化関数を表す
+    - `Softmax` クラス : `NNActivation` の子クラス。softmax 関数の活性化関数を表す
+    
+- `NNLoss` クラス : ニューラルネットワークにおける損失関数を表す親クラス。<br>
+    ポリモーフィズムを実現するための親クラス
+    - `L1Norm` クラス : `NNLoss` クラスの子クラス。損失関数である L1ノルムを表すクラス。
+    - `L2Norm` クラス : `NNLoss` クラスの子クラス。損失関数である L2ノルムを表すクラス。
+    - `BinaryCrossEntropy` クラス : `NNLoss` クラスの子クラス。２値のクロス・エントロピーの損失関数
+    - `CrossEntropy` クラス : `NNLoss` クラスの子クラス。クロス・エントロピーの損失関数
+    - `SoftmaxCrossEntropy` クラス : `NNLoss` クラスの子クラス。ソフトマックス・クロス・エントロピーの損失関数
+    - `SparseSoftmaxCrossEntropy` クラス : `NNLoss` クラスの子クラス。疎なソフトマックス・クロス・エントロピーの損失関数
+    
+- `NNOptimizer` クラス : ニューラルネットワークモデルの最適化アルゴリズム Optimizer を表す親クラス<br>
+    ポリモーフィズムを実現するための親クラス
+    - `GradientDecent` クラス : `NNOptimizer` クラスの子クラス。勾配降下法を表すクラス。
+    - `Momentum` クラス : `NNOptimizer` クラスの子クラス。モメンタム アルゴリズムを表すクラス
+    - `NesterovMomentum` クラス : `NNOptimizer` クラスの子クラス。Nesterov モメンタム アルゴリズムを表すクラス
+    - `Adagrad` クラス : `NNOptimizer` クラスの子クラス。Adagrad アルゴリズムを表すクラス
+    - `Adadelta` クラス : `NNOptimizer` クラスの子クラス。Adadelta アルゴリズムを表すクラス
+
+
 
 #### 使用例
 ```python
-from MLPlot import MLPlot
-from MLPreProcess import MLPreProcess
-from NNActivation import NNActivation
-from MultilayerPerceptron import MultilayerPerceptron
-
 def main():
     ...
 
@@ -194,9 +164,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3,3],
                n_outputLayer = 1,
-               activate_hiddenLayer = NNActivation( "sigmoid" ),
-               activate_outputLayer = NNActivation( "sigmoid" ),
-               learning_rate = 0.05,
+               activate_hiddenLayer = Sigmoid(),
+               activate_outputLayer = Sigmoid(),
                epochs = 500,
                batch_size = 20
            )
@@ -205,10 +174,10 @@ def main():
     mlp.models()
 
     # 損失関数を設定する。
-    mlp.loss( type = "binary-cross-entropy" )
+    mlp.loss( BinaryCrossEntropy() )
 
     # 最適化アルゴリズムを設定
-    mlp.optimizer( type = "gradient-descent" )
+    mlp.optimizer( GradientDecent( learning_rate = 0.05 ) )
 
     # モデルの初期化と学習（トレーニング）
     mlp1.fit( X_train, y_train )
@@ -216,7 +185,6 @@ def main():
     # 識別境界を plot
     MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp )
     ...
-
 ```
 
 <br>
@@ -240,69 +208,61 @@ def main():
     - `X_train, X_test, y_train, y_test = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )`
 - `MultilayerPerceptron` のコンストラクタ（厳密にはイニシャライザ） `__init(...)__` にて、多層パーセプトロンの各層の層数等を初期設定。
     - １つ目の検証モデルは、入力層が２ノード、隠れ層が３ノード、出力層が１ノードの MLP モデル (2-3-1)<br>
-        - 隠れ層の活性化関数 `activate_hiddenLayer` は、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
-        出力層の活性化関数 `activate_hiddenLayer` も、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
-        - 又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
+        - 隠れ層の活性化関数 `activate_hiddenLayer` は、シグモイド関数 `Sigmoid()` に指定。<br>
+        出力層の活性化関数 `activate_hiddenLayer` も、シグモイド関数 `Sigmoid()` に指定。<br>
+        - 又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20
     ```python
     mlp1 = MultilayerPerceptron(
                session = tf.Session(),
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3],
                n_outputLayer = 1,
-               activate_hiddenLayer = NNActivation( "sigmoid" ),
-               activate_outputLayer = NNActivation( "sigmoid" ),
-               learning_rate = 0.05,
+               activate_hiddenLayer = Sigmoid(),
+               activate_outputLayer = Sigmoid(),
                epochs = 500,
                batch_size = 20
            )
     ```
+    - 学習率 `learning_rate` は、0.05 に設定。
+    ```python
+    mlp1.optimizer( GradientDecent( learning_rate = 0.05 ) )
+    ```
     - ２つ目の検証モデルは、入力層が２ノード、隠れ層１が３ノード、隠れ層２が３ノード、出力層が１ノードの MLP モデル (2-3-3-1)<br>
-        - 隠れ層の活性化関数 `activate_hiddenLayer` は、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
-        出力層の活性化関数 `activate_hiddenLayer` も、シグモイド関数 `NNActivation( "sigmoid" )` に指定。<br>
-        - 又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20 、学習率 `learning_rate` は、0.05 に設定。
+        - 隠れ層の活性化関数 `activate_hiddenLayer` は、シグモイド関数 `Sigmoid()` に指定。<br>
+        出力層の活性化関数 `activate_hiddenLayer` も、シグモイド関数 `Sigmoid()` に指定。<br>
+        - 又、エポック数 `epochs` は 500 回で、ミニバッチ学習のサイズ `batch_size` は 20
     ```python
     mlp2 = MultilayerPerceptron(
                session = tf.Session(),
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3,3],
                n_outputLayer = 1,
-               activate_hiddenLayer = NNActivation( "sigmoid" ),
-               activate_outputLayer = NNActivation( "sigmoid" ),
-               learning_rate = 0.05,
+               activate_hiddenLayer = Sigmoid(),
+               activate_outputLayer = Sigmoid(),
                epochs = 500,
                batch_size = 20
            )
     ```
+    - 学習率 `learning_rate` は、0.05 に設定。
+    ```python
+    mlp2.optimizer( GradientDecent( learning_rate = 0.05 ) )
+    ```
 - `MultilayerPerceptron.models()` メソッドにて、多層パーセプトロンのフィードフォワード処理をモデル化。
-    - 入力層、及び隠れ層からの出力に対する活性化関数は、`NNActivation( activate_type = "sigmoid" )` で指定したシグモイド関数で実装
+    - 入力層、及び隠れ層からの出力に対する活性化関数は、`Sigmoid()` で指定したシグモイド関数で実装
         - `h_out_op = self._activate_hiddenLayer.activate( h_in_op )`
-    - 出力層からの出力に対する活性化関数は、`NNActivation( activate_type = "sigmoid" )` で指定したシグモイド関数で実装
+    - 出力層からの出力に対する活性化関数は、`Sigmoid()` で指定したシグモイド関数で実装
         - `self._y_out_op = self._activate_outputLayer.activate( y_in_op )`
 - `MultilayerPerceptron.loss()` メソッドにて、このモデルの損失関数を設定。<br>このモデルの損失関数は、クロス・エントロピー関数
     ```python
-    def loss( self, type = "l2-norm", original_loss_op = None ):
-        ...
-        # クロス・エントロピー（２クラスの分類問題）
-        elif ( type == "binary-cross-entropy" ):
-            self._loss_op = -tf.reduce_sum( 
-                                self._t_holder * tf.log(self._y_out_op) + 
-                                ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
-                            )
-        ...
-        return self._loss_op
+    mlp1.loss( BinaryCrossEntropy() )
+    mlp2.loss( BinaryCrossEntropy() )
     ```
-- `MultilayerPerceptron.optimizer()` メソッドにて、このモデルの最適化アルゴリズムを設定。<br>このモデルの最適化アルゴリズムは、最急降下法（勾配降下法）。学習率 `learning_rate` は、コンストラクタで設定した値である 0.05
+- `MultilayerPerceptron.optimizer()` メソッドにて、このモデルの最適化アルゴリズムを設定。<br>このモデルの最適化アルゴリズムは、最急降下法（勾配降下法）。学習率 `learning_rate` は、0.05
     ```python
-    def optimizer( self, type = "gradient-descent", original_opt = None ):
-        ...
-        elif ( type == "gradient-descent" ):
-            self._optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
-
-        ...
-        self._train_step = self._optimizer.minimize( self._loss_op )
-        return self._train_step
+    # モデルの最適化アルゴリズムを設定
+    mlp1.optimizer( GradientDecent( learning_rate = 0.05 ) )
+    mlp2.optimizer( GradientDecent( learning_rate = 0.05 ) )
     ```
-
 
 <br>
 

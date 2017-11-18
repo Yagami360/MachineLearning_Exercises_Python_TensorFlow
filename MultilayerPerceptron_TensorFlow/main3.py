@@ -19,12 +19,32 @@ from tensorflow.python.framework import ops
 from MLPlot import MLPlot
 from MLPreProcess import MLPreProcess
 from MultilayerPerceptron import MultilayerPerceptron   #
-from NNActivation import NNActivation                   # ニューラルネットワークの活性化関数を表すクラス
+
+import NNActivation                                     # ニューラルネットワークの活性化関数を表すクラス
+from NNActivation import NNActivation
+from NNActivation import Sigmoid
+from NNActivation import Relu
+from NNActivation import Softmax
+
+import NNLoss                                           # ニューラルネットワークの損失関数を表すクラス
+from NNLoss import L1Norm
+from NNLoss import L2Norm
+from NNLoss import BinaryCrossEntropy
+from NNLoss import CrossEntropy
+from NNLoss import SoftmaxCrossEntropy
+from NNLoss import SparseSoftmaxCrossEntropy
+
+import NNOptimizer                                      # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from NNOptimizer import GradientDecent
+from NNOptimizer import Momentum
+from NNOptimizer import NesterovMomentum
+from NNOptimizer import Adagrad
+from NNOptimizer import Adadelta
 
 
 def main():
     """
-    多層パーセプトロンを用いた、MIST データでの手書き数字文字のパターン認識処理
+    多層パーセプトロンを用いた、MNIST データでの手書き数字文字のパターン認識処理
     """
     print("Enter main()")
 
@@ -32,11 +52,11 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    # MSIT データが格納されているフォルダへのパス
-    mist_path = "D:\Data\MachineLearning_DataSet\MIST"
+    # MNSIT データが格納されているフォルダへのパス
+    mnist_path = "D:\Data\MachineLearning_DataSet\MNIST"
 
-    X_train, y_train = MLPreProcess.load_mist( mist_path, "train" )
-    X_test, y_test = MLPreProcess.load_mist( mist_path, "t10k" )
+    X_train, y_train = MLPreProcess.load_mist( mnist_path, "train" )
+    X_test, y_test = MLPreProcess.load_mist( mnist_path, "t10k" )
 
     print( "X_train.shape : ", X_train.shape )
     print( "y_train.shape : ", y_train.shape )
@@ -44,7 +64,7 @@ def main():
     print( "y_test.shape : ", y_test.shape )
 
     #---------------------------------------------------------------------
-    # MIST 画像を plot
+    # MNIST 画像を plot
     #---------------------------------------------------------------------
     # 先頭の 0~9 のラベルの画像データを plot
     """
@@ -123,9 +143,8 @@ def main():
                n_inputLayer = X_train.shape[1], # 784 
                n_hiddenLayers = [50,50],
                n_outputLayer = 10,
-               activate_hiddenLayer = NNActivation( "relu" ),
-               activate_outputLayer = NNActivation( "softmax" ),
-               learning_rate = 0.0001,
+               activate_hiddenLayer = Relu(),
+               activate_outputLayer = Softmax(),
                epochs = 1000,
                batch_size = 50
            )
@@ -156,7 +175,7 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    mlp1.loss( type = "cross-entropy" )
+    mlp1.loss( CrossEntropy() )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -173,7 +192,7 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    mlp1.optimizer( type = "gradient-descent" )
+    mlp1.optimizer( GradientDecent( learning_rate = 0.0001 ) )
 
     # トレーニングデータで fitting 処理
     mlp1.fit( X_train, y_train_encoded )

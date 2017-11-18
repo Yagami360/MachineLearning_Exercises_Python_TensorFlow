@@ -18,7 +18,27 @@ from sklearn.utils import shuffle
 
 # 自作クラス
 #from NeuralNetworkBase import NeuralNetworkBase    # 親クラス
-from NNActivation import NNActivation     # ニューラルネットワークの活性化関数を表すクラス
+
+import NNActivation
+from NNActivation import NNActivation               # ニューラルネットワークの活性化関数を表すクラス
+from NNActivation import Sigmoid
+from NNActivation import Relu
+from NNActivation import Softmax
+
+import NNLoss                                       # ニューラルネットワークの損失関数を表すクラス
+from NNLoss import L1Norm
+from NNLoss import L2Norm
+from NNLoss import BinaryCrossEntropy
+from NNLoss import CrossEntropy
+from NNLoss import SoftmaxCrossEntropy
+from NNLoss import SparseSoftmaxCrossEntropy
+
+import NNOptimizer                                  # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from NNOptimizer import GradientDecent
+from NNOptimizer import Momentum
+from NNOptimizer import NesterovMomentum
+from NNOptimizer import Adagrad
+from NNOptimizer import Adadelta
 
 
 class MultilayerPerceptron( object ):
@@ -41,8 +61,6 @@ class MultilayerPerceptron( object ):
         _biases : list <Variable>
             モデルの各層のバイアス項の  Variable からなる list
 
-        _learning_rate : float
-            学習率
         _epochs : int
             エポック数（トレーニング回数）
         _batch_size : int
@@ -87,9 +105,8 @@ class MultilayerPerceptron( object ):
             self, 
             session = tf.Session(), 
             n_inputLayer = 1, n_hiddenLayers = [1,1,1], n_outputLayer = 1, 
-            activate_hiddenLayer = NNActivation( "sigmoid" ),
-            activate_outputLayer = NNActivation( "sigmoid" ),
-            learning_rate = 0.01, 
+            activate_hiddenLayer = NNActivation(),
+            activate_outputLayer = NNActivation(),
             epochs = 1000,
             batch_size = 1 
         ):
@@ -112,7 +129,6 @@ class MultilayerPerceptron( object ):
         self._activate_hiddenLayer = activate_hiddenLayer
         self._activate_outputLayer = activate_outputLayer
 
-        self._learning_rate = learning_rate
         self._epochs = epochs
         self._batch_size = batch_size
 
@@ -142,6 +158,7 @@ class MultilayerPerceptron( object ):
         print( str )
 
         print( "_session : ", self._session )
+        print( "_init_var_op :\n", self._init_var_op )
 
         print( "_n_inputLayer : ", self._n_inputLayer )
         print( "_n_hiddenLayers : ", self._n_hiddenLayers )
@@ -156,11 +173,9 @@ class MultilayerPerceptron( object ):
         print( "_activate_hiddenLayer :", self._activate_hiddenLayer )
         print( "_activate_outputLayer :", self._activate_outputLayer )
 
-        print( "_learning_rate :", self._learning_rate )
         print( "_epoches :", self._epochs )
         print( "_batch_size :", self._batch_size )
 
-        print( "_init_var_op :\n", self._init_var_op )
         print( "_loss_op :", self._loss_op )
         print( "_optimizer :", self._optimizer )
         print( "_train_step :", self._train_step )
@@ -327,139 +342,33 @@ class MultilayerPerceptron( object ):
         return self._y_out_op
 
     
-    def loss( self, type = "l2-norm", original_loss_op = None ):
+    def loss( self, nnLoss ):
         """
         損失関数の定義を行う。
         
         [Input]
-            type : str
-                損失関数の種類
-                "original" : 独自の損失関数
-                "l1-norm" : L1 損失関数（L1ノルム）
-                "l2-norm" : L2 損失関数（L2ノルム）
-                "binary-cross-entropy" : クロス・エントロピー交差関数（２クラスの分類問題）
-                "cross-entropy" : クロス・エントロピー交差関数（多クラスの分類問題）
-                "softmax-cross-entrpy" : ソフトマックス クロス・エントロピー損失関数
-                "sigmoid-cross-entropy" : シグモイド・クロス・エントロピー損失関数
-                "weighted-cross-entropy" : 重み付きクロス・エントロピー損失関数
-                "sparse-softmax-cross-entrpy" : 疎なソフトマックスクロス・エントロピー損失関数
-
-            original_loss_op : Operator
-                type = "original" で独自の損失関数とした場合の損失関数を表すオペレーター
-
+            nnLoss : NNLoss クラスのオブジェクト
+            
         [Output]
             self._loss_op : Operator
                 損失関数を表すオペレーター
         """
-        # 独自の損失関数
-        if ( type == "original" ):
-            self._loss_op = original_loss_op
-
-        # L1 損失関数
-        elif ( type == "l1-norm" ):
-            # 回帰問題の場合
-            self._loss_op = tf.reduce_mean(
-                                tf.abs( self._t_holder - self._y_out_op )
-                            )
-        # L2 損失関数
-        elif ( type == "l2-norm" ):
-            # 回帰問題の場合
-            self._loss_op = tf.reduce_mean(
-                                tf.square( self._t_holder - self._y_out_op )
-                            )
-
-        # クロス・エントロピー（２クラスの分類問題）
-        elif ( type == "binary-cross-entropy" ):
-            # クロス・エントロピー
-            # ２クラスの分類問題の場合
-            self._loss_op = -tf.reduce_sum( 
-                                self._t_holder * tf.log( self._y_out_op ) + 
-                                ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
-                            )
-
-        # クロス・エントロピー（多クラスの分類問題）
-        elif ( type == "cross-entropy" ):
-            # 多クラスの分類問題の場合
-            # softmax で正規化済みの場合
-            # tf.clip_by_value(...) : 下限値、上限値を設定
-            self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
-                                -tf.reduce_sum( 
-                                    self._t_holder * tf.log( tf.clip_by_value(self._y_out_op, 1e-10, 1.0) ), 
-                                    reduction_indices = [1]     # sum をとる行列の方向 ( 1:row 方向 )
-                                )
-                            )
-
-        # ソフトマックス　クロス・エントロピー（多クラスの分類問題）
-        elif ( type == "softmax-cross-entropy"):
-            # softmax で正規化済みでない場合
-            self._loss_op = tf.reduce_mean(
-                                tf.nn.softmax_cross_entropy_with_logits(
-                                    labels = self._t_holder,
-                                    logits = self._y_out_op
-                                )
-                            )
-
-        # その他（デフォルト）
-        else:
-            self._loss_op = -tf.reduce_sum( 
-                                self._t_holder * tf.log(self._y_out_op) +
-                                ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
-                            )
+        self._loss_op = nnLoss.loss( t_holder = self._t_holder, y_out_op = self._y_out_op )
         
-
         return self._loss_op
 
 
-    def optimizer( self, type = "gradient-descent", original_opt = None ):
+    def optimizer( self, nnOptimizer ):
         """
         モデルの最適化アルゴリズムの設定を行う。
         [Input]
-            type : str
-                最適化アルゴリズムの種類
-                "original" : 独自の最適化アルゴリズム
-                "gradient-descent" : 最急降下法 tf.train.GradientDescentOptimizer(...)
-                "momentum" : モメンタム tf.train.MomentumOptimizer( ..., use_nesterov = False )
-                "momentum-nesterov" : Nesterov モメンタム  tf.train.MomentumOptimizer( ..., use_nesterov = True )
-                "ada-grad" : Adagrad tf.train.AdagradOptimizer(...)
-                "ada-delta" : Adadelta tf.train.AdadeletaOptimizer(...)
-
-            original_opt : Optimizer
-                独自の最適化アルゴリズム
+            nnOptimizer : NNOptimizer のクラスのオブジェクト
 
         [Output]
             optimizer の train_step
         """
-        if ( type == "original" ):
-            self._optimizer = original_opt
-
-        elif ( type == "gradient-descent" ):
-            self._optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
-        
-        elif ( type == "momentum" ):
-            self._optimizer = tf.train.MomentumOptimizer( 
-                                  learning_rate = self._learning_rate, 
-                                  momentum = 0.9,
-                                  use_nesterov = False
-                              )
-        
-        elif ( type == "momentum-nesterov" ):
-            self._optimizer = tf.train.MomentumOptimizer( 
-                                  learning_rate = self._learning_rate, 
-                                  momentum = 0.9,
-                                  use_nesterov = True
-                              )
-
-        elif ( type == "ada-grad" ):
-            self._optimizer = tf.train.AdagradOptimizer( learning_rate = self._learning_rate )
-
-        elif ( type == "ada-delta" ):
-            self._optimizer = tf.train.AdadeltaOptimizer( learning_rate = self._learning_rate, rho = 0.95 )
-
-        else:
-            self._optimizeroptimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
-
-
-        self._train_step = self._optimizer.minimize( self._loss_op )
+        self._optimizer = nnOptimizer._optimizer
+        self._train_step = nnOptimizer.train_step( self._loss_op )
         
         return self._train_step
 
@@ -559,10 +468,10 @@ class MultilayerPerceptron( object ):
                 予想結果（分類モデルの場合は、クラスラベル）
         """
         # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
-        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
+        if ( self._activate_outputLayer._node_name == "Activate_Sigmoid_op" ):
             predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
         # 出力層の活性化関数が softmax のとき（多クラスの識別）
-        elif ( self._activate_outputLayer._activate_type == "softmax" ):
+        elif ( self._activate_outputLayer._node_name == "Activate_Softmax_op" ):
             predict_op = tf.arg_max( input = self._y_out_op, dimension = 1 )
         else:
             predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
@@ -605,13 +514,13 @@ class MultilayerPerceptron( object ):
         指定したデータでの正解率 [accuracy] を計算する。
         """
         # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
-        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
+        if ( self._activate_outputLayer._node_name == "Activate_Sigmoid_op" ):
             correct_predict_op = tf.equal( 
                                      tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
                                      self._t_holder 
                                  )
         # 出力層の活性化関数が softmax のとき（多クラスの識別）
-        elif (  self._activate_outputLayer._activate_type == "softmax"  ):
+        elif ( self._activate_outputLayer._node_name == "Activate_Softmax_op" ):
             correct_predict_op = tf.equal(
                                      tf.arg_max( self._y_out_op, dimension = 1 ),
                                      tf.arg_max( self._t_holder, dimension = 1 )

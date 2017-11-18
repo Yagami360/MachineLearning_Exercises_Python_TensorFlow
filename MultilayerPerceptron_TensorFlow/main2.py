@@ -19,7 +19,27 @@ from tensorflow.python.framework import ops
 from MLPlot import MLPlot
 from MLPreProcess import MLPreProcess
 from MultilayerPerceptron import MultilayerPerceptron
-from NNActivation import NNActivation     # ニューラルネットワークの活性化関数を表すクラス
+
+import NNActivation                                     # ニューラルネットワークの活性化関数を表すクラス
+from NNActivation import NNActivation
+from NNActivation import Sigmoid
+from NNActivation import Relu
+from NNActivation import Softmax
+
+import NNLoss                                           # ニューラルネットワークの損失関数を表すクラス
+from NNLoss import L1Norm
+from NNLoss import L2Norm
+from NNLoss import BinaryCrossEntropy
+from NNLoss import CrossEntropy
+from NNLoss import SoftmaxCrossEntropy
+from NNLoss import SparseSoftmaxCrossEntropy
+
+import NNOptimizer                                      # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from NNOptimizer import GradientDecent
+from NNOptimizer import Momentum
+from NNOptimizer import NesterovMomentum
+from NNOptimizer import Adagrad
+from NNOptimizer import Adadelta
 
 
 def main():
@@ -90,9 +110,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [5],
                n_outputLayer = 3,
-               activate_hiddenLayer = NNActivation( "sigmoid" ),
-               activate_outputLayer = NNActivation( "softmax" ),
-               learning_rate = 0.05,
+               activate_hiddenLayer = Sigmoid(),
+               activate_outputLayer = Softmax(),
                epochs = 500,
                batch_size = 50
            )
@@ -102,9 +121,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [5,5],
                n_outputLayer = 3,
-               activate_hiddenLayer = NNActivation( "relu" ),       # Relu
-               activate_outputLayer = NNActivation( "softmax" ),
-               learning_rate = 0.05,
+               activate_hiddenLayer = Relu(),       # Relu
+               activate_outputLayer = Softmax(),
                epochs = 500,
                batch_size = 50
            )
@@ -135,8 +153,8 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    mlp1.loss( type = "cross-entropy" )
-    mlp2.loss( type = "cross-entropy" )
+    mlp1.loss( CrossEntropy() )
+    mlp2.loss( CrossEntropy() )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -153,8 +171,8 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    mlp1.optimizer( type = "gradient-descent" )
-    mlp2.optimizer( type = "gradient-descent" )
+    mlp1.optimizer( GradientDecent( learning_rate = 0.05 ) )
+    mlp2.optimizer( GradientDecent( learning_rate = 0.05 ) )
 
     # トレーニングデータで fitting 処理
     mlp1.fit( X_train_std, y_train_encoded )

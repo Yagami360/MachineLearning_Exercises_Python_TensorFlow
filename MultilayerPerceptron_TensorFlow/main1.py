@@ -18,12 +18,34 @@ from tensorflow.python.framework import ops
 # 自作クラス
 from MLPlot import MLPlot
 from MLPreProcess import MLPreProcess
+
 from MultilayerPerceptron import MultilayerPerceptron
-from NNActivation import NNActivation     # ニューラルネットワークの活性化関数を表すクラス
+
+import NNActivation                                     # ニューラルネットワークの活性化関数を表すクラス
+from NNActivation import NNActivation
+from NNActivation import Sigmoid
+from NNActivation import Relu
+from NNActivation import Softmax
+
+import NNLoss                                           # ニューラルネットワークの損失関数を表すクラス
+from NNLoss import L1Norm
+from NNLoss import L2Norm
+from NNLoss import BinaryCrossEntropy
+from NNLoss import CrossEntropy
+from NNLoss import SoftmaxCrossEntropy
+from NNLoss import SparseSoftmaxCrossEntropy
+
+import NNOptimizer                                      # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from NNOptimizer import GradientDecent
+from NNOptimizer import Momentum
+from NNOptimizer import NesterovMomentum
+from NNOptimizer import Adagrad
+from NNOptimizer import Adadelta
+
 
 def main():
     """
-    多層パーセプトロンを用いた、データの識別
+    多層パーセプトロンを用いた、データの識別（２クラスの分類問題）
     """
     print("Enter main()")
 
@@ -60,9 +82,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3],
                n_outputLayer = 1,
-               activate_hiddenLayer = NNActivation( "sigmoid" ),
-               activate_outputLayer = NNActivation( "sigmoid" ),
-               learning_rate = 0.05,
+               activate_hiddenLayer = Sigmoid(),
+               activate_outputLayer = Sigmoid(),
                epochs = 500,
                batch_size = 20
            )
@@ -72,9 +93,8 @@ def main():
                n_inputLayer = len(X_features[0]), 
                n_hiddenLayers = [3,3],
                n_outputLayer = 1,
-               activate_hiddenLayer = NNActivation( "sigmoid" ),
-               activate_outputLayer = NNActivation( "sigmoid" ),
-               learning_rate = 0.05,
+               activate_hiddenLayer = Sigmoid(),
+               activate_outputLayer = Sigmoid(),
                epochs = 500,
                batch_size = 20
            )
@@ -105,8 +125,8 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    mlp1.loss( type = "cross-entropy1" )
-    mlp2.loss( type = "cross-entropy1" )
+    mlp1.loss( BinaryCrossEntropy() )
+    mlp2.loss( BinaryCrossEntropy() )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -123,8 +143,8 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    mlp1.optimizer( type = "gradient-descent" )
-    mlp2.optimizer( type = "gradient-descent" )
+    mlp1.optimizer( GradientDecent( learning_rate = 0.05 ) )
+    mlp2.optimizer( GradientDecent( learning_rate = 0.05 ) )
 
     # トレーニングデータで fitting 処理
     mlp1.fit( X_train, y_train )
