@@ -92,13 +92,21 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 <a id="ID_3-0"></a>
 
 ## ニューラルネットワークのフレームワークのコードの説明
-> 記載中...<br>
 > sphinx or API Blueprint で HTML 形式の API 仕様書作成予定...
 
 - `NeuralNetworkBase` クラス
     - TensorFlow ライブラリを使用
     - ニューラルネットワークの基本的なフレームワークを想定した仮想メソッドからなる抽象クラス。<br>
     実際のニューラルネットワークを表すクラスの実装は、このクラスを継承し、オーバーライドするを想定している。
+        - `model()` : モデルの定義を行い、最終的なモデルの出力のオペレーターを設定する。
+        - `loss( nnLoss )` : 損失関数（誤差関数、コスト関数）の定義を行う。
+        - `optimizer( nnOptimize )` : モデルの最適化アルゴリズムの設定を行う。
+        - `fit( X_test, y_test )` : 指定されたトレーニングデータで、モデルの fitting 処理を行う。
+        - `predict( X_test, y_test )` : fitting 処理したモデルで、推定を行い、予想値を返す。
+        - `predict_prob( X_test, y_test )` : fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
+        - `accuracy( X_test )` : 指定したデータでの正解率を算出する。
+        - `accuracy_labels( X_test )` : 指定したデータでのラベル毎の正解率を算出する。
+
 - `ConvolutionalNN` クラス
     - `NeuralNetworkBase` クラスの子クラス。
     - 畳み込みニューラルネットワーク [CNN : Convolutional Neural Network] を表すクラス。<br>
@@ -106,19 +114,28 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - `NNActivation` クラス : ニューラルネットワークの活性化関数を表す親クラス。<br>
     ポリモーフィズムを実現するための親クラス
-    - `Sigmoid` クラス : `NNActivation` の子クラス。シグモイド関数を表す。
-    - `ReLu` クラス : `NNActivation` の子クラス。。Relu関数を表す。
-    - xxx
-- `NNOptimizer` クラス : ニューラルネットワークモデルの最適化アルゴリズム Optimizer を表す親クラス<br>
-    ポリモーフィズムを実現するための親クラス
-    - `GDNNOptimizer` クラス : `NNOptimizer` クラスの子クラス。勾配降下法を表すクラス。
-    - xxx
+    - `Sigmoid` クラス : `NNActivation` の子クラス。シグモイド関数の活性化関数を表す
+    - `ReLu` クラス : `NNActivation` の子クラス。。Relu 関数の活性化関数を表す
+    - `Softmax` クラス : `NNActivation` の子クラス。。softmax 関数の活性化関数を表す
+    
 - `NNLoss` クラス : ニューラルネットワークにおける損失関数を表す親クラス。<br>
     ポリモーフィズムを実現するための親クラス
-    - `L1NormNNLoss` : `NNLoss` クラスの子クラス。損失関数である L1ノルムを表すクラス。
-    - xxx
-- xxx
+    - `L1Norm` クラス : `NNLoss` クラスの子クラス。損失関数である L1ノルムを表すクラス。
+    - `L2Norm` クラス : `NNLoss` クラスの子クラス。損失関数である L2ノルムを表すクラス。
+    - `BinaryCrossEntropy` クラス : `NNLoss` クラスの子クラス。２値のクロス・エントロピーの損失関数
+    - `CrossEntropy` クラス : `NNLoss` クラスの子クラス。クロス・エントロピーの損失関数
+    - `SoftmaxCrossEntropy` クラス : `NNLoss` クラスの子クラス。ソフトマックス・クロス・エントロピーの損失関数
+    - `SparseSoftmaxCrossEntropy` クラス : `NNLoss` クラスの子クラス。疎なソフトマックス・クロス・エントロピーの損失関数
+    
+- `NNOptimizer` クラス : ニューラルネットワークモデルの最適化アルゴリズム Optimizer を表す親クラス<br>
+    ポリモーフィズムを実現するための親クラス
+    - `GradientDecent` クラス : `NNOptimizer` クラスの子クラス。勾配降下法を表すクラス。
+    - `Momentum` クラス : `NNOptimizer` クラスの子クラス。モメンタム アルゴリズムを表すクラス
+    - `NesterovMomentum` クラス : `NNOptimizer` クラスの子クラス。モメンタム アルゴリズムを表すクラス
+    - `Adagrad` クラス : `NNOptimizer` クラスの子クラス。Adagrad アルゴリズムを表すクラス
+    - `Adadelta` クラス : `NNOptimizer` クラスの子クラス。Adadelta アルゴリズムを表すクラス
 
+<br>
 <a id="ID_3"></a>
 
 ## コードの実行結果
@@ -183,10 +200,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
         # 畳み込み層からの出力（活性化関数）オペレーター
         # バイアス項を加算したものを活性化関数に通す
-        conv_out_op1 = NNActivation( activate_type = "relu" ).activate( 
-                           tf.nn.bias_add( conv_op1, self._biases[0] ) 
-                       )
-        
+        conv_out_op1 = Relu( tf.nn.bias_add( conv_op1, self._biases[0] ) )._activate_op
+
         # プーリング層のオペレーター
         pool_op1 = tf.nn.max_pool(
                        value = conv_out_op1,
@@ -209,9 +224,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
                        strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
                        padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
                    )
-        conv_out_op2 = NNActivation( activate_type = "relu" ).activate( 
-                           tf.nn.bias_add( conv_op2, self._biases[1] ) 
-                       )
+        conv_out_op2 = Relu( tf.nn.bias_add( conv_op2, self._biases[1] ) )._activate_op
+
         pool_op2 = tf.nn.max_pool(
                        value = conv_out_op2,
                        ksize = [ 1, 2, 2, 1 ],  # プーリングする範囲のサイズ
@@ -254,10 +268,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         print( "flatted_input :", flatted_input )
 
         # 全結合層の入力側へのオペレーター
-        fullyLayers_in_op = NNActivation( activate_type = "relu" ).activate(
-                                tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] )
-                            )
-
+        fullyLayers_in_op = Relu( tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] )._activate_op
+        
         # 全結合層の出力側へのオペレーター
         fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_in_op, self._weights[-1] ), self._biases[-1] )
 
@@ -266,45 +278,45 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         return self._y_out_op
     ```
 - 損失関数は、疎なソフトマックス・クロス・エントロピー関数を使用
-    - `cnn1.loss( type = "sparse-softmax-cross-entropy" )`
-- モデルの最適化アルゴリズムは、モーメンタムを使用
-    - `cnn1.optimizer( type = "momentum" )`
-- 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで検証
+    - `cnn1.loss( SparseSoftmaxCrossEntropy )`
+    - `cnn2.loss( SparseSoftmaxCrossEntropy )`
+- モデルの最適化アルゴリズムは、モメンタムを使用
+    - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
+    - `cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )`
+    - `cnn1.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )`
+- エポック数は 500、ミニバッチサイズは 100 で学習
+    ```python
+    def main():
+        ...
+        # CNN クラスのオブジェクト生成
+        cnn1 = ConvolutionalNN(
+                   session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+                   epochs = 500,
+                   batch_size = 100,
+                   eval_step = 1,
+                   image_height = 28,                   # 28 pixel
+                   image_width = 28,                    # 28 pixel
+                   n_channels = 1,                      # グレースケール
+                   n_ConvLayer_features = [25, 50],     #
+                   n_strides = 1,
+                   n_fullyLayers = 100,
+                   n_labels = 10
+               )
 
-```python
-def main():
-    ...
-    # CNN クラスのオブジェクト生成
-    cnn1 = ConvolutionalNN(
-               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               learning_rate = 0.0001,
-               epochs = 500,
-               batch_size = 100,
-               eval_step = 1,
-               image_width = 28,                    # 28 pixel
-               image_height = 28,                   # 28 pixel
-               n_ConvLayer_features = [25, 50],     #
-               n_channels = 1,                      # グレースケール
-               n_strides = 1,
-               n_fullyLayers = 100,
-               n_labels = 10
-           )
-
-    cnn2 = ConvolutionalNN(
-               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               learning_rate = 0.0005,
-               epochs = 500,
-               batch_size = 100,
-               eval_step = 1,
-               image_width = 28,                    # 28 pixel
-               image_height = 28,                   # 28 pixel
-               n_ConvLayer_features = [25, 50],     #
-               n_channels = 1,                      # グレースケール
-               n_strides = 1,
-               n_fullyLayers = 100,
-               n_labels = 10
-           )
-```
+        cnn2 = ConvolutionalNN(
+                   session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+                   epochs = 500,
+                   batch_size = 100,
+                   eval_step = 1,
+                   image_height = 28,                   # 28 pixel
+                   image_width = 28,                    # 28 pixel
+                   n_channels = 1,                      # グレースケール
+                   n_ConvLayer_features = [25, 50],     #
+                   n_strides = 1,
+                   n_fullyLayers = 100,
+                   n_labels = 10
+               )
+    ```
 
 #### 損失関数のグラフ
 ![cnn_1-2-2](https://user-images.githubusercontent.com/25688193/32940343-b5638ec4-cbc5-11e7-88e7-ec023053d917.png)
@@ -373,14 +385,13 @@ def main():
 > コード実装中...
 
 - バイナリー形式の CIFAR-10 データセットを使用
-    - 
 - **画像は、ランダムに加工した上でトレーニングデータとして利用する**
     - 加工は、画像の一部の切り出し、左右の反転、明るさの変更からなる。
     - 画像の分類精度を向上させるには、画像の枚数が必要となるが、画像を加工することで画像を水増しすることが出来るため、このような処理を行う。
 
 
 
-
+<br>
 
 ---
 

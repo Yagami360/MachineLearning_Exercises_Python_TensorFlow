@@ -19,9 +19,30 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from MLPlot import MLPlot                               # 機械学習の plot 処理群を表すクラス
 from MLPreProcess import MLPreProcess                   # 機械学習の前処理群を表すクラス
 
-from NNActivation import NNActivation                   # ニューラルネットワークの活性化関数を表すクラス
 from MultilayerPerceptron import MultilayerPerceptron   # 多層パーセプトロン MLP を表すクラス
 from ConvolutionalNN import ConvolutionalNN             # 畳み込みニューラルネットワーク CNN を表すクラス
+
+import NNActivation                                     # ニューラルネットワークの活性化関数を表すクラス
+from NNActivation import NNActivation
+from NNActivation import Sigmoid
+from NNActivation import Relu
+from NNActivation import Softmax
+
+import NNLoss                                           # ニューラルネットワークの損失関数を表すクラス
+from NNLoss import L1Norm
+from NNLoss import L2Norm
+from NNLoss import BinaryCrossEntropy
+from NNLoss import CrossEntropy
+from NNLoss import SoftmaxCrossEntropy
+from NNLoss import SparseSoftmaxCrossEntropy
+
+import NNOptimizer                                      # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from NNOptimizer import GradientDecent
+from NNOptimizer import Momentum
+from NNOptimizer import NesterovMomentum
+from NNOptimizer import Adagrad
+from NNOptimizer import Adadelta
+
 
 def main():
     """
@@ -36,34 +57,93 @@ def main():
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
-    # MNIST データが格納されているフォルダへのパス
-    cifar10_path = "D:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-py"
+    # CIFAR-10 データが格納されているフォルダへのパス
+    cifar10_path = "D:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-bin"
 
-    X_train, y_train = MLPreProcess.load_cifar10( cifar10_path, kind = "train", bReshape = False, bTensor = False )
-    X_test, y_test = MLPreProcess.load_cifar10( cifar10_path, kind = "test", bReshape = False, bTensor = False  )
+    X_train, y_train = MLPreProcess.load_cifar10( cifar10_path, kind = "train" )
+    X_test, y_test = MLPreProcess.load_cifar10( cifar10_path, kind = "test" )
     
+
+    """
+    # Tensor から実際の値を取得
+    sess = tf.InteractiveSession()
+    image_holder = tf.placeholder( tf.float32, shape = [None] )
+    sess.run( tf.global_variables_initializer() )
+    #print( y_train.eval() )
+    #print( X_train.eval() )
+    #y_train = y_train.eval()
+    #X_test = X_test.eval()
+    #y_test = y_test.eval()
+    #X_train = sess.run( X_train, feed_dict = {image_holder:X_train} )
+    #y_train = session.run( y_train )
+    #X_test = session.run( X_test )
+    #y_test = session.run( y_test )
+    sess.close()
+    """
+
     # 3 * 32 * 32 に reshape
     X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
     X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
-
-    """
-    # TensorFlow のサポート関数を使用して, MNIST データを読み込み
-    mnist = read_data_sets( mnist_path )
-    print( "mnist :\n", mnist )
-    X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in mnist.train.images] )
-    X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in mnist.test.images] )
-    y_train = mnist.train.labels
-    y_test = mnist.test.labels
-    """
+    y_train = numpy.reshape( y_train, 50000 )
+    y_test = numpy.reshape( y_test, 10000 )
 
     print( "X_train.shape : ", X_train.shape )
     print( "y_train.shape : ", y_train.shape )
     print( "X_test.shape : ", X_test.shape )
     print( "y_test.shape : ", y_test.shape )
 
-    print( "X_train : \n", X_train )
-    print( "y_train : \n", y_train )
-    
+    print( "X_train[0] : \n", X_train[0] )
+    print( "y_train[0] : \n", y_train[0] )
+    print( "[y_train == 0] : \n", [ y_train == 0 ] )
+
+    #---------------------------------------------------------------------
+    # CIFAR-10 画像を plot
+    #---------------------------------------------------------------------
+    """
+    # 先頭の 0~9 のラベルの画像データを plot
+    # plt.subplots(...) から,
+    # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
+    figure, axis = plt.subplots( 
+                       nrows = 8, ncols = 8,
+                       sharex = True, sharey = True     # x,y 軸をシャアする
+                   )
+    # 2 dim 配列を１次元に変換
+    axis = axis.flatten()
+
+    # ラベルの 0~9 の plot 用の for ループ
+    for i in range(64):
+        #print( "i=", i )
+        image = X_train[i]
+        # １次元配列を shape = [3,32,32] に reshape
+        #image = image.reshape(3,32,32)
+        # imshow()で読める([1]row, [2]column, [0] channel) の順番に変更するために
+        # numpyのtranspose()を使って次元を入れ替え
+        image = image.transpose(1, 2, 0)        
+        axis[i].imshow( image )
+        axis[i].set_title( "Actual: " + str( y_train[i] ), fontsize = 8 )
+
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
+    plt.tight_layout()
+    MLPlot.saveFigure( fileName = "CNN_2-1.png" )
+    plt.show()
+
+    # 特定のラベルの画像データを plot
+    figure, axis = plt.subplots( nrows = 8, ncols = 8, sharex = True, sharey = True )
+    axis = axis.flatten()
+    for i in range(64):
+        image = X_train[y_train == 0][i]
+        #image = image.reshape(3,32,32)   
+        image = image.transpose(1, 2, 0)
+        axis[i].imshow( image )
+        axis[i].set_title( "Actual: " + str( 0 ), fontsize = 8 )
+
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
+    plt.tight_layout()
+    MLPlot.saveFigure( fileName = "CNN_2-2.png" )
+    plt.show()
+    """
     #======================================================================
     # データを変換、正規化
     # Transform and normalize data.
@@ -91,14 +171,13 @@ def main():
     # CNN クラスのオブジェクト生成
     cnn1 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               learning_rate = 0.0001,
                epochs = 500,
                batch_size = 100,
                eval_step = 1,
-               image_width = 32,                    # 32 pixel
                image_height = 32,                   # 32 pixel
-               n_ConvLayer_features = [25, 50],     #
+               image_width = 32,                    # 32 pixel
                n_channels = 3,                      # RGB の 3 チャンネル
+               n_ConvLayer_features = [25, 50],     #
                n_strides = 1,
                n_fullyLayers = 100,
                n_labels = 10
@@ -110,10 +189,10 @@ def main():
                epochs = 500,
                batch_size = 100,
                eval_step = 1,
-               image_width = 32,                    # 32 pixel
                image_height = 32,                   # 32 pixel
-               n_ConvLayer_features = [25, 50],     #
+               image_width = 32,                    # 32 pixel
                n_channels = 3,                      # RGB の 3 チャンネル
+               n_ConvLayer_features = [25, 50],     #
                n_strides = 1,
                n_fullyLayers = 100,
                n_labels = 10
@@ -148,8 +227,8 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    cnn1.loss( type = "sparse-softmax-cross-entropy" )
-    cnn2.loss( type = "sparse-softmax-cross-entropy" )
+    cnn1.loss( SoftmaxCrossEntropy() )
+    cnn2.loss( SoftmaxCrossEntropy() )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -166,8 +245,8 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    cnn1.optimizer( type = "momentum" )
-    cnn2.optimizer( type = "momentum" )
+    cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
+    cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
 
     # トレーニングデータで fitting 処理
     cnn1.fit( X_train, y_train )
@@ -288,49 +367,6 @@ def main():
     axis2[0].set_yticks( [] )
     #plt.tight_layout()
     MLPlot.saveFigure( fileName = "CNN_1-3.png" )
-    plt.show()
-    """
-    #---------------------------------------------------------------------
-    # CIFAR-10 画像を plot
-    #---------------------------------------------------------------------
-    # 先頭の 0~9 のラベルの画像データを plot
-    """
-    # plt.subplots(...) から,
-    # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
-    figure, axis = plt.subplots( 
-                       nrows = 2, ncols = 5,
-                       sharex = True, sharey = True     # x,y 軸をシャアする
-                   )
-    # 2 × 5 配列を１次元に変換
-    axis = axis.flatten()
-    # 数字の 0~9 の plot 用の for ループ
-    for i in range(10):
-        image = X_train[y_train == i][0]    #
-        image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
-        axis[i].imshow(
-            image,
-            cmap = "Greys",
-            interpolation = "nearest"   # 補間方法
-        )
-    axis[0].set_xticks( [] )
-    axis[0].set_yticks( [] )
-    plt.tight_layout()
-    MLPlot.saveFigure( fileName = "MultilayerPerceptron_3-1.png" )
-    plt.show()
-    """
-
-    """
-    # 特定のラベルの 25 枚の画像データを plot
-    figure, axis = plt.subplots( nrows = 5, ncols = 5, sharex = True, sharey = True )
-    axis = axis.flatten()
-    for i in range(25):
-        image = X_train[y_train == 7][i].reshape(28,28)    
-        axis[i].imshow( image, cmap = "Greys", interpolation = "nearest" )
-    
-    axis[0].set_xticks( [] )
-    axis[0].set_yticks( [] )
-    plt.tight_layout()
-    MLPlot.saveFigure( fileName = "MultilayerPerceptron_3-2.png" )
     plt.show()
     """
 

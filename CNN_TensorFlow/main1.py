@@ -19,9 +19,29 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from MLPlot import MLPlot                               # 機械学習の plot 処理群を表すクラス
 from MLPreProcess import MLPreProcess                   # 機械学習の前処理群を表すクラス
 
-from NNActivation import NNActivation                   # ニューラルネットワークの活性化関数を表すクラス
 from MultilayerPerceptron import MultilayerPerceptron   # 多層パーセプトロン MLP を表すクラス
 from ConvolutionalNN import ConvolutionalNN             # 畳み込みニューラルネットワーク CNN を表すクラス
+
+import NNActivation                                     # ニューラルネットワークの活性化関数を表すクラス
+from NNActivation import NNActivation
+from NNActivation import Sigmoid
+from NNActivation import Relu
+from NNActivation import Softmax
+
+import NNLoss                                           # ニューラルネットワークの損失関数を表すクラス
+from NNLoss import L1Norm
+from NNLoss import L2Norm
+from NNLoss import BinaryCrossEntropy
+from NNLoss import CrossEntropy
+from NNLoss import SoftmaxCrossEntropy
+from NNLoss import SparseSoftmaxCrossEntropy
+
+import NNOptimizer                                      # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from NNOptimizer import GradientDecent
+from NNOptimizer import Momentum
+from NNOptimizer import NesterovMomentum
+from NNOptimizer import Adagrad
+from NNOptimizer import Adadelta
 
 
 def main():
@@ -91,14 +111,13 @@ def main():
     # CNN クラスのオブジェクト生成
     cnn1 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               learning_rate = 0.0001,
                epochs = 500,
                batch_size = 100,
                eval_step = 1,
-               image_width = 28,                    # 28 pixel
                image_height = 28,                   # 28 pixel
-               n_ConvLayer_features = [25, 50],     #
+               image_width = 28,                    # 28 pixel
                n_channels = 1,                      # グレースケール
+               n_ConvLayer_features = [25, 50],     #
                n_strides = 1,
                n_fullyLayers = 100,
                n_labels = 10
@@ -106,14 +125,13 @@ def main():
 
     cnn2 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               learning_rate = 0.0005,
                epochs = 500,
                batch_size = 100,
                eval_step = 1,
-               image_width = 28,                    # 28 pixel
                image_height = 28,                   # 28 pixel
-               n_ConvLayer_features = [25, 50],     #
+               image_width = 28,                    # 28 pixel
                n_channels = 1,                      # グレースケール
+               n_ConvLayer_features = [25, 50],     #
                n_strides = 1,
                n_fullyLayers = 100,
                n_labels = 10
@@ -148,8 +166,8 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    cnn1.loss( type = "sparse-softmax-cross-entropy" )
-    cnn2.loss( type = "sparse-softmax-cross-entropy" )
+    cnn1.loss( SparseSoftmaxCrossEntropy() )
+    cnn2.loss( SparseSoftmaxCrossEntropy() )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -166,8 +184,8 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    cnn1.optimizer( type = "momentum" )
-    cnn2.optimizer( type = "momentum" )
+    cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
+    cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
 
     # トレーニングデータで fitting 処理
     cnn1.fit( X_train, y_train )
