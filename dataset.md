@@ -91,6 +91,14 @@ URL : https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wi
 
 <br>
 
+### 渦巻きデータ：（csvフォーマット）
+
+URL : https://github.com/Yagami360/MachineLearning_Exercises_Python_scikit-learn/blob/master/EnsembleLearning_scikit-learn/data/naruto.csv
+
+２クラス（0 or 1）識別問題用の渦巻状のデータ。
+
+<br>
+
 ### MNIST：（手書き数字文字画像データ）
 
 URL : http://yann.lecun.com/exdb/mnist/
@@ -136,8 +144,36 @@ URL : http://yann.lecun.com/exdb/mnist/
 
 <br>
 
-### 渦巻きデータ：（csvフォーマット）
+### CIFAR-10 データセット
 
-URL : https://github.com/Yagami360/MachineLearning_Exercises_Python_scikit-learn/blob/master/EnsembleLearning_scikit-learn/data/naruto.csv
+URL : https://www.cs.toronto.edu/~kriz/cifar.html
 
-２クラス（0 or 1）識別問題用の渦巻状のデータ。
+- 10 個のクラスからなる 32×32 pixcel の画像 60,000 個から構成されるデータセット
+- これら 10 個のクラスは、それぞれ、<br>
+  1 : 飛行機、2 : 自動車、3 : 鳥、4 : ネコ、5 : イヌ、6 : カエル、7 : 馬、8 : 船、9 : トラック
+  を表している。
+- 各画像は、RGB の 3 チャンネルのカラー画像。（※MNISTデータセットは、グレースケールの１チェンネルであった）
+- 50000枚（各クラス5000枚）の訓練画像と10000枚（各クラス1000枚）のテスト画像に分割されている
+- バイナリー用のファイルは、CIFAR-10 binary version (suitable for C programs)
+- Python用のファイル `cifar-10-python.tar.gz` の内容は、cPickle 形式
+
+以下、各ファイルのフォーマットの詳細
+
+|レコード数|ラベル値|R 値|G 値|B 値|
+|---|---|---|---|---|
+|レコード 1|1 byte|1024 byte|1024 byte|1024 byte|
+|レコード 2|1 byte|1024 byte|1024 byte|1024 byte|
+|...|...|...|...|...|
+|レコード 10,000|1 byte|1024 byte|1024 byte|1024 byte|
+
+レコードは固定長の3,073バイト。先頭の1バイトがラベルで、残り3,072バイトは縦横32pxの画像データを直列化したものになっており、一般的なBitmap形式と違い、RGB各チャンネルのデータが1,024バイトずつ並ぶ構造になっている。<br>そして、これらのファイルが data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5, test_batch の 6つのファイル、合計 60,000 サンプル存在する。
+
+- 先頭の画像 64 枚
+
+![cnn_2-1-1](https://user-images.githubusercontent.com/25688193/32976898-11d69a6c-cc65-11e7-8852-5aa822530592.png)
+
+- 7 : 馬のラベルとなる先頭の画像 64 枚
+
+![cnn_2-2-1 _label7](https://user-images.githubusercontent.com/25688193/32976904-58e9d05e-cc65-11e7-849c-7fa05858b9c0.png)
+
+参考URL : http://aidiary.hatenablog.com/entry/20151014/1444827123
