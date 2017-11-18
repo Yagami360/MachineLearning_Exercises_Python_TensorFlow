@@ -468,10 +468,10 @@ class MultilayerPerceptron( object ):
                 予想結果（分類モデルの場合は、クラスラベル）
         """
         # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
-        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
+        if ( self._activate_outputLayer._node_name == "Activate_Sigmoid_op" ):
             predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
         # 出力層の活性化関数が softmax のとき（多クラスの識別）
-        elif ( self._activate_outputLayer._activate_type == "softmax" ):
+        elif ( self._activate_outputLayer._node_name == "Activate_Softmax_op" ):
             predict_op = tf.arg_max( input = self._y_out_op, dimension = 1 )
         else:
             predict_op = tf.to_int64( tf.greater( self._y_out_op, 0.5 ) )
@@ -514,13 +514,13 @@ class MultilayerPerceptron( object ):
         指定したデータでの正解率 [accuracy] を計算する。
         """
         # 出力層の活性化関数が sigmoid のとき（２クラスの識別）
-        if ( self._activate_outputLayer._activate_type == "sigmoid" ):
+        if ( self._activate_outputLayer._node_name == "Activate_Sigmoid_op" ):
             correct_predict_op = tf.equal( 
                                      tf.to_float( tf.greater( self._y_out_op, 0.5 ) ), 
                                      self._t_holder 
                                  )
         # 出力層の活性化関数が softmax のとき（多クラスの識別）
-        elif (  self._activate_outputLayer._activate_type == "softmax"  ):
+        elif ( self._activate_outputLayer._node_name == "Activate_Softmax_op" ):
             correct_predict_op = tf.equal(
                                      tf.arg_max( self._y_out_op, dimension = 1 ),
                                      tf.arg_max( self._t_holder, dimension = 1 )
