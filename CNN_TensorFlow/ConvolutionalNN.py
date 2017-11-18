@@ -4,7 +4,7 @@
 """
     更新情報
     [17/11/04] : 新規作成
-    [17/xx/xx] : 
+    [17/11/19] : NeuralNetworkBase クラスの子クラスになるように修正
                : 
 """
 
@@ -18,7 +18,7 @@ from tensorflow.python.framework import ops
 from sklearn.utils import shuffle
 
 # 自作クラス
-#from NeuralNetworkBase import NeuralNetworkBase    # 親クラス
+from NeuralNetworkBase import NeuralNetworkBase    # 親クラス
 
 import NNActivation
 from NNActivation import NNActivation               # ニューラルネットワークの活性化関数を表すクラス
@@ -42,7 +42,7 @@ from NNOptimizer import Adagrad
 from NNOptimizer import Adadelta
 
 
-class ConvolutionalNN(object):
+class ConvolutionalNN( NeuralNetworkBase ):
     """
     畳み込みニューラルネットワーク [CNN : Convolutional Neural Network] を表すクラス.
     TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、
@@ -50,20 +50,6 @@ class ConvolutionalNN(object):
     scikit-learn ライブラリとの互換性のある自作クラス
     ------------------------------------------------------------------------------------------------
     [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
-        _session : tf.Session()
-            自身の Session
-        _init_var_op : tf.global_variables_initializer()
-            全 Variable の初期化オペレーター
-
-        _loss_op : Operator
-            損失関数を表すオペレーター
-        _optimizer : Optimizer
-            モデルの最適化アルゴリズム
-        _train_step : 
-            トレーニングステップ
-        _y_out_op : Operator
-            モデルの出力のオペレーター
-
         _weights : list <Variable>
             モデルの各層の重みの Variable からなる list
         _biases : list <Variable>
@@ -76,16 +62,16 @@ class ConvolutionalNN(object):
         _eval_step : int
             学習処理時に評価指数の算出処理を行う step 間隔
 
-        _image_width : int
-            入力画像データの幅（ピクセル単位）
         _image_height : int
             入力画像データの高さ（ピクセル単位）
-        _n_ConvLayer_features : list <int>
-            畳み込み層の特徴量の数
+        _image_width : int
+            入力画像データの幅（ピクセル単位）
         _n_channels : int
             入力画像データのチャンネル数
             1 : グレースケール画像
 
+        _n_ConvLayer_features : list <int>
+            畳み込み層の特徴量の数
         _n_strides : int
             CNN の畳み込み処理でストライドさせる pixel 数
         _n_fullyLayers : int
@@ -127,17 +113,9 @@ class ConvolutionalNN(object):
         """
         コンストラクタ（厳密にはイニシャライザ）
         """
+        super().__init__( session )
+
         tf.set_random_seed(12)
-
-        # このクラスの処理で使われる Session の設定
-        self._session = session
-
-        # 各種 Operator の初期化
-        self._init_var_op = None
-        self._loss_op = None
-        self._optimizer = None
-        self._train_step = None
-        self._y_out_op = None
 
         # 各パラメータの初期化
         self._weights = []
@@ -178,20 +156,16 @@ class ConvolutionalNN(object):
 
     def print( self, str ):
         print( "----------------------------------" )
-        print( "CNN" )
-        print( self )
         print( str )
+        print( self )
 
         print( "_session : ", self._session )
         print( "_init_var_op :\n", self._init_var_op )
 
-        print( "_weights : \n", self._weights )
-        if( self._session != None ):
-            print( self._session.run( self._weights ) )
-
-        print( "_biases : \n", self._biases )
-        if( self._session != None ):
-            print( self._session.run( self._biases ) )
+        print( "_loss_op : ", self._loss_op )
+        print( "_optimizer : ", self._optimizer )
+        print( "_train_step : ", self._train_step )
+        print( "_y_out_op : ", self._y_out_op )
 
         print( "_epoches : ", self._epochs )
         print( "_batch_size : ", self._batch_size )
@@ -205,15 +179,17 @@ class ConvolutionalNN(object):
         print( "_n_fullyLayers : " , self._n_fullyLayers )
         print( "_n_labels : " , self._n_labels )
 
-        print( "_loss_op : ", self._loss_op )
-        print( "_optimizer : ", self._optimizer )
-        print( "_train_step : ", self._train_step )
-        print( "_y_out_op : ", self._y_out_op )
-
         print( "_X_holder : ", self._X_holder )
         print( "_t_holder : ", self._t_holder )
         print( "_keep_prob_holder : ", self._keep_prob_holder )
 
+        print( "_weights : \n", self._weights )
+        if( self._session != None ):
+            print( self._session.run( self._weights ) )
+
+        print( "_biases : \n", self._biases )
+        if( self._session != None ):
+            print( self._session.run( self._biases ) )
         print( "----------------------------------" )
         return
 
@@ -299,7 +275,7 @@ class ConvolutionalNN(object):
 
         # 畳み込み層からの出力（活性化関数）オペレーター
         # バイアス項を加算したものを活性化関数に通す
-        conv_out_op1 = Relu( tf.nn.bias_add( conv_op1, self._biases[0] ) )._activate_op
+        conv_out_op1 = Relu().activate( tf.nn.bias_add( conv_op1, self._biases[0] ) )
                 
         # プーリング層のオペレーター
         pool_op1 = tf.nn.max_pool(
@@ -324,7 +300,7 @@ class ConvolutionalNN(object):
                        padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
                    )
 
-        conv_out_op2 = Relu( tf.nn.bias_add( conv_op2, self._biases[1] ) )._activate_op
+        conv_out_op2 = Relu().activate( tf.nn.bias_add( conv_op2, self._biases[1] ) )
 
         pool_op2 = tf.nn.max_pool(
                        value = conv_out_op2,
@@ -369,7 +345,7 @@ class ConvolutionalNN(object):
         print( "flatted_input :", flatted_input )
 
         # 全結合層の入力側へのオペレーター
-        fullyLayers_in_op = Relu( tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] ) )._activate_op
+        fullyLayers_in_op = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] ) )
         
         # 全結合層の出力側へのオペレーター
         fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_in_op, self._weights[-1] ), self._biases[-1] )
@@ -398,6 +374,7 @@ class ConvolutionalNN(object):
     def optimizer( self, nnOptimizer ):
         """
         モデルの最適化アルゴリズムの設定を行う。
+
         [Input]
             nnOptimizer : NNOptimizer のクラスのオブジェクト
 

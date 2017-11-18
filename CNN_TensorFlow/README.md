@@ -95,7 +95,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 > sphinx or API Blueprint で HTML 形式の API 仕様書作成予定...
 
 - `NeuralNetworkBase` クラス
-    - TensorFlow ライブラリを使用
+    - scikit-learn ライブラリの推定器 estimator の基本クラス `BaseEstimator`, `ClassifierMixin` を継承している
     - ニューラルネットワークの基本的なフレームワークを想定した仮想メソッドからなる抽象クラス。<br>
     実際のニューラルネットワークを表すクラスの実装は、このクラスを継承し、オーバーライドするを想定している。
         - `model()` : モデルの定義を行い、最終的なモデルの出力のオペレーターを設定する。
