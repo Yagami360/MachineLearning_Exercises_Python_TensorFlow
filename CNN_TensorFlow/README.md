@@ -151,7 +151,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         ...
         X_train, y_train = MLPreProcess.load_mnist( mnist_path, "train" )
         X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )
-        
+
         X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )
         X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )
     ```
@@ -317,12 +317,20 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         return self._y_out_op
     ```
 - 損失関数は、疎なソフトマックス・クロス・エントロピー関数を使用
-    - `cnn1.loss( SparseSoftmaxCrossEntropy )`
-    - `cnn2.loss( SparseSoftmaxCrossEntropy )`
+    ```python
+    def main():
+        ...
+        cnn1.loss( SparseSoftmaxCrossEntropy() )
+        cnn2.loss( SparseSoftmaxCrossEntropy() )
+    ```
 - モデルの最適化アルゴリズムは、モメンタムを使用
     - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
-    - `cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )`
-    - `cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )`
+    ```python
+    def main():
+        ...
+        cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
+        cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
+    ```
 
 
 #### 損失関数のグラフ
