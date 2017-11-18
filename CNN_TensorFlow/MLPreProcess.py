@@ -20,8 +20,6 @@ import numpy
 # Data Frame & IO 関連
 import pandas
 from io import StringIO
-import tarfile
-
 
 # scikit-learn ライブラリ関連
 from sklearn import datasets                            # scikit-learn ライブラリのデータセット群
@@ -305,9 +303,99 @@ class MLPreProcess( object ):
     
 
     @staticmethod
-    def load_cifar10( path, kind = "tain", bReshape = False, bTensor = False ):
+    def load_cifar10( path, kind = "tain" ):
         """
-        検証データ用の CIFAR データを読み込む。
+        検証データ用の CIFAR-10 データを読み込む。
+        バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
+
+        [Input]
+            path : str
+                CIFAR-10 データセットが格納されているフォルダへのパス
+            kind : str
+                読み込みたいデータの種類（トレーニング用データ or テスト用データ）
+                "train" : トレーニング用データ
+                "test" : テスト用データ
+        """
+        # 読み込みファイル名の設定
+        # トレーニング用のデータ
+        if( kind == "train" ):
+            # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5
+            files = [ os.path.join( path, "data_batch_{}.bin".format(i) ) for i in range(1,6) ]
+        # テスト用のデータ
+        elif( kind == "test" ):
+            # test_batch
+            files = [ os.path.join( path, "test_batch.bin") ]
+        else:
+            files = [ os.path.join( path, "data_batch_{}.bin".format(i) ) for i in range(1,6) ]
+
+        print( "files :", files )
+
+        # 内部データサイズの設定 
+        image_height = 32   # CIFAR-10 画像の高さ (pixel)
+        image_width = 32    #
+        n_channels = 3      # RGB の 3 チャンネル
+
+        image_bytes = image_height * image_width * n_channels
+        labels_byte = 1
+        record_bytes = image_bytes + labels_byte
+
+        images = []
+        labels = []
+
+        # トレーニング用のデータ
+        if ( kind == "train" ):
+            # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5 に関しての loop
+            for i in range( 5 ):
+                #print( "i=" , i )
+                # バイナリーモードでファイルオープン
+                byte_stream = open( files[i], mode="rb" )
+
+                # 全レコード長に関しての loop
+                for record in range(10000):
+                    #
+                    byte_stream.seek( record_bytes * record , 0 )
+
+                    # バッファに割り当て
+                    label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
+                    image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
+                    image_buffer = image_buffer.astype( numpy.float32 )
+
+                    images.append( image_buffer )
+                    labels.append( label_buffer )
+                    #images[record] = image_buffer
+
+                # 
+                byte_stream.close()
+
+        # テスト用のデータ
+        elif ( kind == "test" ):
+            byte_stream = open( files[0], mode="rb" )
+            # 全レコード長に関しての loop
+            for record in range(10000):
+                #
+                byte_stream.seek( record_bytes * record , 0 )
+
+                # バッファに割り当て
+                label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
+                image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
+                image_buffer = image_buffer.astype( numpy.float32 )
+
+                images.append( image_buffer )
+                labels.append( label_buffer )
+                #images[record] = image_buffer
+
+            # 
+            byte_stream.close()
+
+        return images, labels
+
+
+    @staticmethod
+    def load_cifar10_tensorflow( path, kind = "tain", bReshape = False, bTensor = False ):
+        """
+        TensorFlow を用いて, 検証データ用の CIFAR-10 データを読み込む。
+        バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
+
         [Input]
             path : str
                 CIFAR-10 データセットが格納されているフォルダへのパス
@@ -321,27 +409,31 @@ class MLPreProcess( object ):
                 戻り値を Tensor のままにするか否か
                 
         [Output]
-            images : Tensor / shape = [n_samples = 60,000, n_features = 3*32*32 = 3*1024]
+            images : Tensor / shape = [n_samples = 50,000, n_features = 3*32*32 = 3*1024]
                 トレーニングデータ用の画像データ
                 n_features = n_channels * image_height * image_width
-            labels : Tensor / [n_samples = 60,000,]
+            labels : Tensor / [n_samples = 10,000,]
                 トレーニングデータ用のラベルデータ（教師データ）
                 0~9 の数字ラベル
-                0 : [] 
-                1 :
+                0 : 飛行機 [airplane] 
+                1 : 
                 2 :
+                ...
+                7 : 馬 [horse]
+                8 :
+                9 : 
         """
         # 読み込みファイル名の設定
         # トレーニング用のデータ
         if( kind == "train" ):
             # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5
-            files = [ os.path.join( path, "data_batch_{}".format(i) ) for i in range(1,6) ]
+            files = [ os.path.join( path, "data_batch_{}.bin".format(i) ) for i in range(1,6) ]
         # テスト用のデータ
         elif( kind == "test" ):
             # test_batch
             files = [ os.path.join( path, "test_batch") ]
         else:
-            files = [ os.path.join( path, "data_batch_{}".format(i) ) for i in range(1,6) ]
+            files = [ os.path.join( path, "data_batch_{}.bin".format(i) ) for i in range(1,6) ]
 
         print( "files :", files )
 
@@ -390,14 +482,66 @@ class MLPreProcess( object ):
 
 
     @staticmethod
-    def load_cifar10_with_transform( path, kind = "tain", bTensor = False ):
+    def load_cifar10_with_transform_tensorflow( 
+        path, 
+        kind = "tain", 
+        bTensor = False,
+        crop_height = 24,
+        crop_width = 24
+    ):
         """
-        検証データ用の CIFAR-10 データを読み込み、ランダムに加工する。
+        TensorFlow を用いて, 検証データ用の CIFAR-10 データを読み込み、ランダムに加工する。
+        バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
+
+        [Input]
+            path : str
+                CIFAR-10 データセットが格納されているフォルダへのパス
+            kind : str
+                読み込みたいデータの種類（トレーニング用データ or テスト用データ）
+                "train" : トレーニング用データ
+                "test" : テスト用データ
+            bTensor : Bool
+                戻り値を Tensor のままにするか否か
+
+            crop_height : int
+                画像加工時の画像のの切り取り高さ
+            crop_width : int
+                画像加工時の画像のの切り取り幅
+
+        [Output]
+            images : Tensor / shape = [n_samples = 50,000, n_features = 3*32*32 = 3*1024]
+                トレーニングデータ用の画像データ
+                n_features = n_channels * image_height * image_width
+            labels : Tensor / [n_samples = 10,000,]
+                トレーニングデータ用のラベルデータ（教師データ）
         """
+        #tf.set_random_seed(12)
+
         # Tensor の状態のままの images, labels データを読み込み
-        image, labels = load_cifar10( path, kind, bReshape = True, bTensor = True )
+        image, labels = load_cifar10_tensorflow( path, kind, bReshape = True, bTensor = True )
 
+        # 画像を変形（転置）
+        image = tf.transpose( image, [1,2,0] )  # [1,2,0] : ?
+        image = tf.cast( image, tf.float32 )    # ?
 
+        # 画像をランダムに切り取る
+        image = tf.image.resize_image_with_crop_or_pad( 
+                    image, 
+                    target_height = crop_height,    # 切り取り高さ
+                    target_width = crop_width       # 切り取り幅 
+                )
+
+        # 画像の左右をランダムに反転
+        image = tf.image.random_flip_left_right( image )
+
+        # 明るさをランダムに変更
+        image = tf.image.random_brightness( image, max_delta = 63, seed = 12 )
+
+        # コントラストをランダムに変更
+        image = tf.image.random_contrast( image, lower = 0.2, upper = 1.8, seed = 12 )
+
+        # 画像を正規化
+        image = tf.image.per_image_standardization( image )
 
         if( bTensor == False ):
             # Session を生成＆run() して、Tensor の実際の値を取得

@@ -11,6 +11,7 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 参考サイト :
 - [Tensorflow での MINIST チュートリアル（公式）](https://www.tensorflow.org/get_started/mnist/beginners)
 - [Tensorflow での CIFAR-10 チュートリアル（公式）](https://www.tensorflow.org/tutorials/deep_cnn)
+- [TensorFlowはじめました / TensorFlowでデータの読み込み ― 画像を分類するCIFAR-10の基礎](http://www.buildinsider.net/small/booktensorflow/0201)
 
 
 ## 項目 [Contents]
@@ -50,11 +51,11 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 >> `tf.nn.max_pool(...)` : マックスプーリング処理のオペレーター<br>
 >> https://www.tensorflow.org/api_docs/python/tf/nn/max_pool<br>
 
->> `tf.nn.sparse_softmax_cross_entropy_with_logits(...)` : 疎なソフトマックス・クロス・エントロピー関数のオペレーター
->> https://www.tensorflow.org/api_docs/python/tf/nn/sparse_softmax_cross_entropy_with_logits
+>> `tf.nn.sparse_softmax_cross_entropy_with_logits(...)` : 疎なソフトマックス・クロス・エントロピー関数のオペレーター<br>
+>> https://www.tensorflow.org/api_docs/python/tf/nn/sparse_softmax_cross_entropy_with_logits<br>
 
->> `tf.train.MomentumOptimizer(...)` : モーメンタムアルゴリズムの Optimizer
->> https://www.tensorflow.org/api_docs/python/tf/train/MomentumOptimizer
+>> `tf.train.MomentumOptimizer(...)` : モーメンタムアルゴリズムの Optimizer<br>
+>> https://www.tensorflow.org/api_docs/python/tf/train/MomentumOptimizer<br>
 
 >> ファイル＆画像処理関連
 >>> 参考サイト : <br>
@@ -66,7 +67,12 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/train/string_input_producer<br>
 >>> `tf.decode_raw(...)` : 文字列から uint8 の Tensor に変換する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/decode_raw<br>
-
+>>> `tf.image.resize_image_with_crop_or_pad(...)` : 指定した値で画像を切り取る<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/image/resize_image_with_crop_or_pad<br>
+>>> `tf.image.random_flip_left_right(...)` : 画像の左右をランダムに反転<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/image/random_flip_left_right<br>
+>>> `tf.image.per_image_standardization(...)` : 画像を正規化<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/image/per_image_standardization<br>
 
 > Numpy ライブラリ
 >> `numpy.argmax(...)` : 指定した配列の中で最大要素を含むインデックスを返す関数<br>
@@ -79,7 +85,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 ## 使用するデータセット
 - [MNIST データセット](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#mnist手書き数字文字画像データ)
     - 多クラスの識別＆パターン認識処理である `main1.py` で使用
-- CIFAR-10 データセット
+- [CIFAR-10 データセット](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#cifar-10-データセット)
     - 多クラスの識別＆パターン認識処理である `main2.py` で使用
 
 
@@ -366,7 +372,8 @@ def main():
 ### CNN による CIFAR-10 データの識別 : `main2.py`
 > コード実装中...
 
-- CIFAR-10 データセットを使用
+- バイナリー形式の CIFAR-10 データセットを使用
+    - 
 - **画像は、ランダムに加工した上でトレーニングデータとして利用する**
     - 加工は、画像の一部の切り出し、左右の反転、明るさの変更からなる。
     - 画像の分類精度を向上させるには、画像の枚数が必要となるが、画像を加工することで画像を水増しすることが出来るため、このような処理を行う。
