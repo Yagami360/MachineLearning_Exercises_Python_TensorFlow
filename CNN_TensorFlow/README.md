@@ -115,8 +115,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 - `NNActivation` クラス : ニューラルネットワークの活性化関数を表す親クラス。<br>
     ポリモーフィズムを実現するための親クラス
     - `Sigmoid` クラス : `NNActivation` の子クラス。シグモイド関数の活性化関数を表す
-    - `ReLu` クラス : `NNActivation` の子クラス。。Relu 関数の活性化関数を表す
-    - `Softmax` クラス : `NNActivation` の子クラス。。softmax 関数の活性化関数を表す
+    - `ReLu` クラス : `NNActivation` の子クラス。Relu 関数の活性化関数を表す
+    - `Softmax` クラス : `NNActivation` の子クラス。softmax 関数の活性化関数を表す
     
 - `NNLoss` クラス : ニューラルネットワークにおける損失関数を表す親クラス。<br>
     ポリモーフィズムを実現するための親クラス
@@ -131,7 +131,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     ポリモーフィズムを実現するための親クラス
     - `GradientDecent` クラス : `NNOptimizer` クラスの子クラス。勾配降下法を表すクラス。
     - `Momentum` クラス : `NNOptimizer` クラスの子クラス。モメンタム アルゴリズムを表すクラス
-    - `NesterovMomentum` クラス : `NNOptimizer` クラスの子クラス。モメンタム アルゴリズムを表すクラス
+    - `NesterovMomentum` クラス : `NNOptimizer` クラスの子クラス。Nesterov モメンタム アルゴリズムを表すクラス
     - `Adagrad` クラス : `NNOptimizer` クラスの子クラス。Adagrad アルゴリズムを表すクラス
     - `Adadelta` クラス : `NNOptimizer` クラスの子クラス。Adadelta アルゴリズムを表すクラス
 
@@ -283,7 +283,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 - モデルの最適化アルゴリズムは、モメンタムを使用
     - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
     - `cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )`
-    - `cnn1.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )`
+    - `cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )`
 - エポック数は 500、ミニバッチサイズは 100 で学習
     ```python
     def main():
