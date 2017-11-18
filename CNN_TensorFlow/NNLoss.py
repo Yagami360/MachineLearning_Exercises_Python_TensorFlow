@@ -77,7 +77,7 @@ class L1Norm( NNLoss ):
     def loss( self, t_holder, y_out_op, node_name = "Loss_L1Norm_op" ):
         # tf.reduce_mean(...) : 
         self._loss_op = tf.reduce_mean(
-                            tf.abs( self._t_holder - self._y_out_op )
+                            tf.abs( t_holder - y_out_op )
                         )
 
         return self._loss_op
@@ -96,7 +96,7 @@ class L2Norm( NNLoss ):
 
     def loss( self, t_holder, y_out_op, node_name = "Loss_L2Norm_op" ):
         self._loss_op = tf.reduce_mean(
-                            tf.square( self._t_holder - self._y_out_op )
+                            tf.square( t_holder - y_out_op )
                         )
         
         return self._loss_op
@@ -115,8 +115,8 @@ class BinaryCrossEntropy( NNLoss ):
 
     def loss( self, t_holder, y_out_op ):
         self._loss_op = -tf.reduce_sum( 
-                            self._t_holder * tf.log( self._y_out_op ) + 
-                            ( 1 - self._t_holder ) * tf.log( 1 - self._y_out_op )
+                            t_holder * tf.log( y_out_op ) + 
+                            ( 1 - t_holder ) * tf.log( 1 - y_out_op )
                         )
         
         return self._loss_op
@@ -138,7 +138,7 @@ class CrossEntropy( NNLoss ):
         # tf.clip_by_value(...) : 下限値、上限値を設定
         self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
                             -tf.reduce_sum( 
-                                self._t_holder * tf.log( tf.clip_by_value(self._y_out_op, 1e-10, 1.0) ), 
+                                t_holder * tf.log( tf.clip_by_value(y_out_op, 1e-10, 1.0) ), 
                                 reduction_indices = [1]     # sum をとる行列の方向 ( 1:row 方向 )
                             )
                         )

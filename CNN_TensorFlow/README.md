@@ -200,7 +200,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
         # 畳み込み層からの出力（活性化関数）オペレーター
         # バイアス項を加算したものを活性化関数に通す
-        conv_out_op1 = Relu( tf.nn.bias_add( conv_op1, self._biases[0] ) )._activate_op
+        conv_out_op1 = Relu().activate( tf.nn.bias_add( conv_op1, self._biases[0] ) )
 
         # プーリング層のオペレーター
         pool_op1 = tf.nn.max_pool(
@@ -224,7 +224,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
                        strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
                        padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
                    )
-        conv_out_op2 = Relu( tf.nn.bias_add( conv_op2, self._biases[1] ) )._activate_op
+        conv_out_op2 = Relu().activate( tf.nn.bias_add( conv_op2, self._biases[1] ) )
 
         pool_op2 = tf.nn.max_pool(
                        value = conv_out_op2,
@@ -268,8 +268,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         print( "flatted_input :", flatted_input )
 
         # 全結合層の入力側へのオペレーター
-        fullyLayers_in_op = Relu( tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] )._activate_op
-        
+        fullyLayers_in_op = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] ) )
+
         # 全結合層の出力側へのオペレーター
         fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_in_op, self._weights[-1] ), self._biases[-1] )
 
