@@ -146,10 +146,15 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - MNIST データセットを使用。
     - データは shape = [n_sample, image_width=28, image_height=28] の形状に reshape
-        - `X_train, y_train = MLPreProcess.load_mnist( mnist_path, "train" )`
-        - `X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )`
-        - `X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )`
-        - `X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )`
+    ```python
+    def main():
+        ...
+        X_train, y_train = MLPreProcess.load_mnist( mnist_path, "train" )
+        X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )
+        
+        X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )
+        X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )
+    ```
 - エポック数は 500、ミニバッチサイズは 100 で学習
     ```python
     def main():
