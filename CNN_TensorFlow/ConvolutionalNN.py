@@ -5,6 +5,7 @@
     更新情報
     [17/11/04] : 新規作成
     [17/11/19] : NeuralNetworkBase クラスの子クラスになるように修正
+               : 畳み込み層でのカーネルのサイズ、プーリング層でのウィンドウサイズ、ストライドサイズの値をコンストラクタで設定出来るように修正
                : 
 """
 
@@ -444,6 +445,12 @@ class ConvolutionalNN( NeuralNetworkBase ):
         [Output]
             self : 自身のオブジェクト
         """
+        # 入力データの shape にチェンネルデータがない場合
+        # shape = [image_height, image_width]
+        if( X_train.ndim == 3 ):
+            # shape を [image_height, image_width] → [image_height, image_width, n_channel=1] に reshape
+            X_train = numpy.expand_dims( X_train, axis = 3 )
+
         #----------------------------
         # 学習開始処理
         #----------------------------
@@ -468,13 +475,11 @@ class ConvolutionalNN( NeuralNetworkBase ):
             X_train_shuffled = X_train[ idx_shuffled ]
             y_train_shuffled = y_train[ idx_shuffled ]
 
-            # shape を (batchsize, image_width, image_height) → (batchsize, image_width, image_height, 1) に reshape
-            X_train_shuffled = numpy.expand_dims( X_train_shuffled, 3 )
-
+            #print( "X_train_shuffled.shape", X_train_shuffled.shape )
             #print( "X_train_shuffled", X_train_shuffled )
             #print( "y_train_shuffled", y_train_shuffled )
 
-            # 
+            # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
             self._session.run(
                 self._train_step,
                 feed_dict = {

@@ -23,7 +23,8 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 1. [コード説明＆実行結果](#ID_3)
     1. [CNN による MNIST データの識別 : `main1.py`](#ID_3-1)
     1. [CNN による CIFAR-10 データの識別 : `main2.py`](#ID_3-2)
-    1. [既存の CNN モデルの再学習処理 : `main3.py`](#ID_3-3)
+    1. [Queue（画像パイプライン）を用いた CNN による CIFAR-10 データの識別 : `main3.py`](#ID3-3)
+    1. [既存の CNN モデルの再学習処理 : `main4.py`](#ID_3-4)
 1. [背景理論](#ID_4)
     1. [CNN の概要](#ID_4-1)
     1. [畳み込み [convolution] 処理について](#ID_4-2)
@@ -448,12 +449,92 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 ### CNN による CIFAR-10 データの識別 : `main2.py`
 > コード実装中...
 
+#### コードの説明
+- バイナリー形式の CIFAR-10 データセット CIFAR-10 binary version (suitable for C programs) を使用
+    - ファイルフォーマットは [dataset.md](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#cifar-10-データセット) 参照
+    - このフォーマットに基づき、<br>
+    データの読み込みを `MLPreProcess` クラスの static 関数 `load_cifar10(...)` で行う。
+    - 読み込みんだデータの shape を、[image_height, image_width, n_channel] となるように変形する。
+    ```python
+    def main():
+        ...
+        X_train, y_train = MLPreProcess.load_cifar10( cifar10_path, kind = "train" )
+        X_test, y_test = MLPreProcess.load_cifar10( cifar10_path, kind = "test" )
+    
+        # [n_channel, image_height, image_width] = [3,32,32] に reshape
+        X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
+        X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
+        y_train = numpy.reshape( y_train, 50000 )
+        y_test = numpy.reshape( y_test, 10000 )
+        
+        # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+        # numpy の transpose() を使って次元を入れ替え
+        X_train = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_train] )
+        X_test = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_test] )
+    ```
+- モデルの構造は、`ConvolutionalNN.model()` メソッドで定義し、<br>
+  ｛畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２｝
+   で構成。
+    - 畳み込み層１ : `tf.nn.conv2d(...)`
+        - 画像の高さ : `_image_height = 32` 
+        - 画像の幅 : `_image_width = 32`
+        - チャンネル数 : `_n_channels = 3`
+        - カーネル（フィルタ行列）: `_n_ConvLayer_kernels[0] = 5` → 5*5
+        - 特徴マップ数 : `_n_ConvLayer_featuresMap[0] = 64`
+        - ストライド幅 : `_n_strides = 1` → 1*1
+        - ゼロパディング : `padding = "SAME"`
+    - プーリング層１
+        - マックスプーリング : `tf.nn.max_pool(...)`
+        - ウィンドウサイズ : `_n_pool_wndsize = 3` → 3*3
+        - ストライド幅 : `_n_pool_strides = 2` → 2*2
+    - 畳み込み層２ : `tf.nn.conv2d(...)`
+        - カーネル（フィルタ行列）: `_n_ConvLayer_kernels[1] = 5` → 5*5
+        - 特徴マップ数（入力側）: `_n_ConvLayer_featuresMap[0] = 64`
+        - 特徴マップ数（出力側）: `_n_ConvLayer_featuresMap[1] = 64`
+        - ストライド幅 : `_n_strides = 1` → 1*1
+        - ゼロパディング : `padding = "SAME"`
+    - プーリング層２
+        - マックスプーリング : `tf.nn.max_pool(...)`
+        - ウィンドウサイズ : `_n_pool_wndsize = 3` → 3*3
+        - ストライド幅 : `_n_pool_strides = 2` → 2*2
+    - 全結合層１（入力側）
+        - xxx
+    - 全結合層２（出力側）
+        - xxx
+- 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、疎なソフトマックス・クロス・エントロピー関数を使用
+    ```python
+    def main():
+        ...
+        cnn1.loss( SparseSoftmaxCrossEntropy() )
+        cnn2.loss( SparseSoftmaxCrossEntropy() )
+    ```
+- モデルの最適化アルゴリズムは、`ConvolutionalNN.optimizer()` メソッドで行い、モメンタムを使用
+    - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
+    ```python
+    def main():
+        ...
+        cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
+        cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
+    ```
+    
+#### コードの実行結果
+
+
+
+
+
+<br>
+<a id="ID_3-3"></a>
+
+### Queue （画像パイプライン）を使用した CNN による CIFAR-10 データの識別 : `main3.py`
+> コード実装中...
+
 - バイナリー形式の CIFAR-10 データセットを使用
+    - xxx
+
 - **画像は、ランダムに加工した上でトレーニングデータとして利用する**
     - 加工は、画像の一部の切り出し、左右の反転、明るさの変更からなる。
     - 画像の分類精度を向上させるには、画像の枚数が必要となるが、画像を加工することで画像を水増しすることが出来るため、このような処理を行う。
-
-
 
 <br>
 
@@ -541,106 +622,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 ### デバッグ Memo
 
-```python
-    # MSIT データが格納されているフォルダへのパス
-    mist_path = "D:\Data\MachineLearning_DataSet\MIST"
+[17/11/19]
 
-    X_train, y_train = MLPreProcess.load_mist( mist_path, "train" )
-    X_test, y_test = MLPreProcess.load_mist( mist_path, "t10k" )
-
-    print( "X_train.shape : ", X_train.shape )
-    print( "y_train.shape : ", y_train.shape )
-    print( "X_test.shape : ", X_test.shape )
-    print( "y_test.shape : ", y_test.shape )
-    ...
-    session = tf.Session()
-    encode_holder = tf.placeholder(tf.int64, [None])
-    y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=10, dtype=tf.float32 ) # depth が 出力層のノード数に対応
-    session.run( tf.global_variables_initializer() )
-    y_train_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_train } )
-    y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
-    print( "y_train_encoded.shape : ", y_train_encoded.shape )
-    print( "y_train_encoded.dtype : ", y_train_encoded.dtype )
-    print( "y_test_encoded.shape : ", y_test_encoded.shape )
-```
-```python
-[出力]
-X_train.shape :  (60000, 784)
-y_train.shape :  (60000,)
-X_test.shape :  (10000, 784)
-y_test.shape :  (10000,)
-y_train_encoded.shape :  (60000, 10)
-y_train_encoded.dtype :  float32
-y_test_encoded.shape :  (10000, 10)
-```
-<br>
-
-```python
-    # TensorFlow のサポート関数を使用して, MNIST データを読み込み
-    mnist = read_data_sets( mist_path )
-    print( "mnist :\n", mnist )
-    X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in mnist.train.images] )
-    X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in mnist.test.images] )
-    y_train = mnist.train.labels
-    y_test = mnist.test.labels
-
-    print( "X_train.shape : ", X_train.shape )
-    print( "y_train.shape : ", y_train.shape )
-    print( "X_test.shape : ", X_test.shape )
-    print( "y_test.shape : ", y_test.shape )
-```
-```python
-[出力]
-mnist :
- Datasets(
- train=<tensorflow.contrib.learn.python.learn.datasets.mnist.DataSet object at 0x0000000002BE99E8>, 
- validation=<tensorflow.contrib.learn.python.learn.datasets.mnist.DataSet object at 0x0000000002BE9EB8>, 
- test=<tensorflow.contrib.learn.python.learn.datasets.mnist.DataSet object at 0x00000000108A5C50>)
-X_train.shape :  (55000, 28, 28)
-y_train.shape :  (55000,)
-X_test.shape :  (10000, 28, 28)
-y_test.shape :  (10000,)
-
-fullyLayers_input_size :  78400
-pool_op1.get_shape().as_list() :
- [None, 28, 28, 25]
-ValueError: Dimensions must be equal, but are 19600 and 78400 for 'MatMul' (op: 'MatMul') with input shapes: [1,19600], [78400,100].
-```
-
-```
-InvalidArgumentError (see above for traceback): You must feed a value for placeholder tensor 'Placeholder_2' with dtype int32 and shape [100]
-	 [[Node: Placeholder_2 = Placeholder[dtype=DT_INT32, shape=[100], _device="/job:localhost/replica:0/task:0/cpu:0"]()]]
-```
-
-```python
-X_train.shape :  (60000, 28, 28)
-y_train.shape :  (60000,)
-X_test.shape :  (10000, 28, 28)
-y_test.shape :  (10000,)
-X_train : 
- [[[0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  ..., 
-  [0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]]
-
- [[0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  ..., 
- [[0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  ..., 
-  [0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]
-  [0 0 0 ..., 0 0 0]]]
-
-y_train : 
- [5 0 4 ..., 5 6 8]
-y_train_encoded.shape :  (60000, 10)
-y_train_encoded.dtype :  float32
-y_test_encoded.shape :  (10000, 10)
-```
+- InvalidArgumentError (see above for traceback): logits and labels must be same size: logits_size=[100,10] labels_size=[1,100]
+	 [[Node: SoftmaxCrossEntropyWithLogits = SoftmaxCrossEntropyWithLogits[T=DT_FLOAT, _device="/job:localhost/replica:0/task:0/cpu:0"](Reshape_2, Reshape_3)]]

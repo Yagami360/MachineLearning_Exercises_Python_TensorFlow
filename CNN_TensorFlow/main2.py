@@ -63,30 +63,17 @@ def main():
     X_train, y_train = MLPreProcess.load_cifar10( cifar10_path, kind = "train" )
     X_test, y_test = MLPreProcess.load_cifar10( cifar10_path, kind = "test" )
     
-
-    """
-    # Tensor から実際の値を取得
-    sess = tf.InteractiveSession()
-    image_holder = tf.placeholder( tf.float32, shape = [None] )
-    sess.run( tf.global_variables_initializer() )
-    #print( y_train.eval() )
-    #print( X_train.eval() )
-    #y_train = y_train.eval()
-    #X_test = X_test.eval()
-    #y_test = y_test.eval()
-    #X_train = sess.run( X_train, feed_dict = {image_holder:X_train} )
-    #y_train = session.run( y_train )
-    #X_test = session.run( X_test )
-    #y_test = session.run( y_test )
-    sess.close()
-    """
-
-    # 3 * 32 * 32 に reshape
+    # [n_channel, image_height, image_width] = [3,32,32] に reshape
     X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
     X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
     y_train = numpy.reshape( y_train, 50000 )
     y_test = numpy.reshape( y_test, 10000 )
 
+    # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+    # numpy の transpose() を使って次元を入れ替え
+    X_train = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_train] )             
+    X_test = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_test] )
+    
     print( "X_train.shape : ", X_train.shape )
     print( "y_train.shape : ", y_train.shape )
     print( "X_test.shape : ", X_test.shape )
@@ -99,7 +86,6 @@ def main():
     #---------------------------------------------------------------------
     # CIFAR-10 画像を plot
     #---------------------------------------------------------------------
-    """
     # 先頭の 0~9 のラベルの画像データを plot
     # plt.subplots(...) から,
     # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
@@ -114,11 +100,9 @@ def main():
     for i in range(64):
         #print( "i=", i )
         image = X_train[i]
-        # １次元配列を shape = [3,32,32] に reshape
-        #image = image.reshape(3,32,32)
         # imshow()で読める([1]row, [2]column, [0] channel) の順番に変更するために
         # numpyのtranspose()を使って次元を入れ替え
-        image = image.transpose(1, 2, 0)        
+        #image = image.transpose(1, 2, 0)
         axis[i].imshow( image )
         axis[i].set_title( "Actual: " + str( y_train[i] ), fontsize = 8 )
 
@@ -133,8 +117,7 @@ def main():
     axis = axis.flatten()
     for i in range(64):
         image = X_train[y_train == 0][i]
-        #image = image.reshape(3,32,32)   
-        image = image.transpose(1, 2, 0)
+        #image = image.transpose(1, 2, 0)
         axis[i].imshow( image )
         axis[i].set_title( "Actual: " + str( 0 ), fontsize = 8 )
 
@@ -143,7 +126,7 @@ def main():
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "CNN_2-2.png" )
     plt.show()
-    """
+
     #======================================================================
     # データを変換、正規化
     # Transform and normalize data.
@@ -186,6 +169,9 @@ def main():
                n_labels = 10
            )
 
+    # 入力画像データの [n_channels, image_height, image_width] の shape に対応するように placeholder の形状を reshape
+    #cnn1._X_holder = tf.placeholder( tf.float32, shape = [ None, 3, 32, 32 ] )
+
     cnn2 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                epochs = 500,
@@ -202,6 +188,9 @@ def main():
                n_fullyLayers = 100,
                n_labels = 10
            )
+
+    # 入力画像データの [n_channels, image_height, image_width] の shape に対応するように placeholder の形状を reshape
+    #cnn2._X_holder = tf.placeholder( tf.float32, shape = [ None, 3, 32, 32 ] )
 
     #cnn1.print( "after __init__()" )
 
@@ -267,18 +256,17 @@ def main():
     #-------------------------------------------------------------------
     # トレーニング回数に対する loss 値の plot
     #-------------------------------------------------------------------
-    """
     plt.clf()
     plt.plot(
         range( 0, 500 ), cnn1._losses_train,
-        label = 'train data : CNN1 = [25,50,100], learning_rate = 0.0001',
+        label = 'train data : CNN1 = [50,50,100], learning_rate = 0.0001',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
     )
     plt.plot(
         range( 0, 500 ), cnn2._losses_train,
-        label = 'train data : CNN2 = [25,50,100], learning_rate = 0.0005',
+        label = 'train data : CNN2 = [50,50,100], learning_rate = 0.0005',
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'
@@ -289,14 +277,12 @@ def main():
     plt.xlabel( "Epocs" )
     plt.tight_layout()
    
-    MLPlot.saveFigure( fileName = "CNN_2-1.png" )
+    MLPlot.saveFigure( fileName = "CNN_2-3.png" )
     plt.show()
-    """
 
     #--------------------------------------------------------------------
     # テストデータでの正解率
     #--------------------------------------------------------------------
-    """
     accuracy1 = cnn1.accuracy( X_test, y_test )
     accuracy2 = cnn2.accuracy( X_test, y_test )
     print( "accuracy1 [test data] : %0.3f" % accuracy1 )
@@ -311,12 +297,10 @@ def main():
     accuracys2 = cnn2.accuracy_labels( X_test, y_test )
     for i in range( len(accuracys2) ):
         print( "label %d : %.3f" % ( i, accuracys2[i] ) )
-    """
 
     #-------------------------------------------------------------------
     # 正解画像＆誤識別画像の plot
     #-------------------------------------------------------------------
-    """
     predict1 = cnn1.predict( X_test )
     predict2 = cnn2.predict( X_test )
     print( "predict1 : ", predict1 )
@@ -349,7 +333,7 @@ def main():
     axis1[0].set_xticks( [] )
     axis1[0].set_yticks( [] )
     #plt.tight_layout()
-    MLPlot.saveFigure( fileName = "CNN_1-2.png" )
+    MLPlot.saveFigure( fileName = "CNN_2-4.png" )
     plt.show()
     
 
@@ -371,10 +355,9 @@ def main():
     axis2[0].set_xticks( [] )
     axis2[0].set_yticks( [] )
     #plt.tight_layout()
-    MLPlot.saveFigure( fileName = "CNN_1-3.png" )
+    MLPlot.saveFigure( fileName = "CNN_2-5.png" )
     plt.show()
-    """
-
+    
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================
