@@ -177,8 +177,11 @@ def main():
                image_height = 32,                   # 32 pixel
                image_width = 32,                    # 32 pixel
                n_channels = 3,                      # RGB の 3 チャンネル
-               n_ConvLayer_features = [25, 50],     #
+               n_ConvLayer_featuresMap = [64, 64],  # conv1 : 64*64, conv2 : 64*64
+               n_ConvLayer_kernels = [5, 5],        # conv1 : 5*5, conv2 : 5*5
                n_strides = 1,
+               n_pool_wndsize = 3,
+               n_pool_strides = 2,
                n_fullyLayers = 100,
                n_labels = 10
            )
@@ -192,8 +195,11 @@ def main():
                image_height = 32,                   # 32 pixel
                image_width = 32,                    # 32 pixel
                n_channels = 3,                      # RGB の 3 チャンネル
-               n_ConvLayer_features = [25, 50],     #
+               n_ConvLayer_featuresMap = [64, 64],  # conv1 : 64*64, conv2 : 64*64
+               n_ConvLayer_kernels = [5, 5],        # conv1 : 5*5, conv2 : 5*5
                n_strides = 1,
+               n_pool_wndsize = 3,
+               n_pool_strides = 2,
                n_fullyLayers = 100,
                n_labels = 10
            )

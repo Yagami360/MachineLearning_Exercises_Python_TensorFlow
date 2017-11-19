@@ -70,10 +70,24 @@ class ConvolutionalNN( NeuralNetworkBase ):
             入力画像データのチャンネル数
             1 : グレースケール画像
 
-        _n_ConvLayer_features : list <int>
-            畳み込み層の特徴量の数
+        _n_ConvLayer_featuresMap : list <int>
+            畳み込み層で変換される特徴マップの枚数
+            conv1 : _n_ConvLayer_featuresMap[0]
+            conv2 : _n_ConvLayer_featuresMap[1]
+            ...
+        _n_ConvLayer_kernels : list <int>
+            CNN の畳み込み処理時のカーネルのサイズ
+            conv1 : _n_ConvLayer_kernels[0] * _n_ConvLayer_kernels[0]
+            conv2 : _n_ConvLayer_kernels[1] * _n_ConvLayer_kernels[1]
+            ...
         _n_strides : int
-            CNN の畳み込み処理でストライドさせる pixel 数
+            CNN の畳み込み処理（特徴マップ生成）でストライドさせる pixel 数
+
+        _n_pool_wndsize : int
+            プーリング処理用のウィンドウサイズ
+        _n_pool_strides : int
+            プーリング処理時のストライドさせる pixel 数
+
         _n_fullyLayers : int
             全結合層の入力側のノード数
         _n_labels : int
@@ -105,8 +119,11 @@ class ConvolutionalNN( NeuralNetworkBase ):
             image_height = 28,
             image_width = 28,
             n_channels = 1,
-            n_ConvLayer_features = [25, 50],
+            n_ConvLayer_featuresMap = [25, 50],
+            n_ConvLayer_kernels = [4, 4],
             n_strides = 1,
+            n_pool_wndsize = 2,
+            n_pool_strides = 2,
             n_fullyLayers = 100,
             n_labels = 10
         ) :
@@ -129,8 +146,13 @@ class ConvolutionalNN( NeuralNetworkBase ):
         self._image_width = image_width
         self._n_channels = n_channels
 
-        self._n_ConvLayer_features = n_ConvLayer_features
+        self._n_ConvLayer_featuresMap = n_ConvLayer_featuresMap
+        self._n_ConvLayer_kernels = n_ConvLayer_kernels
         self._n_strides = n_strides
+
+        self._n_pool_wndsize = n_pool_wndsize
+        self._n_pool_strides = n_pool_strides
+
         self._n_fullyLayers = n_fullyLayers
         self._n_labels = n_labels
 
@@ -139,7 +161,7 @@ class ConvolutionalNN( NeuralNetworkBase ):
         # shape の行は、None にして汎用性を確保
         self._X_holder = tf.placeholder( 
                              tf.float32, 
-                             shape = [ None, image_width, image_height, n_channels ]
+                             shape = [ None, image_height, image_width, n_channels ]
                          )
 
         self._t_holder = tf.placeholder( 
@@ -174,8 +196,11 @@ class ConvolutionalNN( NeuralNetworkBase ):
         print( "_image_height : " , self._image_height )
         print( "_image_width : " , self._image_width )
         print( "_n_channels : " , self._n_channels )
-        print( "_n_ConvLayer_features :\n" , self._n_ConvLayer_features )
+        print( "_n_ConvLayer_featuresMap :" , self._n_ConvLayer_featuresMap )
+        print( "_n_ConvLayer_kernels :" , self._n_ConvLayer_kernels )
         print( "_n_strides : " , self._n_strides )
+        print( "_n_pool_wndsize : " , self._n_pool_wndsize )
+        print( "_n_pool_strides : " , self._n_pool_strides )
         print( "_n_fullyLayers : " , self._n_fullyLayers )
         print( "_n_labels : " , self._n_labels )
 
@@ -252,23 +277,29 @@ class ConvolutionalNN( NeuralNetworkBase ):
         """
         # 計算グラフの構築
         #----------------------------------------------------------------------
-        # 畳み込み層 ~ 活性化関数 ~ プーリング層 ~
+        # １つ目の畳み込み層 ~ 活性化関数 ~ プーリング層 ~
         #----------------------------------------------------------------------
         # 重みの Variable の list に、１つ目の畳み込み層の重み（カーネル）を追加
-        # この重みは、畳み込み処理の画像データに対するフィルタ処理に使うカーネルを表す Tensor のことである。
+        # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [4, 4, self._n_channels, self._n_ConvLayer_features[0] ]  # 4, 4 : カーネルの pixcel サイズ（幅、高さ） 
+                input_shape = [ 
+                    self._n_ConvLayer_kernels[0], self._n_ConvLayer_kernels[0], 
+                    self._n_channels, 
+                    self._n_ConvLayer_featuresMap[0] 
+                ]
             ) 
         )
         
         # バイアス項の Variable の list に、畳み込み層のバイアス項を追加
-        self._biases.append( self.init_bias_variable( input_shape = [ self._n_ConvLayer_features[0] ] ) )
+        self._biases.append( 
+            self.init_bias_variable( input_shape = [ self._n_ConvLayer_featuresMap[0] ] ) 
+        )
 
         # 畳み込み層のオペレーター
         conv_op1 = tf.nn.conv2d(
                        input = self._X_holder,
-                       filter = self._weights[0],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列 (Tensor)
+                       filter = self._weights[0],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
                        strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
                        padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
                    )
@@ -280,19 +311,30 @@ class ConvolutionalNN( NeuralNetworkBase ):
         # プーリング層のオペレーター
         pool_op1 = tf.nn.max_pool(
                        value = conv_out_op1,
-                       ksize = [ 1, 2, 2, 1 ],  # プーリングする範囲のサイズ
-                       strides = [ 1, 2, 2, 1 ], # strides[0] = strides[3] = 1. とする必要がある
-                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                       ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
+                       strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"                                                 # ゼロパディングを利用する場合はSAMEを指定
                    )
 
-        # ２つ目の畳み込み層
+
+        #----------------------------------------------------------------------
+        # ２つ目以降の畳み込み層 ~ 活性化関数 ~ プーリング層 ~
+        #----------------------------------------------------------------------
+        # 畳み込み層のカーネル
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [4, 4, self._n_ConvLayer_features[0], self._n_ConvLayer_features[1] ]  # 4, 4 : フィルタ処理後の出力 pixcel サイズ（幅、高さ） 
+                input_shape = [ 
+                    self._n_ConvLayer_kernels[1], self._n_ConvLayer_kernels[1], 
+                    self._n_ConvLayer_featuresMap[0], self._n_ConvLayer_featuresMap[1] 
+                ]
             ) 
         )
-        self._biases.append( self.init_bias_variable( input_shape = [ self._n_ConvLayer_features[1] ] ) )
 
+        self._biases.append( 
+            self.init_bias_variable( input_shape = [ self._n_ConvLayer_featuresMap[1] ] ) 
+        )
+
+        # 畳み込み層のオペレーター
         conv_op2 = tf.nn.conv2d(
                        input = pool_op1,
                        filter = self._weights[1],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列 (Tensor)
@@ -301,22 +343,23 @@ class ConvolutionalNN( NeuralNetworkBase ):
                    )
 
         conv_out_op2 = Relu().activate( tf.nn.bias_add( conv_op2, self._biases[1] ) )
-
+        
+        # プーリング層のオペレーター
         pool_op2 = tf.nn.max_pool(
                        value = conv_out_op2,
-                       ksize = [ 1, 2, 2, 1 ],  # プーリングする範囲のサイズ
-                       strides = [ 1, 2, 2, 1 ], # strides[0] = strides[3] = 1. とする必要がある
-                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                       ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
+                       strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"                                                 # ゼロパディングを利用する場合はSAMEを指定
                    )
 
         #----------------------------------------------------------------------
-        # ~ 全結合層
+        # ~ 全結合層 ~ 出力層
         #----------------------------------------------------------------------
         # 全結合層の入力側
         # 重み & バイアス項の Variable の list に、全結合層の入力側に対応する値を追加
         fullyLayers_width = self._image_width // (2*2)    # ? (2 * 2 : pooling 処理の範囲)
         fullyLayers_height = self._image_height // (2*2)  # ?
-        fullyLayers_input_size = fullyLayers_width * fullyLayers_height * self._n_ConvLayer_features[-1] # ?
+        fullyLayers_input_size = fullyLayers_width * fullyLayers_height * self._n_ConvLayer_featuresMap[-1] # ?
         print( "fullyLayers_input_size : ", fullyLayers_input_size )
 
         self._weights.append( 
@@ -325,15 +368,6 @@ class ConvolutionalNN( NeuralNetworkBase ):
             )
         )
         self._biases.append( self.init_bias_variable( input_shape = [ self._n_fullyLayers ] ) )
-
-        # 全結合層の出力側
-        # 重み & バイアス項のの Variable の list に、全結合層の出力側に対応する値を追加
-        self._weights.append( 
-            self.init_weight_variable( 
-                input_shape = [ self._n_fullyLayers, self._n_labels ] 
-            )
-        )
-        self._biases.append( self.init_bias_variable( input_shape = [ self._n_labels ] ) )
 
         # 全結合層への入力
         # 1 * N のユニットに対応するように reshape
@@ -345,11 +379,20 @@ class ConvolutionalNN( NeuralNetworkBase ):
         print( "flatted_input :", flatted_input )
 
         # 全結合層の入力側へのオペレーター
-        fullyLayers_in_op = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] ) )
+        fullyLayers_in_op = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-1] ), self._biases[-1] ) )
+
+
+        # 全結合層の出力側
+        # 重み & バイアス項のの Variable の list に、全結合層の出力側に対応する値を追加
+        self._weights.append( 
+            self.init_weight_variable( 
+                input_shape = [ self._n_fullyLayers, self._n_labels ] 
+            )
+        )
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_labels ] ) )
         
         # 全結合層の出力側へのオペレーター
         fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_in_op, self._weights[-1] ), self._biases[-1] )
-
         self._y_out_op = fullyLayers_out_op
 
         return self._y_out_op

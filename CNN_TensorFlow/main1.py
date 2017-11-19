@@ -117,8 +117,11 @@ def main():
                image_height = 28,                   # 28 pixel
                image_width = 28,                    # 28 pixel
                n_channels = 1,                      # グレースケール
-               n_ConvLayer_features = [25, 50],     #
+               n_ConvLayer_featuresMap = [25, 50],  # conv1 : 25 枚, conv2 : 50 枚
+               n_ConvLayer_kernels = [4, 4],        # conv1 : 4*4, conv2 : 4*4
                n_strides = 1,
+               n_pool_wndsize = 2,
+               n_pool_strides = 2,
                n_fullyLayers = 100,
                n_labels = 10
            )
@@ -131,8 +134,11 @@ def main():
                image_height = 28,                   # 28 pixel
                image_width = 28,                    # 28 pixel
                n_channels = 1,                      # グレースケール
-               n_ConvLayer_features = [25, 50],     #
+               n_ConvLayer_featuresMap = [25, 50],  # conv1 : 25 枚, conv2 : 50 枚
+               n_ConvLayer_kernels = [4, 4],        # conv1 : 4*4, conv2 : 4*4
                n_strides = 1,
+               n_pool_wndsize = 2,
+               n_pool_strides = 2,
                n_fullyLayers = 100,
                n_labels = 10
            )

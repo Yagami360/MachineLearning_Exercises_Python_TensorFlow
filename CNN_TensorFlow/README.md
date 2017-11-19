@@ -12,7 +12,8 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
 - [Tensorflow での MINIST チュートリアル（公式）](https://www.tensorflow.org/get_started/mnist/beginners)
 - [Tensorflow での CIFAR-10 チュートリアル（公式）](https://www.tensorflow.org/tutorials/deep_cnn)
 - [TensorFlowはじめました / TensorFlowでデータの読み込み ― 画像を分類するCIFAR-10の基礎](http://www.buildinsider.net/small/booktensorflow/0201)
-
+- Queue（画像パイプライン）を用いた処理
+    - http://ykicisk.hatenablog.com/entry/2016/12/18/184840<br>
 
 ## 項目 [Contents]
 
@@ -73,6 +74,9 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/image/random_flip_left_right<br>
 >>> `tf.image.per_image_standardization(...)` : 画像を正規化<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/image/per_image_standardization<br>
+
+>> キュー（画像パイプライン）関連<br>
+>>>
 
 > Numpy ライブラリ
 >> `numpy.argmax(...)` : 指定した配列の中で最大要素を含むインデックスを返す関数<br>
@@ -155,7 +159,9 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )
         X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )
     ```
-- エポック数は 500、ミニバッチサイズは 100 で学習
+- エポック数は 500、ミニバッチサイズは 100 で学習。
+- その他、CNN 処理に必要なパラメータは、
+以下のように `ConvolutionalNN` クラスのオブジェクト生成時に設定する。
     ```python
     def main():
         ...
@@ -168,8 +174,11 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
                    image_height = 28,                   # 28 pixel
                    image_width = 28,                    # 28 pixel
                    n_channels = 1,                      # グレースケール
-                   n_ConvLayer_features = [25, 50],     #
+                   n_ConvLayer_featuresMap = [25, 50],  # conv1 : 25 枚, conv2 : 50 枚
+                   n_ConvLayer_kernels = [4, 4],        # conv1 : 4*4, conv2 : 4*4
                    n_strides = 1,
+                   n_pool_wndsize = 2,
+                   n_pool_strides = 2,
                    n_fullyLayers = 100,
                    n_labels = 10
                )
@@ -182,26 +191,44 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
                    image_height = 28,                   # 28 pixel
                    image_width = 28,                    # 28 pixel
                    n_channels = 1,                      # グレースケール
-                   n_ConvLayer_features = [25, 50],     #
+                   n_ConvLayer_featuresMap = [25, 50],  # conv1 : 25 枚, conv2 : 50 枚
+                   n_ConvLayer_kernels = [4, 4],        # conv1 : 4*4, conv2 : 4*4
                    n_strides = 1,
+                   n_pool_wndsize = 2,
+                   n_pool_strides = 2,
                    n_fullyLayers = 100,
                    n_labels = 10
                )
     ```
-- モデルの構造は、<br>
-  畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２
-    - 畳み込み層１：<br>
-    画像の幅 (image_width)=28, (image_height)=28, チャンネル数 (n_channels) =1, 特徴数 (n_features) = 25, ストライド幅 (n_strides)=1, ゼロパディング
-    - プーリング層１：<br>
-    マックスプーリング、ストライド幅 (n_pool_strides) = 2
-    - 畳み込み層２：<br>
-    xxx
-    - プーリング層２：<br>
-    マックスプーリング、ストライド幅 (n_pool_strides) = 2
-    - 全結合層１：<br>
-    xxx
-    - 全結合層２：<br>
-    xxx
+- モデルの構造は、`ConvolutionalNN.model()` メソッドで定義し、<br>
+  ｛畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２｝
+   で構成。
+    - 畳み込み層１ : `tf.nn.conv2d(...)`
+        - 画像の高さ : `_image_height = 28` 
+        - 画像の幅 : `_image_width = 28`
+        - チャンネル数 : `_n_channels = 1`
+        - カーネル（フィルタ行列）: `_n_ConvLayer_kernels[0] = 4` → 4*4
+        - 特徴マップ数 : `_n_ConvLayer_featuresMap[0] = 25`
+        - ストライド幅 : `_n_strides = 1` → 1*1
+        - ゼロパディング : `padding = "SAME"`
+    - プーリング層１
+        - マックスプーリング : `tf.nn.max_pool(...)`
+        - ウィンドウサイズ : `_n_pool_wndsize = 2` → 2*2
+        - ストライド幅 : `_n_pool_strides = 2` → 2*2
+    - 畳み込み層２ : `tf.nn.conv2d(...)`
+        - カーネル（フィルタ行列）: `_n_ConvLayer_kernels[1] = 4` → 4*4
+        - 特徴マップ数（入力側）: `_n_ConvLayer_featuresMap[0] = 25`
+        - 特徴マップ数（出力側）: `_n_ConvLayer_featuresMap[1] = 50`
+        - ストライド幅 : `_n_strides = 1` → 1*1
+        - ゼロパディング : `padding = "SAME"`
+    - プーリング層２
+        - マックスプーリング : `tf.nn.max_pool(...)`
+        - ウィンドウサイズ : `_n_pool_wndsize = 2` → 2*2
+        - ストライド幅 : `_n_pool_strides = 2` → 2*2
+    - 全結合層１（入力側）
+        - xxx
+    - 全結合層２（出力側）
+        - xxx
     ```python
     class ConvolutionalNN( NeuralNetworkBase ):
     ...
@@ -216,23 +243,29 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         """
         # 計算グラフの構築
         #----------------------------------------------------------------------
-        # 畳み込み層 ~ 活性化関数 ~ プーリング層 ~
+        # １つ目の畳み込み層 ~ 活性化関数 ~ プーリング層 ~
         #----------------------------------------------------------------------
         # 重みの Variable の list に、１つ目の畳み込み層の重み（カーネル）を追加
-        # この重みは、畳み込み処理の画像データに対するフィルタ処理に使うカーネルを表す Tensor のことである。
+        # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [4, 4, self._n_channels, self._n_ConvLayer_features[0] ]  # 4, 4 : カーネルの pixcel サイズ（幅、高さ） 
+                input_shape = [ 
+                    self._n_ConvLayer_kernels[0], self._n_ConvLayer_kernels[0], 
+                    self._n_channels, 
+                    self._n_ConvLayer_featuresMap[0] 
+                ]
             ) 
         )
         
         # バイアス項の Variable の list に、畳み込み層のバイアス項を追加
-        self._biases.append( self.init_bias_variable( input_shape = [ self._n_ConvLayer_features[0] ] ) )
+        self._biases.append( 
+            self.init_bias_variable( input_shape = [ self._n_ConvLayer_featuresMap[0] ] ) 
+        )
 
         # 畳み込み層のオペレーター
         conv_op1 = tf.nn.conv2d(
                        input = self._X_holder,
-                       filter = self._weights[0],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列 (Tensor)
+                       filter = self._weights[0],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
                        strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
                        padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
                    )
@@ -240,45 +273,59 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         # 畳み込み層からの出力（活性化関数）オペレーター
         # バイアス項を加算したものを活性化関数に通す
         conv_out_op1 = Relu().activate( tf.nn.bias_add( conv_op1, self._biases[0] ) )
-
+                
         # プーリング層のオペレーター
         pool_op1 = tf.nn.max_pool(
                        value = conv_out_op1,
-                       ksize = [ 1, 2, 2, 1 ],  # プーリングする範囲のサイズ
-                       strides = [ 1, 2, 2, 1 ], # strides[0] = strides[3] = 1. とする必要がある
-                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                       ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
+                       strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"                                                 # ゼロパディングを利用する場合はSAMEを指定
                    )
 
-        # ２つ目の畳み込み層
+
+        #----------------------------------------------------------------------
+        # ２つ目以降の畳み込み層 ~ 活性化関数 ~ プーリング層 ~
+        #----------------------------------------------------------------------
+        # 畳み込み層のカーネル
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [4, 4, self._n_ConvLayer_features[0], self._n_ConvLayer_features[1] ]  # 4, 4 : カーネルの出力 pixcel サイズ（幅、高さ） 
+                input_shape = [ 
+                    self._n_ConvLayer_kernels[1], self._n_ConvLayer_kernels[1], 
+                    self._n_ConvLayer_featuresMap[0], self._n_ConvLayer_featuresMap[1] 
+                ]
             ) 
         )
-        self._biases.append( self.init_bias_variable( input_shape = [ self._n_ConvLayer_features[1] ] ) )
 
+        self._biases.append( 
+            self.init_bias_variable( input_shape = [ self._n_ConvLayer_featuresMap[1] ] ) 
+        )
+
+        # 畳み込み層のオペレーター
         conv_op2 = tf.nn.conv2d(
                        input = pool_op1,
-                       filter = self._weights[1],   # 畳込み処理で input で指定した Tensor との積和に使用する カーネル行列 (Tensor)
+                       filter = self._weights[1],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列 (Tensor)
                        strides = [ 1, self._n_strides, self._n_strides, 1 ], # strides[0] = strides[3] = 1. とする必要がある
                        padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
                    )
-        conv_out_op2 = Relu().activate( tf.nn.bias_add( conv_op2, self._biases[1] ) )
 
+        conv_out_op2 = Relu().activate( tf.nn.bias_add( conv_op2, self._biases[1] ) )
+        
+        # プーリング層のオペレーター
         pool_op2 = tf.nn.max_pool(
                        value = conv_out_op2,
-                       ksize = [ 1, 2, 2, 1 ],  # プーリングする範囲のサイズ
-                       strides = [ 1, 2, 2, 1 ], # strides[0] = strides[3] = 1. とする必要がある
-                       padding = "SAME"     # ゼロパディングを利用する場合はSAMEを指定
+                       ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
+                       strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
+                       padding = "SAME"                                                 # ゼロパディングを利用する場合はSAMEを指定
                    )
+
         #----------------------------------------------------------------------
-        # ~ 全結合層
+        # ~ 全結合層 ~ 出力層
         #----------------------------------------------------------------------
         # 全結合層の入力側
         # 重み & バイアス項の Variable の list に、全結合層の入力側に対応する値を追加
         fullyLayers_width = self._image_width // (2*2)    # ? (2 * 2 : pooling 処理の範囲)
         fullyLayers_height = self._image_height // (2*2)  # ?
-        fullyLayers_input_size = fullyLayers_width * fullyLayers_height * self._n_ConvLayer_features[-1] # ?
+        fullyLayers_input_size = fullyLayers_width * fullyLayers_height * self._n_ConvLayer_featuresMap[-1] # ?
         print( "fullyLayers_input_size : ", fullyLayers_input_size )
 
         self._weights.append( 
@@ -287,15 +334,6 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
             )
         )
         self._biases.append( self.init_bias_variable( input_shape = [ self._n_fullyLayers ] ) )
-
-        # 全結合層の出力側
-        # 重み & バイアス項のの Variable の list に、全結合層の出力側に対応する値を追加
-        self._weights.append( 
-            self.init_weight_variable( 
-                input_shape = [ self._n_fullyLayers, self._n_labels ] 
-            )
-        )
-        self._biases.append( self.init_bias_variable( input_shape = [ self._n_labels ] ) )
 
         # 全結合層への入力
         # 1 * N のユニットに対応するように reshape
@@ -307,23 +345,32 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         print( "flatted_input :", flatted_input )
 
         # 全結合層の入力側へのオペレーター
-        fullyLayers_in_op = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-2] ), self._biases[-2] ) )
+        fullyLayers_in_op = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-1] ), self._biases[-1] ) )
 
+
+        # 全結合層の出力側
+        # 重み & バイアス項のの Variable の list に、全結合層の出力側に対応する値を追加
+        self._weights.append( 
+            self.init_weight_variable( 
+                input_shape = [ self._n_fullyLayers, self._n_labels ] 
+            )
+        )
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_labels ] ) )
+        
         # 全結合層の出力側へのオペレーター
         fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_in_op, self._weights[-1] ), self._biases[-1] )
-
         self._y_out_op = fullyLayers_out_op
 
         return self._y_out_op
     ```
-- 損失関数は、疎なソフトマックス・クロス・エントロピー関数を使用
+- 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、疎なソフトマックス・クロス・エントロピー関数を使用
     ```python
     def main():
         ...
         cnn1.loss( SparseSoftmaxCrossEntropy() )
         cnn2.loss( SparseSoftmaxCrossEntropy() )
     ```
-- モデルの最適化アルゴリズムは、モメンタムを使用
+- モデルの最適化アルゴリズムは、`ConvolutionalNN.optimizer()` メソッドで行い、モメンタムを使用
     - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
     ```python
     def main():
