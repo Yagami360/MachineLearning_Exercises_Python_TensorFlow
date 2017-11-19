@@ -188,7 +188,6 @@ def main():
 
     cnn2 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               learning_rate = 0.0005,
                epochs = 500,
                batch_size = 100,
                eval_step = 1,
