@@ -4,7 +4,7 @@
 """
     更新情報
     [17/10/14] : 新規作成
-    [17/xx/xx] : 
+    [17/11/19] : NeuralNetwrksBase クラスの子クラスになるように変更
                : 
 """
 import numpy
@@ -17,7 +17,7 @@ from tensorflow.python.framework import ops
 from sklearn.utils import shuffle
 
 # 自作クラス
-#from NeuralNetworkBase import NeuralNetworkBase    # 親クラス
+from NeuralNetworkBase import NeuralNetworkBase    # 親クラス
 
 import NNActivation
 from NNActivation import NNActivation               # ニューラルネットワークの活性化関数を表すクラス
@@ -41,7 +41,7 @@ from NNOptimizer import Adagrad
 from NNOptimizer import Adadelta
 
 
-class MultilayerPerceptron( object ):
+class MultilayerPerceptron( NeuralNetworkBase ):
     """
     多層パーセプトロンを表すクラス
     TensorFlow での多層パーセプトロンの処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、
@@ -69,25 +69,11 @@ class MultilayerPerceptron( object ):
         _losses_train : list <float32>
             トレーニングデータでの損失関数の値の list
 
-        _session : tf.Session()
-            自身の Session
-        _init_var_op : tf.global_variables_initializer()
-            全 Variable の初期化オペレーター
-
         _activate_hiddenLayer : NNActivatation クラス
             隠れ層からの活性化関数の種類
         _activate_outputLayer : NNActivatation クラス
             出力層からの活性化関数
-
-        _loss_op : Operator
-            損失関数を表すオペレーター
-        _optimizer : Optimizer
-            モデルの最適化アルゴリズム
-        _train_step : 
-            トレーニングステップ
-        _y_out_op : Operator
-            モデルの出力のオペレーター
-            
+                    
         _X_holder : placeholder
             入力層にデータを供給するための placeholder
         _t_holder : placeholder
@@ -113,6 +99,8 @@ class MultilayerPerceptron( object ):
         """
         コンストラクタ（厳密にはイニシャライザ）
         """
+        super().__init__( session )
+                
         tf.set_random_seed(12)
         
         # 引数で指定された Session を設定
@@ -134,14 +122,7 @@ class MultilayerPerceptron( object ):
 
         # evaluate 関連の初期化
         self._losses_train = []
-
-        # オペレーターの初期化
-        self._init_var_op = None
-        self._loss_op = None
-        self._optimizer = None
-        self._train_step = None
-        self._y_out_op = None
-
+        
         # placeholder の初期化
         # shape の列（横方向）は、各層の次元（ユニット数）に対応させる。
         # shape の行は、None にして汎用性を確保
@@ -159,31 +140,29 @@ class MultilayerPerceptron( object ):
 
         print( "_session : ", self._session )
         print( "_init_var_op :\n", self._init_var_op )
+        print( "_loss_op :", self._loss_op )
+        print( "_optimizer :", self._optimizer )
+        print( "_train_step :", self._train_step )
+        print( "_y_out_op :", self._y_out_op )
+
+        print( "_epoches :", self._epochs )
+        print( "_batch_size :", self._batch_size )
 
         print( "_n_inputLayer : ", self._n_inputLayer )
         print( "_n_hiddenLayers : ", self._n_hiddenLayers )
         print( "_n_outputLayer : ", self._n_outputLayer )
+        print( "_activate_hiddenLayer :", self._activate_hiddenLayer )
+        print( "_activate_outputLayer :", self._activate_outputLayer )
+
+        print( "_X_holder : ", self._X_holder )
+        print( "_t_holder : ", self._t_holder )
+        print( "_keep_prob_holder : ", self._keep_prob_holder )
 
         print( "_weights : \n", self._weights )
         print( self._session.run( self._weights ) )
 
         print( "_biases : \n", self._biases )
         print( self._session.run( self._biases ) )
-
-        print( "_activate_hiddenLayer :", self._activate_hiddenLayer )
-        print( "_activate_outputLayer :", self._activate_outputLayer )
-
-        print( "_epoches :", self._epochs )
-        print( "_batch_size :", self._batch_size )
-
-        print( "_loss_op :", self._loss_op )
-        print( "_optimizer :", self._optimizer )
-        print( "_train_step :", self._train_step )
-        print( "_y_out_op :", self._y_out_op )
-
-        print( "_X_holder : ", self._X_holder )
-        print( "_t_holder : ", self._t_holder )
-        print( "_keep_prob_holder : ", self._keep_prob_holder )
 
         print( "----------------------------------" )
         return

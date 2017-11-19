@@ -89,7 +89,7 @@ https://www.tensorflow.org/api_docs/python/tf/sigmoid </br>
 > sphinx or API Blueprint で HTML 形式の API 仕様書作成予定...
 
 - `NeuralNetworkBase` クラス
-    - scikit-learn ライブラリの推定器 estimator の基本クラス BaseEstimator, ClassifierMixin を継承している
+    - scikit-learn ライブラリの推定器 estimator の基本クラス `BaseEstimator`, `ClassifierMixin` を継承している
     - ニューラルネットワークの基本的なフレームワークを想定した仮想メソッドからなる抽象クラス。<br>
     実際のニューラルネットワークを表すクラスの実装は、このクラスを継承し、オーバーライドするを想定している。
         - `model()` : モデルの定義を行い、最終的なモデルの出力のオペレーターを設定する。
@@ -180,7 +180,7 @@ def main():
     mlp.optimizer( GradientDecent( learning_rate = 0.05 ) )
 
     # モデルの初期化と学習（トレーニング）
-    mlp1.fit( X_train, y_train )
+    mlp.fit( X_train, y_train )
 
     # 識別境界を plot
     MLPlot.drawDiscriminantRegions( X_features, y_labels, classifier = mlp )
