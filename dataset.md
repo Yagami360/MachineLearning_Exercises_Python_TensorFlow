@@ -168,12 +168,10 @@ URL : https://www.cs.toronto.edu/~kriz/cifar.html
 
 レコードは固定長の3,073バイト。先頭の1バイトがラベルで、残り3,072バイトは縦横32pxの画像データを直列化したものになっており、一般的なBitmap形式と違い、RGB各チャンネルのデータが1,024バイトずつ並ぶ構造になっている。<br>そして、これらのファイルが data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5, test_batch の 6つのファイル、合計 60,000 サンプル存在する。
 
-- 先頭の画像 64 枚
+- 先頭の画像 64 枚<br>
+![cnn_2-1-2](https://user-images.githubusercontent.com/25688193/33030307-55cc89a2-ce5e-11e7-88c8-59675684d9e0.png)
 
-![cnn_2-1-1](https://user-images.githubusercontent.com/25688193/32976898-11d69a6c-cc65-11e7-8852-5aa822530592.png)
-
-- 7 : 馬のラベルとなる先頭の画像 64 枚
-
-![cnn_2-2-1 _label7](https://user-images.githubusercontent.com/25688193/32976904-58e9d05e-cc65-11e7-849c-7fa05858b9c0.png)
+- 7 : 馬のラベルとなる先頭の画像 64 枚<br>
+![cnn_2-2-2 _label7](https://user-images.githubusercontent.com/25688193/33030404-92b147a4-ce5e-11e7-8b2d-fe65b8dc35bc.png)
 
 参考URL : http://aidiary.hatenablog.com/entry/20151014/1444827123
