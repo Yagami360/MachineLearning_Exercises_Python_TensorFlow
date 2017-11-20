@@ -58,6 +58,20 @@ def main():
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
+    # CIFAR-10 のラベル値とカテゴリーのディクショナリ
+    cifar10_labels_dict = {
+        0 : "airplane",
+        1 : "automoblie",
+        2 : "bird",
+        3 : "cat",
+        4 : "deer",
+        5 : "dog",
+        6 : "frog",
+        7 : "horse",
+        8 : "ship",
+        9 : "truck",
+    }
+    
     # CIFAR-10 データが格納されているフォルダへのパス
     cifar10_path = "D:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-bin"
 
@@ -83,7 +97,7 @@ def main():
     print( "X_train[0] : \n", X_train[0] )
     print( "y_train[0] : \n", y_train[0] )
     print( "[y_train == 0] : \n", [ y_train == 0 ] )
-
+    
     #---------------------------------------------------------------------
     # CIFAR-10 画像を plot
     #---------------------------------------------------------------------
@@ -99,13 +113,9 @@ def main():
 
     # ラベルの 0~9 の plot 用の for ループ
     for i in range(64):
-        #print( "i=", i )
         image = X_train[i]
-        # imshow()で読める([1]row, [2]column, [0] channel) の順番に変更するために
-        # numpyのtranspose()を使って次元を入れ替え
-        #image = image.transpose(1, 2, 0)
         axis[i].imshow( image )
-        axis[i].set_title( "Actual: " + str( y_train[i] ), fontsize = 8 )
+        axis[i].set_title( "Actual: " + cifar10_labels_dict[ y_train[i] ], fontsize = 8 )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )
@@ -118,9 +128,8 @@ def main():
     axis = axis.flatten()
     for i in range(64):
         image = X_train[y_train == 0][i]
-        #image = image.transpose(1, 2, 0)
         axis[i].imshow( image )
-        axis[i].set_title( "Actual: " + str( 0 ), fontsize = 8 )
+        axis[i].set_title( "Actual: " + cifar10_labels_dict[ y_train[0] ], fontsize = 8 )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )
@@ -166,7 +175,7 @@ def main():
                n_strides = 1,
                n_pool_wndsize = 3,
                n_pool_strides = 2,
-               n_fullyLayers = 100,
+               n_fullyLayers = 384,
                n_labels = 10
            )
 
@@ -240,8 +249,8 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    learning_rate1 = 0.0005
-    learning_rate2 = 0.0001
+    learning_rate1 = 0.0001
+    learning_rate2 = 0.0005
     cnn1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
     cnn2.optimizer( GradientDecent( learning_rate = learning_rate2 ) )
     #cnn1.optimizer( GradientDecentDecay( learning_rate = learning_rate1, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )
@@ -332,7 +341,11 @@ def main():
         #print( "idx", idx )
         image = image.reshape(32,32,3)        # １次元配列を shape = [32, 32, 3] に reshape
         axis[idx].imshow( image )
-        axis[idx].set_title( "Actual: " + str( y_test[corrects1][idx] ) + " Pred: " + str( predict1[corrects1][idx] ), fontsize = 8 )
+        axis[idx].set_title( 
+            "Actual: " + cifar10_labels_dict[ y_test[corrects1][idx] ] + " / " +
+            "Pred: " + cifar10_labels_dict[ predict1[corrects1][idx] ], 
+            fontsize = 8 
+        )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )
@@ -347,10 +360,17 @@ def main():
                         sharex = True, sharey = True     # x,y 軸をシャアする
                      )
 
+    # ２次元配列を１次元に変換
+    axis = axis.flatten()
+
     for (idx, image) in enumerate( X_test[ ~corrects1 ][0:40] ):
         image = image.reshape(32,32,3)        # １次元配列を shape = [32, 32 ,3] に reshape
         axis[idx].imshow( image )
-        axis[idx].set_title( "Actual: " + str( y_test[~corrects1][idx] ) + " Pred: " + str( predict1[~corrects1][idx] ), fontsize = 8 )
+        axis[idx].set_title( 
+            "Actual: " + cifar10_labels_dict[ y_test[~corrects1][idx] ] + " / " +
+            "Pred: " + cifar10_labels_dict[ predict1[~corrects1][idx] ], 
+            fontsize = 8 
+        )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )
@@ -373,7 +393,11 @@ def main():
         #print( "idx", idx )
         image = image.reshape(32,32,3)        # １次元配列を shape = [32 ,32, 3] に reshape
         axis[idx].imshow( image )
-        axis[idx].set_title( "Actual: " + str( y_test[corrects2][idx] ) + " Pred: " + str( predict1[corrects2][idx] ), fontsize = 8 )
+        axis[idx].set_title( 
+            "Actual: " + cifar10_labels_dict[ y_test[corrects2][idx] ] + " / " +
+            "Pred: " + cifar10_labels_dict[ predict2[corrects2][idx] ], 
+            fontsize = 8 
+        )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )
@@ -388,10 +412,17 @@ def main():
                         sharex = True, sharey = True     # x,y 軸をシャアする
                      )
 
+    # ２次元配列を１次元に変換
+    axis = axis.flatten()
+
     for (idx, image) in enumerate( X_test[ ~corrects2 ][0:40] ):
         image = image.reshape(32,32,3)        # １次元配列を shape = [32 ,32, 3] に reshape
         axis[idx].imshow( image )
-        axis[idx].set_title( "Actual: " + str( y_test[~corrects2][idx] ) + " Pred: " + str( predict2[~corrects2][idx] ), fontsize = 8 )
+        axis[idx].set_title( 
+            "Actual: " + cifar10_labels_dict[ y_test[~corrects2][idx] ] + " / " +
+            "Pred: " + cifar10_labels_dict[ predict2[~corrects2][idx] ], 
+            fontsize = 8 
+        )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )

@@ -148,6 +148,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 <a id="ID_3-1"></a>
 
 ### CNN による MNIST データの識別 : `main1.py`
+![image](https://user-images.githubusercontent.com/25688193/33008526-bf1593e2-ce16-11e7-9cf4-8930e1347cf6.png)
 
 #### コードの説明
 - MNIST データセットを使用。
@@ -228,9 +229,9 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         - ウィンドウサイズ : `_n_pool_wndsize = 2` → 2*2
         - ストライド幅 : `_n_pool_strides = 2` → 2*2
     - 全結合層１（入力側）
-        - xxx
+        - `n_fullyLayers = 100` → `n_labels = 10`
     - 全結合層２（出力側）
-        - xxx
+        - `n_labels = 10` → 最終出力
     ```python
     class ConvolutionalNN( NeuralNetworkBase ):
     ...
@@ -446,7 +447,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 <a id="ID_3-2"></a>
 
 ### CNN による CIFAR-10 データの識別 : `main2.py`
-![image](https://user-images.githubusercontent.com/25688193/33004989-125ab272-ce07-11e7-9e21-70bb31bbfea0.png)
+![image](https://user-images.githubusercontent.com/25688193/33008486-99f0d40a-ce16-11e7-95a1-2adc8abfff39.png)
 
 #### コードの説明
 
@@ -496,9 +497,9 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         - ウィンドウサイズ : `_n_pool_wndsize = 3` → 3*3
         - ストライド幅 : `_n_pool_strides = 2` → 2*2
     - 全結合層１（入力側）
-        - xxx
+        - `n_fullyLayers = 384` → `n_labels = 10`
     - 全結合層２（出力側）
-        - xxx
+        - `n_labels = 10` → 最終出力
 - 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、ソフトマックス・クロス・エントロピー関数を使用
     ```python
     cnn1.loss( SoftmaxCrossEntropy() )
@@ -533,23 +534,27 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 #### コードの実行結果
 
-##### 損失関数のグラフ
+#### 損失関数のグラフ
 損失関数として、ソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。<br>
 
 - 学習率 : 0.0001（固定値） と 0.0005（固定値）：最急降下法<br>
+    - 全結合層：100 ノード
 ![cnn_2-3-1 _gradentdecent](https://user-images.githubusercontent.com/25688193/33002539-2d29d70e-cdf8-11e7-888f-b587f693a715.png)
+    - 全結合層：384 ノード
+![cnn_2-3-4 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33010288-52f77994-ce1d-11e7-9191-07a3e06aa7cc.png)
+
 
 - 学習率 : 0.001（固定値） と 0.005（固定値）：モメンタム<br>
 ![cnn_2-3-2](https://user-images.githubusercontent.com/25688193/32998027-c7de0400-cdda-11e7-827d-c0f4c072b12d.png)
 
-- 学習率 : 0.01（固定値） と 0.05（固定値）：モメンタム<br
+- 学習率 : 0.01（固定値） と 0.05（固定値）：モメンタム<br>
 ![cnn_2-3-3](https://user-images.githubusercontent.com/25688193/32998827-9b063e82-cde1-11e7-938d-1fb65c98bb14.png)
 
 - 学習率 : 0.0001（減衰値） と 0.0005（減衰値）：最急降下法
 
 
 
-##### 学習済みモデルでの正解率の値
+#### 学習済みモデルでの正解率の値
 
 - 学習済みモデルでのテストデータでの正解率：（学習率=0.01（固定値） 、最急降下法の場合）
 結果処理中...
@@ -587,15 +592,16 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 |9||（※全サンプル数でない）|
 
 
-##### 識別に正解した画像
+#### 識別に正解した画像
 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
 - 学習率 0.0005 （固定値）：最急降下法
-![cnn_2-4-1 _gradientdecent](https://user-images.githubusercontent.com/25688193/33006133-8123f89e-ce0c-11e7-9b20-989a1f60d58f.png)
+![cnn_2-4-1 _gradientdecent](https://user-images.githubusercontent.com/25688193/33010234-288b8f6a-ce1d-11e7-9376-93e480ff435b.png)
 
+<br>
 
-##### 識別に失敗した画像
+#### 識別に失敗した画像
 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
