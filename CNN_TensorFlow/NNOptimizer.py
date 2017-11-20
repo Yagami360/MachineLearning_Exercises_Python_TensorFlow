@@ -4,7 +4,7 @@
 """
     更新情報
     [17/11/18] : 新規作成
-    [17/xx/xx] : 
+    [17/11/20] : 最急降下法で学習率が幾何学的に減衰していく最適化アルゴリズム GradentDecentDecay 追加
                : 
 """
 
@@ -94,6 +94,59 @@ class GradientDecent( NNOptimzer ):
     
     def optimizer( self ):
         self._optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._learning_rate )
+        return self._optimizer
+
+    def train_step( self, loss_op ):
+        self._train_step = self._optimizer.minimize( loss_op )
+        return self._train_step
+
+
+class GradientDecentDecay( NNOptimzer ):
+    """
+    最急降下法（学習率が減衰）を表すクラス
+    NNOptimizer クラスの子クラスとして定義
+
+    減衰
+    learning_rate * ( 1 - learning_rate)^(n_generation/n_gen_to_wait)
+    [public]
+        _n_generation : int
+            学習率を幾何学的に減衰させるためのパラメータ
+        _n_gen_to_wait : int
+            学習率を幾何学的に減衰させるためのパラメータ
+            学習率を減衰されるステップ間隔
+        _lr_recay : float
+            学習率を幾何学的に減衰させるためのパラメータ
+
+        _recay_learning_rate : 
+            tf.train.exponential_decay(...) の戻り値
+    """
+    def __init__( 
+        self, learning_rate = 0.001, 
+        n_generation = 500, n_gen_to_wait = 5, 
+        lr_recay = 0.1, 
+        node_name = "GradientDecentDecay_Optimizer" 
+    ):
+        self._learning_rate = learning_rate
+        self._n_generation = n_generation
+        self._n_gen_to_wait = n_gen_to_wait
+        self._lr_recay = lr_recay
+
+        self._recay_learning_rate = tf.train.exponential_decay( 
+                                        learning_rate = learning_rate, 
+                                        global_step = n_generation, 
+                                        decay_steps = n_gen_to_wait, 
+                                        decay_rate = lr_recay, 
+                                        staircase = True 
+                                    )
+
+        self._node_name = node_name
+        self._optimizer = self.optimizer()
+        self._train_step = None
+
+        return
+    
+    def optimizer( self ):
+        self._optimizer = tf.train.GradientDescentOptimizer( learning_rate = self._recay_learning_rate )
         return self._optimizer
 
     def train_step( self, loss_op ):

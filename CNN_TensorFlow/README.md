@@ -367,18 +367,14 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     ```
 - 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、ソフトマックス・クロス・エントロピー関数を使用
     ```python
-    def main():
-        ...
-        cnn1.loss( SoftmaxCrossEntropy() )
-        cnn2.loss( SoftmaxCrossEntropy() )
+    cnn1.loss( SoftmaxCrossEntropy() )
+    cnn2.loss( SoftmaxCrossEntropy() )
     ```
 - モデルの最適化アルゴリズムは、`ConvolutionalNN.optimizer()` メソッドで行い、モメンタムを使用
     - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
     ```python
-    def main():
-        ...
-        cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
-        cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
+    cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
+    cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
     ```
 
 #### コードの実行結果
@@ -450,30 +446,29 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 <a id="ID_3-2"></a>
 
 ### CNN による CIFAR-10 データの識別 : `main2.py`
-> コード実装中...
+![image](https://user-images.githubusercontent.com/25688193/33004989-125ab272-ce07-11e7-9e21-70bb31bbfea0.png)
 
 #### コードの説明
+
 - バイナリー形式の CIFAR-10 データセット CIFAR-10 binary version (suitable for C programs) を使用
     - ファイルフォーマットは [dataset.md](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#cifar-10-データセット) 参照
     - このフォーマットに基づき、<br>
-    データの読み込みを `MLPreProcess` クラスの static 関数 `load_cifar10(...)` で行う。
+    データの読み込みを `MLPreProcess` クラスの static 関数 `load_cifar10_trains(...)` or `load_cifar10_train(...)` and `load_cifar10_test(...)` で行う。
     - 読み込みんだデータの shape を、[image_height, image_width, n_channel] となるように変形する。
     ```python
-    def main():
-        ...
-        X_train, y_train = MLPreProcess.load_cifar10( cifar10_path, kind = "train" )
-        X_test, y_test = MLPreProcess.load_cifar10( cifar10_path, kind = "test" )
+    X_train, y_train = MLPreProcess.load_cifar10_trains( cifar10_path )
+    X_test, y_test = MLPreProcess.load_cifar10_test( cifar10_path )
     
-        # [n_channel, image_height, image_width] = [3,32,32] に reshape
-        X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
-        X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
-        y_train = numpy.reshape( y_train, 50000 )
-        y_test = numpy.reshape( y_test, 10000 )
+    # [n_channel, image_height, image_width] = [3,32,32] に reshape
+    X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
+    X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
+    y_train = numpy.reshape( y_train, 50000 )
+    y_test = numpy.reshape( y_test, 10000 )
         
-        # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
-        # numpy の transpose() を使って次元を入れ替え
-        X_train = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_train] )
-        X_test = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_test] )
+    # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+    # numpy の transpose() を使って次元を入れ替え
+    X_train = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_train] )
+    X_test = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_test] )
     ```
 - モデルの構造は、`ConvolutionalNN.model()` メソッドで定義し、<br>
   ｛畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２｝
@@ -504,31 +499,115 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         - xxx
     - 全結合層２（出力側）
         - xxx
-- 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、疎なソフトマックス・クロス・エントロピー関数を使用
+- 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、ソフトマックス・クロス・エントロピー関数を使用
     ```python
-    def main():
-        ...
-        cnn1.loss( SparseSoftmaxCrossEntropy() )
-        cnn2.loss( SparseSoftmaxCrossEntropy() )
+    cnn1.loss( SoftmaxCrossEntropy() )
+    cnn2.loss( SoftmaxCrossEntropy() )
     ```
-- モデルの最適化アルゴリズムは、`ConvolutionalNN.optimizer()` メソッドで行い、モメンタムを使用
-    - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
-    ```python
-    def main():
-        ...
-        cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
-        cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
-    ```
-    
+- モデルの最適化アルゴリズムは、`ConvolutionalNN.optimizer()` メソッドで行い、<br>
+　最急降下法 `GradientDecent(...)` を使用する。
+    - 学習率 `learning_rate` は、の２つのモデルで異なる値、及び固定値 or 減衰する値の組み合わせで検証
+    - 尚、幾何学的に減衰する学習率は `tf.train.exponential_decay(...)` を使用し、エポック数の 1/100 回数度に 10% を学習率を減衰させる。
+        - 式で書くと、rate * ( 1.0 - rate )^(n_generation/n_gen_to_wait)<br>
+        rate = 0.1, (n_generation/n_gen_to_wait) = 0.01
+        ```python
+        # 最急降下法：固定値の学習率
+        cnn1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
+        cnn2.optimizer( GradientDecent( learning_rate = learning_rate2 ) )
+        ```
+        ```python
+        # 最急降下法：減衰する学習率
+        cnn1.optimizer( 
+            GradientDecentDecay( 
+                learning_rate = learning_rate1, 
+                n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 
+            ) 
+        )
+        cnn2.optimizer( 
+            GradientDecentDecay(
+                learning_rate = learning_rate2, 
+                n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1
+            )
+        )
+        ```
+
 #### コードの実行結果
 
 ##### 損失関数のグラフ
-![cnn_2-3-1](https://user-images.githubusercontent.com/25688193/32998038-e11515f8-cdda-11e7-9abf-6bfe72f86fc4.png)
+損失関数として、ソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。<br>
+
+- 学習率 : 0.0001（固定値） と 0.0005（固定値）：最急降下法<br>
+![cnn_2-3-1 _gradentdecent](https://user-images.githubusercontent.com/25688193/33002539-2d29d70e-cdf8-11e7-888f-b587f693a715.png)
+
+- 学習率 : 0.001（固定値） と 0.005（固定値）：モメンタム<br>
 ![cnn_2-3-2](https://user-images.githubusercontent.com/25688193/32998027-c7de0400-cdda-11e7-827d-c0f4c072b12d.png)
 
+- 学習率 : 0.01（固定値） と 0.05（固定値）：モメンタム<br
+![cnn_2-3-3](https://user-images.githubusercontent.com/25688193/32998827-9b063e82-cde1-11e7-938d-1fb65c98bb14.png)
+
+- 学習率 : 0.0001（減衰値） と 0.0005（減衰値）：最急降下法
 
 
 
+##### 学習済みモデルでの正解率の値
+
+- 学習済みモデルでのテストデータでの正解率：（学習率=0.01（固定値） 、最急降下法の場合）
+結果処理中...
+
+|ラベル|Acuraccy [test data]|サンプル数|
+|---|---|---|
+|全ラベルでの平均||10,000 個|
+|0||（※全サンプル数でない）|
+|1||（※全サンプル数でない）|
+|2||（※全サンプル数でない）|
+|3||（※全サンプル数でない）|
+|4||（※全サンプル数でない）|
+|5||（※全サンプル数でない）|
+|6||（※全サンプル数でない）|
+|7||（※全サンプル数でない）|
+|8||（※全サンプル数でない）|
+|9||（※全サンプル数でない）|
+
+
+- 学習済みモデルでのテストデータでの正解率：（学習率=0.05（固定値） 、最急降下法の場合）
+結果処理中...
+
+|ラベル|Acuraccy [test data]|サンプル数|
+|---|---|---|
+|全ラベルでの平均||10,000 個|
+|0||（※全サンプル数でない）|
+|1||（※全サンプル数でない）|
+|2||（※全サンプル数でない）|
+|3||（※全サンプル数でない）|
+|4||（※全サンプル数でない）|
+|5||（※全サンプル数でない）|
+|6||（※全サンプル数でない）|
+|7||（※全サンプル数でない）|
+|8||（※全サンプル数でない）|
+|9||（※全サンプル数でない）|
+
+
+##### 識別に正解した画像
+識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
+各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
+
+- 学習率 0.0005 （固定値）：最急降下法
+![cnn_2-4-1 _gradientdecent](https://user-images.githubusercontent.com/25688193/33006133-8123f89e-ce0c-11e7-9b20-989a1f60d58f.png)
+
+
+##### 識別に失敗した画像
+識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
+各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
+
+- 学習率 0.0005 （固定値）：最急降下法
+
+
+<br>
+
+画像生成中...
+> 学習率 0.05 （固定値）の CNN モデルにおいて、<br>
+> 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
+> 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
 <br>
 <a id="ID_3-3"></a>
@@ -550,7 +629,6 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 <a id="ID_4"></a>
 
 ## 背景理論
-
 ![image](https://user-images.githubusercontent.com/25688193/30858595-4e038b96-a2fb-11e7-9ac2-4e7131148034.png)
 ![image](https://user-images.githubusercontent.com/25688193/30904563-47b0fd48-a3ad-11e7-8d6c-c1f3c2751131.png)
 

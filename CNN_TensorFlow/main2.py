@@ -38,6 +38,7 @@ from NNLoss import SparseSoftmaxCrossEntropy
 
 import NNOptimizer                                      # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
 from NNOptimizer import GradientDecent
+from NNOptimizer import GradientDecentDecay
 from NNOptimizer import Momentum
 from NNOptimizer import NesterovMomentum
 from NNOptimizer import Adagrad
@@ -60,13 +61,13 @@ def main():
     # CIFAR-10 データが格納されているフォルダへのパス
     cifar10_path = "D:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-bin"
 
-    X_train, y_train = MLPreProcess.load_cifar10( cifar10_path, kind = "train" )
-    X_test, y_test = MLPreProcess.load_cifar10( cifar10_path, kind = "test" )
+    X_train, y_train = MLPreProcess.load_cifar10_train( cifar10_path, fileName = "data_batch_1.bin" )
+    X_test, y_test = MLPreProcess.load_cifar10_test( cifar10_path )
     
     # [n_channel, image_height, image_width] = [3,32,32] に reshape
     X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
     X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
-    y_train = numpy.reshape( y_train, 50000 )
+    y_train = numpy.reshape( y_train, 10000 )
     y_test = numpy.reshape( y_test, 10000 )
 
     # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
@@ -86,7 +87,6 @@ def main():
     #---------------------------------------------------------------------
     # CIFAR-10 画像を plot
     #---------------------------------------------------------------------
-    """
     # 先頭の 0~9 のラベルの画像データを plot
     # plt.subplots(...) から,
     # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
@@ -127,7 +127,6 @@ def main():
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "CNN_2-2.png" )
     plt.show()
-    """
 
     #======================================================================
     # データを変換、正規化
@@ -187,7 +186,7 @@ def main():
                n_strides = 1,
                n_pool_wndsize = 3,
                n_pool_strides = 2,
-               n_fullyLayers = 100,
+               n_fullyLayers = 384,
                n_labels = 10
            )
 
@@ -241,8 +240,12 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    cnn1.optimizer( Momentum( learning_rate = 0.001, momentum = 0.9 ) )
-    cnn2.optimizer( Momentum( learning_rate = 0.005, momentum = 0.9 ) )
+    learning_rate1 = 0.0005
+    learning_rate2 = 0.0001
+    cnn1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
+    cnn2.optimizer( GradientDecent( learning_rate = learning_rate2 ) )
+    #cnn1.optimizer( GradientDecentDecay( learning_rate = learning_rate1, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )
+    #cnn2.optimizer( GradientDecentDecay( learning_rate = learning_rate2, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )
 
     # トレーニングデータで fitting 処理
     cnn1.fit( X_train, y_train_encoded )
@@ -261,14 +264,14 @@ def main():
     plt.clf()
     plt.plot(
         range( 0, 500 ), cnn1._losses_train,
-        label = 'train data : CNN1 = [50,50,100], learning_rate = 0.001',
+        label = 'train data : CNN1 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate1,
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
     )
     plt.plot(
         range( 0, 500 ), cnn2._losses_train,
-        label = 'train data : CNN2 = [50,50,100], learning_rate = 0.005',
+        label = 'train data : CNN1 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate2,
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'
@@ -308,58 +311,94 @@ def main():
     print( "predict1 : ", predict1 )
     print( "predict2 : ", predict2 )
 
-    figure1, axis1 = plt.subplots( 
+    # 正解・不正解のリスト [True or False]
+    corrects1 = numpy.equal( predict1, y_test )
+    corrects2 = numpy.equal( predict2, y_test )
+    print( "corrects1 : ", corrects1 )
+    print( "corrects2 : ", corrects2 )
+
+
+    figure, axis = plt.subplots( 
                         nrows = 5, ncols = 8,
                         sharex = True, sharey = True     # x,y 軸をシャアする
                      )
     
     # ２次元配列を１次元に変換
-    axis1 = axis1.flatten()
-
-    # 正解・不正解のリスト [True or False]
-    corrects = numpy.equal( predict2, y_test )
-    print( "corrects", corrects )
+    axis = axis.flatten()
 
     # 正解画像の plot のための loop
     #plt.clf()
-    for (idx, image) in enumerate( X_test[ corrects ][0:40] ):
+    for (idx, image) in enumerate( X_test[ corrects1 ][0:40] ):
         #print( "idx", idx )
-        image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
-        axis1[idx].imshow(
-            image,
-            cmap = "Greys",
-            interpolation = "nearest"   # 補間方法
-        )
-        axis1[idx].set_title( "Actual: " + str( y_test[corrects][idx] ) + " Pred: " + str( predict2[corrects][idx] ), fontsize = 8 )
+        image = image.reshape(32,32,3)        # １次元配列を shape = [32, 32, 3] に reshape
+        axis[idx].imshow( image )
+        axis[idx].set_title( "Actual: " + str( y_test[corrects1][idx] ) + " Pred: " + str( predict1[corrects1][idx] ), fontsize = 8 )
 
-    axis1[0].set_xticks( [] )
-    axis1[0].set_yticks( [] )
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
     #plt.tight_layout()
     MLPlot.saveFigure( fileName = "CNN_2-4.png" )
     plt.show()
     
 
     # 誤識別画像の plot のための loop
-    figure2, axis2 = plt.subplots( 
+    figure, axis = plt.subplots( 
                         nrows = 5, ncols = 8,
                         sharex = True, sharey = True     # x,y 軸をシャアする
                      )
 
-    for (idx, image) in enumerate( X_test[ ~corrects ][0:40] ):
-        image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
-        axis2[idx].imshow(
-            image,
-            cmap = "Greys",
-            interpolation = "nearest"   # 補間方法
-        )
-        axis2[idx].set_title( "Actual: " + str( y_test[~corrects][idx] ) + " Pred: " + str( predict1[~corrects][idx] ), fontsize = 8 )
+    for (idx, image) in enumerate( X_test[ ~corrects1 ][0:40] ):
+        image = image.reshape(32,32,3)        # １次元配列を shape = [32, 32 ,3] に reshape
+        axis[idx].imshow( image )
+        axis[idx].set_title( "Actual: " + str( y_test[~corrects1][idx] ) + " Pred: " + str( predict1[~corrects1][idx] ), fontsize = 8 )
 
-    axis2[0].set_xticks( [] )
-    axis2[0].set_yticks( [] )
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
     #plt.tight_layout()
     MLPlot.saveFigure( fileName = "CNN_2-5.png" )
     plt.show()
     
+    #
+    figure, axis = plt.subplots( 
+                        nrows = 5, ncols = 8,
+                        sharex = True, sharey = True     # x,y 軸をシャアする
+                     )
+    
+    # ２次元配列を１次元に変換
+    axis = axis.flatten()
+
+    # 正解画像の plot のための loop
+    #plt.clf()
+    for (idx, image) in enumerate( X_test[ corrects2 ][0:40] ):
+        #print( "idx", idx )
+        image = image.reshape(32,32,3)        # １次元配列を shape = [32 ,32, 3] に reshape
+        axis[idx].imshow( image )
+        axis[idx].set_title( "Actual: " + str( y_test[corrects2][idx] ) + " Pred: " + str( predict1[corrects2][idx] ), fontsize = 8 )
+
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
+    #plt.tight_layout()
+    MLPlot.saveFigure( fileName = "CNN_2-6.png" )
+    plt.show()
+    
+
+    # 誤識別画像の plot のための loop
+    figure, axis = plt.subplots( 
+                        nrows = 5, ncols = 8,
+                        sharex = True, sharey = True     # x,y 軸をシャアする
+                     )
+
+    for (idx, image) in enumerate( X_test[ ~corrects2 ][0:40] ):
+        image = image.reshape(32,32,3)        # １次元配列を shape = [32 ,32, 3] に reshape
+        axis[idx].imshow( image )
+        axis[idx].set_title( "Actual: " + str( y_test[~corrects2][idx] ) + " Pred: " + str( predict2[~corrects2][idx] ), fontsize = 8 )
+
+    axis[0].set_xticks( [] )
+    axis[0].set_yticks( [] )
+    #plt.tight_layout()
+    MLPlot.saveFigure( fileName = "CNN_2-7.png" )
+    plt.show()
+
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================

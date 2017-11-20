@@ -303,31 +303,19 @@ class MLPreProcess( object ):
     
 
     @staticmethod
-    def load_cifar10( path, kind = "tain" ):
+    def load_cifar10_trains( path ):
         """
-        検証データ用の CIFAR-10 データを読み込む。
+        検証データ用の CIFAR-10 データのトレーニング用ファイルセットを読み込む。
         バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
 
         [Input]
             path : str
                 CIFAR-10 データセットが格納されているフォルダへのパス
-            kind : str
-                読み込みたいデータの種類（トレーニング用データ or テスト用データ）
-                "train" : トレーニング用データ
-                "test" : テスト用データ
         """
         # 読み込みファイル名の設定
         # トレーニング用のデータ
-        if( kind == "train" ):
-            # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5
-            files = [ os.path.join( path, "data_batch_{}.bin".format(i) ) for i in range(1,6) ]
-        # テスト用のデータ
-        elif( kind == "test" ):
-            # test_batch
-            files = [ os.path.join( path, "test_batch.bin") ]
-        else:
-            files = [ os.path.join( path, "data_batch_{}.bin".format(i) ) for i in range(1,6) ]
-
+        # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5
+        files = [ os.path.join( path, "data_batch_{}.bin".format(i) ) for i in range(1,6) ]
         print( "files :", files )
 
         # 内部データサイズの設定 
@@ -342,34 +330,11 @@ class MLPreProcess( object ):
         images = []
         labels = []
 
-        # トレーニング用のデータ
-        if ( kind == "train" ):
-            # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5 に関しての loop
-            for i in range( 5 ):
-                #print( "i=" , i )
-                # バイナリーモードでファイルオープン
-                byte_stream = open( files[i], mode="rb" )
+        # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5 に関しての loop
+        for i in range( 5 ):
+            # バイナリーモードでファイルオープン
+            byte_stream = open( files[i], mode="rb" )
 
-                # 全レコード長に関しての loop
-                for record in range(10000):
-                    #
-                    byte_stream.seek( record_bytes * record , 0 )
-
-                    # バッファに割り当て
-                    label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
-                    image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
-                    image_buffer = image_buffer.astype( numpy.float32 )
-
-                    images.append( image_buffer )
-                    labels.append( label_buffer )
-                    #images[record] = image_buffer
-
-                # 
-                byte_stream.close()
-
-        # テスト用のデータ
-        elif ( kind == "test" ):
-            byte_stream = open( files[0], mode="rb" )
             # 全レコード長に関しての loop
             for record in range(10000):
                 #
@@ -386,6 +351,100 @@ class MLPreProcess( object ):
 
             # 
             byte_stream.close()
+
+        return images, labels
+
+
+    @staticmethod
+    def load_cifar10_train( path, fileName = "data_batch_1.bin" ):
+        """
+        検証データ用の CIFAR-10 データの１つのトレーニング用ファイルを読み込む。
+        バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
+
+        [Input]
+            path : str
+                CIFAR-10 データセットが格納されているフォルダへのパス
+            fileName :str
+                CIFAR-10 データセットの１つのトレーニング用ファイル名
+        """
+        file = os.path.join( path, fileName )
+        
+        # 内部データサイズの設定 
+        image_height = 32   # CIFAR-10 画像の高さ (pixel)
+        image_width = 32    #
+        n_channels = 3      # RGB の 3 チャンネル
+
+        image_bytes = image_height * image_width * n_channels
+        labels_byte = 1
+        record_bytes = image_bytes + labels_byte
+
+        images = []
+        labels = []
+
+        # バイナリーモードでファイルオープン
+        byte_stream = open( file, mode="rb" )
+
+        # 全レコード長に関しての loop
+        for record in range(10000):
+            #
+            byte_stream.seek( record_bytes * record , 0 )
+
+            # バッファに割り当て
+            label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
+            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
+            image_buffer = image_buffer.astype( numpy.float32 )
+
+            images.append( image_buffer )
+            labels.append( label_buffer )
+            #images[record] = image_buffer
+
+        # 
+        byte_stream.close()
+
+        return images, labels
+
+    @staticmethod
+    def load_cifar10_test( path ):
+        """
+        検証データ用の CIFAR-10 データのテスト用ファイルを読み込む。
+        バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
+
+        [Input]
+            path : str
+                CIFAR-10 データセットが格納されているフォルダへのパス
+        """
+        file = os.path.join( path, "test_batch.bin" )
+        
+        # 内部データサイズの設定 
+        image_height = 32   # CIFAR-10 画像の高さ (pixel)
+        image_width = 32    #
+        n_channels = 3      # RGB の 3 チャンネル
+
+        image_bytes = image_height * image_width * n_channels
+        labels_byte = 1
+        record_bytes = image_bytes + labels_byte
+
+        images = []
+        labels = []
+
+        # バイナリーモードでファイルオープン
+        byte_stream = open( file, mode="rb" )
+
+        # 全レコード長に関しての loop
+        for record in range(10000):
+            #
+            byte_stream.seek( record_bytes * record , 0 )
+
+            # バッファに割り当て
+            label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
+            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
+            image_buffer = image_buffer.astype( numpy.float32 )
+
+            images.append( image_buffer )
+            labels.append( label_buffer )
+            #images[record] = image_buffer
+ 
+        byte_stream.close()
 
         return images, labels
 
