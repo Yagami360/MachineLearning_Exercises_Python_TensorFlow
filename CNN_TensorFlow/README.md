@@ -537,27 +537,26 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 #### 損失関数のグラフ
 損失関数として、ソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。<br>
 
-##### 学習率 : 0.0001（固定値） と 0.0005（固定値）：最急降下法
-- 全結合層：100 ノード
-![cnn_2-3-1 _gradentdecent](https://user-images.githubusercontent.com/25688193/33002539-2d29d70e-cdf8-11e7-888f-b587f693a715.png)
-- 全結合層：384 ノード
-![cnn_2-3-4 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33010288-52f77994-ce1d-11e7-9191-07a3e06aa7cc.png)
+- 学習率 : 0.0001（固定値） と 0.0005（固定値）：最急降下法
+    - 全結合層：100 ノード
+    ![cnn_2-3-1 _gradentdecent](https://user-images.githubusercontent.com/25688193/33002539-2d29d70e-cdf8-11e7-888f-b587f693a715.png)
+    - 全結合層：384 ノード
+    ![cnn_2-3-4 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33010288-52f77994-ce1d-11e7-9191-07a3e06aa7cc.png)
+
+- 学習率 : 0.001（固定値） と 0.005（固定値）：最急降下法
+    - 全結合層：384 ノード<br>
+    ![cnn_2-3-6 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33021995-fe2b5ba4-ce46-11e7-81af-78ebc4448ce0.png)
+
 > 損失関数のグラフより、
 > - 値が 0 付近に収束しきれていない。トレーニング回数が少ないため？
 > - ノイズが大きい。ノイズミニバッチサイズが小さいため？
 > - 収束値に近づくにつれ、ノイズが大きい。減衰する学習率を使用する必要あり？
-> - 又、そもそも CIFAR-10 画像の色がおかしい
 
+- 学習率 : 0.01（固定値） と 0.05（固定値）：最急降下法
+    - 全結合層：384 ノード<br>
+![cnn_2-3-7 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33040654-13d324f4-ce7f-11e7-8b0b-4876c3a7f3c8.png)
 
-##### 学習率 : 0.001（固定値） と 0.005（固定値）：最急降下法
-- 全結合層：384 ノード<br>
-![cnn_2-3-6 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33021995-fe2b5ba4-ce46-11e7-81af-78ebc4448ce0.png)
-
-##### 学習率 : 0.01（固定値） と 0.05（固定値）：モメンタム<br>
-- 全結合層：100 ノード<br>
-![cnn_2-3-3](https://user-images.githubusercontent.com/25688193/32998827-9b063e82-cde1-11e7-938d-1fb65c98bb14.png)
-
-##### 学習率 : 0.0001（減衰値） と 0.0005（減衰値）：最急降下法
+- 学習率 : 0.0001（減衰値） と 0.0005（減衰値）：最急降下法
 
 
 

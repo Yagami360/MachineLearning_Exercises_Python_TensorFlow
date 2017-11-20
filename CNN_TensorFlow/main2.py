@@ -79,15 +79,15 @@ def main():
     X_test, y_test = MLPreProcess.load_cifar10_test( cifar10_path )
     
     # [n_channel, image_height, image_width] = [3,32,32] に reshape
-    X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
-    X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
-    y_train = numpy.reshape( y_train, 10000 )
-    y_test = numpy.reshape( y_test, 10000 )
+    #X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
+    #X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
+    #y_train = numpy.reshape( y_train, 10000 )
+    #y_test = numpy.reshape( y_test, 10000 )
 
     # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
     # numpy の transpose() を使って次元を入れ替え
-    X_train = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_train] )             
-    X_test = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_test] )
+    #X_train = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_train] )             
+    #X_test = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_test] )
     
     print( "X_train.shape : ", X_train.shape )
     print( "y_train.shape : ", y_train.shape )
@@ -101,21 +101,23 @@ def main():
     #---------------------------------------------------------------------
     # CIFAR-10 画像を plot
     #---------------------------------------------------------------------
-    # 先頭の 0~9 のラベルの画像データを plot
+    """
+    # 先頭からの画像データを plot
     # plt.subplots(...) から,
     # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
     figure, axis = plt.subplots( 
                        nrows = 8, ncols = 8,
                        sharex = True, sharey = True     # x,y 軸をシャアする
                    )
+
     # 2 dim 配列を１次元に変換
     axis = axis.flatten()
 
-    # ラベルの 0~9 の plot 用の for ループ
+    # 先頭からの画像データを plot 用の for ループ
     for i in range(64):
         image = X_train[i]
         axis[i].imshow( image )
-        axis[i].set_title( "Actual: " + cifar10_labels_dict[ y_train[i] ], fontsize = 8 )
+        axis[i].set_title( "Actual: [" + str(int(y_train[i])) + "] "+ cifar10_labels_dict[ y_train[i] ], fontsize = 8 )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )
@@ -124,18 +126,20 @@ def main():
     plt.show()
 
     # 特定のラベルの画像データを plot
+    label = 7
     figure, axis = plt.subplots( nrows = 8, ncols = 8, sharex = True, sharey = True )
     axis = axis.flatten()
     for i in range(64):
-        image = X_train[y_train == 0][i]
+        image = X_train[y_train == label][i]
         axis[i].imshow( image )
-        axis[i].set_title( "Actual: " + cifar10_labels_dict[ y_train[0] ], fontsize = 8 )
+        axis[i].set_title( "Actual: [" + str(label) + "] "+ cifar10_labels_dict[ y_train[label] ], fontsize = 8 )
 
     axis[0].set_xticks( [] )
     axis[0].set_yticks( [] )
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "CNN_2-2.png" )
     plt.show()
+    """
 
     #======================================================================
     # データを変換、正規化
@@ -280,7 +284,7 @@ def main():
     )
     plt.plot(
         range( 0, 500 ), cnn2._losses_train,
-        label = 'train data : CNN1 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate2,
+        label = 'train data : CNN2 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate2,
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'
@@ -342,8 +346,8 @@ def main():
         image = image.reshape(32,32,3)        # １次元配列を shape = [32, 32, 3] に reshape
         axis[idx].imshow( image )
         axis[idx].set_title( 
-            "Actual: " + cifar10_labels_dict[ y_test[corrects1][idx] ] + " / " +
-            "Pred: " + cifar10_labels_dict[ predict1[corrects1][idx] ], 
+            "Actual: [" + str(int(y_test[corrects1][idx])) + "] " + cifar10_labels_dict[ y_test[corrects1][idx] ] + " / " +
+            "Pred: [" + str(int(predict1[corrects1][idx])) + "] " + cifar10_labels_dict[ predict1[corrects1][idx] ], 
             fontsize = 8 
         )
 
@@ -367,8 +371,8 @@ def main():
         image = image.reshape(32,32,3)        # １次元配列を shape = [32, 32 ,3] に reshape
         axis[idx].imshow( image )
         axis[idx].set_title( 
-            "Actual: " + cifar10_labels_dict[ y_test[~corrects1][idx] ] + " / " +
-            "Pred: " + cifar10_labels_dict[ predict1[~corrects1][idx] ], 
+            "Actual: [" + str(int(y_test[~corrects1][idx])) + "] " + cifar10_labels_dict[ y_test[~corrects1][idx] ] + " / " +
+            "Pred: [" + str(int(predict1[~corrects1][idx])) + "] " + cifar10_labels_dict[ predict1[~corrects1][idx] ], 
             fontsize = 8 
         )
 
@@ -394,8 +398,8 @@ def main():
         image = image.reshape(32,32,3)        # １次元配列を shape = [32 ,32, 3] に reshape
         axis[idx].imshow( image )
         axis[idx].set_title( 
-            "Actual: " + cifar10_labels_dict[ y_test[corrects2][idx] ] + " / " +
-            "Pred: " + cifar10_labels_dict[ predict2[corrects2][idx] ], 
+            "Actual: [" + str(int(y_test[corrects2][idx])) +"] " + cifar10_labels_dict[ y_test[corrects2][idx] ] + " / " +
+            "Pred: [" + str(int(predict2[corrects2][idx])) + "] " + cifar10_labels_dict[ predict2[corrects2][idx] ], 
             fontsize = 8 
         )
 
@@ -419,8 +423,8 @@ def main():
         image = image.reshape(32,32,3)        # １次元配列を shape = [32 ,32, 3] に reshape
         axis[idx].imshow( image )
         axis[idx].set_title( 
-            "Actual: " + cifar10_labels_dict[ y_test[~corrects2][idx] ] + " / " +
-            "Pred: " + cifar10_labels_dict[ predict2[~corrects2][idx] ], 
+            "Actual: [" + str(int(y_test[~corrects2][idx])) + "] " + cifar10_labels_dict[ y_test[~corrects2][idx] ] + " / " +
+            "Pred: [" + str(int(predict2[~corrects2][idx])) + "] " + cifar10_labels_dict[ predict2[~corrects2][idx] ], 
             fontsize = 8 
         )
 

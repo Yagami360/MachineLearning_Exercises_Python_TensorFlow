@@ -311,6 +311,26 @@ class MLPreProcess( object ):
         [Input]
             path : str
                 CIFAR-10 データセットが格納されているフォルダへのパス
+
+        [Output]
+            images : float shape = [n_samples = 50,000, n_features = 3*32*32 = 3*1024]
+                トレーニングデータ用の画像データ
+                n_features = n_channels * image_height * image_width
+
+            labels : int shape = [n_samples = 10,000,]
+                トレーニングデータ用のラベルデータ（教師データ）
+                cifar10_labels_dict = {
+                    0 : "airplane",
+                    1 : "automoblie",
+                    2 : "bird",
+                    3 : "cat",
+                    4 : "deer",         #  鹿
+                    5 : "dog",
+                    6 : "frog",
+                    7 : "horse",
+                    8 : "ship",
+                    9 : "truck",
+                }
         """
         # 読み込みファイル名の設定
         # トレーニング用のデータ
@@ -327,8 +347,8 @@ class MLPreProcess( object ):
         labels_byte = 1
         record_bytes = image_bytes + labels_byte
 
-        images = []
-        labels = []
+        images = numpy.empty( shape = [50000, image_width, image_height, n_channels ] )
+        labels = numpy.empty( shape = [50000] )
 
         # data_batch_1, data_batch_2, data_batch_3, data_batch_4, data_batch_5 に関しての loop
         for i in range( 5 ):
@@ -337,17 +357,27 @@ class MLPreProcess( object ):
 
             # 全レコード長に関しての loop
             for record in range(10000):
-                #
+                # seek(...) : 起点：record_bytes * record, オフセット：0
                 byte_stream.seek( record_bytes * record , 0 )
 
                 # バッファに割り当て
                 label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
                 image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
-                image_buffer = image_buffer.astype( numpy.float32 )
 
-                images.append( image_buffer )
-                labels.append( label_buffer )
-                #images[record] = image_buffer
+                # [n_channel, image_height, image_width] = [3,32,32] に reshape
+                image_buffer = numpy.reshape( image_buffer, [n_channels, image_width, image_height ] )
+                
+                # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+                # numpy の transpose() を使って次元を入れ替え
+                image_buffer = numpy.transpose( image_buffer, [1, 2, 0] )
+                
+                # float
+                image_buffer = image_buffer.astype( numpy.float32 )
+                image_buffer = image_buffer / 255
+
+                # 各レコードの画像データを格納していく
+                images[record*(i+1)] = image_buffer
+                labels[record*(i+1)] = label_buffer
 
             # 
             byte_stream.close()
@@ -378,25 +408,35 @@ class MLPreProcess( object ):
         labels_byte = 1
         record_bytes = image_bytes + labels_byte
 
-        images = []
-        labels = []
+        images = numpy.empty( shape = [10000, image_width, image_height, n_channels ] )
+        labels = numpy.empty( shape = [10000] )
 
         # バイナリーモードでファイルオープン
         byte_stream = open( file, mode="rb" )
 
         # 全レコード長に関しての loop
         for record in range(10000):
-            #
+            # seek(...) : 起点：record_bytes * record, オフセット：0
             byte_stream.seek( record_bytes * record , 0 )
 
             # バッファに割り当て
             label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
-            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
-            image_buffer = image_buffer.astype( numpy.float32 )
+            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.int8 )
 
-            images.append( image_buffer )
-            labels.append( label_buffer )
-            #images[record] = image_buffer
+            # [n_channel, image_height, image_width] = [3,32,32] に reshape
+            image_buffer = numpy.reshape( image_buffer, [n_channels, image_width, image_height ] )
+            
+            # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+            # numpy の transpose() を使って次元を入れ替え
+            image_buffer = numpy.transpose( image_buffer, [1, 2, 0] )
+
+            # float
+            image_buffer = image_buffer.astype( numpy.float32 )
+            image_buffer = image_buffer / 255
+
+            # 各レコードの画像データを格納していく
+            images[record] = image_buffer
+            labels[record] = label_buffer
 
         # 
         byte_stream.close()
@@ -424,25 +464,35 @@ class MLPreProcess( object ):
         labels_byte = 1
         record_bytes = image_bytes + labels_byte
 
-        images = []
-        labels = []
+        images = numpy.empty( shape = [10000, image_width, image_height, n_channels ] )
+        labels = numpy.empty( shape = [10000] )
 
         # バイナリーモードでファイルオープン
         byte_stream = open( file, mode="rb" )
 
         # 全レコード長に関しての loop
         for record in range(10000):
-            #
+            # seek(...) : 起点：record_bytes * record, オフセット：0
             byte_stream.seek( record_bytes * record , 0 )
 
             # バッファに割り当て
             label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
-            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.uint8 )
-            image_buffer = image_buffer.astype( numpy.float32 )
+            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.int8 )
 
-            images.append( image_buffer )
-            labels.append( label_buffer )
-            #images[record] = image_buffer
+            # [n_channel, image_height, image_width] = [3,32,32] に reshape
+            image_buffer = numpy.reshape( image_buffer, [n_channels, image_width, image_height ] )
+            
+            # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+            # numpy の transpose() を使って次元を入れ替え
+            image_buffer = numpy.transpose( image_buffer, [1, 2, 0] )
+            
+            # float
+            image_buffer = image_buffer.astype( numpy.float32 )
+            image_buffer = image_buffer / 255
+
+            # 各レコードの画像データを格納していく
+            images[record] = image_buffer
+            labels[record] = label_buffer
  
         byte_stream.close()
 
