@@ -261,6 +261,12 @@ def main():
     print( "predict1 : ", predict1 )
     print( "predict2 : ", predict2 )
 
+    # 正解・不正解のリスト [True or False]
+    corrects1 = numpy.equal( predict1, y_test )
+    corrects2 = numpy.equal( predict2, y_test )
+    print( "corrects1 :", corrects1 )
+    print( "corrects2 :", corrects2 )
+
     figure1, axis1 = plt.subplots( 
                         nrows = 5, ncols = 8,
                         sharex = True, sharey = True     # x,y 軸をシャアする
@@ -269,13 +275,9 @@ def main():
     # ２次元配列を１次元に変換
     axis1 = axis1.flatten()
 
-    # 正解・不正解のリスト [True or False]
-    corrects = numpy.equal( predict2, y_test )
-    print( "corrects", corrects )
-
     # 正解画像の plot のための loop
     #plt.clf()
-    for (idx, image) in enumerate( X_test[ corrects ][0:40] ):
+    for (idx, image) in enumerate( X_test[ corrects1 ][0:40] ):
         #print( "idx", idx )
         image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
         axis1[idx].imshow(
@@ -283,7 +285,7 @@ def main():
             cmap = "Greys",
             interpolation = "nearest"   # 補間方法
         )
-        axis1[idx].set_title( "Actual: " + str( y_test[corrects][idx] ) + " Pred: " + str( predict2[corrects][idx] ), fontsize = 8 )
+        axis1[idx].set_title( "Actual: " + str( y_test[corrects1][idx] ) + " Pred: " + str( predict1[corrects1][idx] ), fontsize = 8 )
 
     axis1[0].set_xticks( [] )
     axis1[0].set_yticks( [] )
@@ -298,14 +300,14 @@ def main():
                         sharex = True, sharey = True     # x,y 軸をシャアする
                      )
 
-    for (idx, image) in enumerate( X_test[ ~corrects ][0:40] ):
+    for (idx, image) in enumerate( X_test[ ~corrects1 ][0:40] ):
         image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
         axis2[idx].imshow(
             image,
             cmap = "Greys",
             interpolation = "nearest"   # 補間方法
         )
-        axis2[idx].set_title( "Actual: " + str( y_test[~corrects][idx] ) + " Pred: " + str( predict1[~corrects][idx] ), fontsize = 8 )
+        axis2[idx].set_title( "Actual: " + str( y_test[~corrects1][idx] ) + " Pred: " + str( predict1[~corrects1][idx] ), fontsize = 8 )
 
     axis2[0].set_xticks( [] )
     axis2[0].set_yticks( [] )

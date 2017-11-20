@@ -429,16 +429,19 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 ##### 識別に正解した画像
 ![cnn_1-2-1 _softmax-cross-entropy](https://user-images.githubusercontent.com/25688193/32997303-78819aba-cdd1-11e7-8be5-fc032cd0a3e2.png)
+> 学習率 0.0005 の CNN モデルにおいて、<br>
 > 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
 > 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
 ##### 識別に失敗した画像
-![cnn_1-3-1 _softmax-cross-entropy](https://user-images.githubusercontent.com/25688193/32997541-c857168e-cdd4-11e7-81b1-198774d15fc3.png)
+![cnn_1-3-2 _softmax-cross-entropy_leraningrate 0 00001](https://user-images.githubusercontent.com/25688193/32997994-668ecd9c-cdda-11e7-9e2e-4d8c8ac6c083.png)
 > 学習率 0.0001 の CNN モデルにおいて、<br>
 > 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 > 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
-![cnn_1-3-2](https://user-images.githubusercontent.com/25688193/32940429-fa1ec984-cbc5-11e7-842d-f3bfc30a8f21.png)
+<br>
+
+![cnn_1-3-1 _softmax-cross-entropy](https://user-images.githubusercontent.com/25688193/32997541-c857168e-cdd4-11e7-81b1-198774d15fc3.png)
 > 学習率 0.0005 の CNN モデルにおいて、<br>
 > 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 
@@ -518,6 +521,10 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     ```
     
 #### コードの実行結果
+
+##### 損失関数のグラフ
+![cnn_2-3-1](https://user-images.githubusercontent.com/25688193/32998038-e11515f8-cdda-11e7-9abf-6bfe72f86fc4.png)
+![cnn_2-3-2](https://user-images.githubusercontent.com/25688193/32998027-c7de0400-cdda-11e7-827d-c0f4c072b12d.png)
 
 
 
