@@ -453,27 +453,136 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - バイナリー形式の CIFAR-10 データセット CIFAR-10 binary version (suitable for C programs) を使用
     - ファイルフォーマットは [dataset.md](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#cifar-10-データセット) 参照
+    - 処理負荷＆メモリサイズ軽減のため、５つのトレーニング用データ（合計：50000 サンプル）の内、
+    １つのファイル（10000 サンプル）のみトレーニングデータとして使用する。
     - このフォーマットに基づき、<br>
-    データの読み込みを `MLPreProcess` クラスの static 関数 `load_cifar10_trains(...)` or `load_cifar10_train(...)` and `load_cifar10_test(...)` で行う。
-    - 読み込みんだデータの shape を、[image_height, image_width, n_channel] となるように変形する。
+    データの読み込みを `MLPreProcess` クラスの static 関数 `load_cifar10_train(...)` and `load_cifar10_test(...)` で行う。
     ```python
-    X_train, y_train = MLPreProcess.load_cifar10_trains( cifar10_path )
-    X_test, y_test = MLPreProcess.load_cifar10_test( cifar10_path )
-    
-    # [n_channel, image_height, image_width] = [3,32,32] に reshape
-    X_train = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_train] )
-    X_test = numpy.array( [numpy.reshape(x, (3,32,32)) for x in X_test] )
-    y_train = numpy.reshape( y_train, 50000 )
-    y_test = numpy.reshape( y_test, 10000 )
+    class MLPreProcess(object):
+    ...
+    @staticmethod
+    def load_cifar10_train( path, fileName = "data_batch_1.bin" ):
+        """
+        検証データ用の CIFAR-10 データの１つのトレーニング用ファイルを読み込む。
+        バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
+
+        [Input]
+            path : str
+                CIFAR-10 データセットが格納されているフォルダへのパス
+            fileName :str
+                CIFAR-10 データセットの１つのトレーニング用ファイル名
+        """
+        file = os.path.join( path, fileName )
         
-    # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
-    # numpy の transpose() を使って次元を入れ替え
-    X_train = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_train] )
-    X_test = numpy.array( [ numpy.transpose( x, (1, 2, 0) ) for x in X_test] )
+        # 内部データサイズの設定 
+        image_height = 32   # CIFAR-10 画像の高さ (pixel)
+        image_width = 32    #
+        n_channels = 3      # RGB の 3 チャンネル
+
+        image_bytes = image_height * image_width * n_channels
+        labels_byte = 1
+        record_bytes = image_bytes + labels_byte
+
+        images = numpy.empty( shape = [10000, image_width, image_height, n_channels ] )
+        labels = numpy.empty( shape = [10000] )
+
+        # バイナリーモードでファイルオープン
+        byte_stream = open( file, mode="rb" )
+
+        # 全レコード長に関しての loop
+        for record in range(10000):
+            # seek(...) : 起点：record_bytes * record, オフセット：0
+            byte_stream.seek( record_bytes * record , 0 )
+
+            # バッファに割り当て
+            label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
+            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.int8 )
+
+            # [n_channel, image_height, image_width] = [3,32,32] に reshape
+            image_buffer = numpy.reshape( image_buffer, [n_channels, image_width, image_height ] )
+            
+            # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+            # numpy の transpose() を使って次元を入れ替え
+            image_buffer = numpy.transpose( image_buffer, [1, 2, 0] )
+
+            # float
+            image_buffer = image_buffer.astype( numpy.float32 )
+            image_buffer = image_buffer / 255
+
+            # 各レコードの画像データを格納していく
+            images[record] = image_buffer
+            labels[record] = label_buffer
+
+        # 
+        byte_stream.close()
+
+        return images, labels
+    ```
+    ```python
+    class MLPreProcess(object):
+    ...
+        @staticmethod
+    def load_cifar10_test( path ):
+        """
+        検証データ用の CIFAR-10 データのテスト用ファイルを読み込む。
+        バイナリ形式 : CIFAR-10 binary version (suitable for C programs)
+
+        [Input]
+            path : str
+                CIFAR-10 データセットが格納されているフォルダへのパス
+        """
+        file = os.path.join( path, "test_batch.bin" )
+        
+        # 内部データサイズの設定 
+        image_height = 32   # CIFAR-10 画像の高さ (pixel)
+        image_width = 32    #
+        n_channels = 3      # RGB の 3 チャンネル
+
+        image_bytes = image_height * image_width * n_channels
+        labels_byte = 1
+        record_bytes = image_bytes + labels_byte
+
+        images = numpy.empty( shape = [10000, image_width, image_height, n_channels ] )
+        labels = numpy.empty( shape = [10000] )
+
+        # バイナリーモードでファイルオープン
+        byte_stream = open( file, mode="rb" )
+
+        # 全レコード長に関しての loop
+        for record in range(10000):
+            # seek(...) : 起点：record_bytes * record, オフセット：0
+            byte_stream.seek( record_bytes * record , 0 )
+
+            # バッファに割り当て
+            label_buffer = numpy.frombuffer( byte_stream.read(labels_byte), dtype=numpy.uint8 )
+            image_buffer = numpy.frombuffer( byte_stream.read(image_bytes), dtype=numpy.int8 )
+
+            # [n_channel, image_height, image_width] = [3,32,32] に reshape
+            image_buffer = numpy.reshape( image_buffer, [n_channels, image_width, image_height ] )
+            
+            # imshow(), fit()で読める ([1]height, [2]width, [0] channel) の順番に変更するために
+            # numpy の transpose() を使って次元を入れ替え
+            image_buffer = numpy.transpose( image_buffer, [1, 2, 0] )
+            
+            # float
+            image_buffer = image_buffer.astype( numpy.float32 )
+            image_buffer = image_buffer / 255
+
+            # 各レコードの画像データを格納していく
+            images[record] = image_buffer
+            labels[record] = label_buffer
+ 
+        byte_stream.close()
+
+        return images, labels
+    ```
+    ```python
+    X_train, y_train = MLPreProcess.load_cifar10_train( cifar10_path )
+    X_test, y_test = MLPreProcess.load_cifar10_test( cifar10_path )
     ```
 - モデルの構造は、`ConvolutionalNN.model()` メソッドで定義し、<br>
   ｛畳み込み層１ → プーリング層１ → 畳み込み層２ → プーリング層２ → 全結合層１ → 全結合層２｝
-   で構成。
+   で構成する。
     - 畳み込み層１ : `tf.nn.conv2d(...)`
         - 画像の高さ : `_image_height = 32` 
         - 画像の幅 : `_image_width = 32`
@@ -564,7 +673,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 #### 学習済みモデルでの正解率の値
 
-- 学習済みモデルでのテストデータでの正解率：（学習率=0.0001（固定値） 、最急降下法の場合）
+- 学習済みモデルでのテストデータでの正解率：（学習率=0.001（固定値） 、最急降下法の場合）
 結果処理中...
 
 |ラベル|Acuraccy [test data]|サンプル数|
@@ -582,7 +691,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 |9||（※全サンプル数でない）|
 
 
-- 学習済みモデルでのテストデータでの正解率：（学習率=0.0005（固定値） 、最急降下法の場合）
+- 学習済みモデルでのテストデータでの正解率：（学習率=0.005（固定値） 、最急降下法の場合）
 結果処理中...
 
 |ラベル|Acuraccy [test data]|サンプル数|
