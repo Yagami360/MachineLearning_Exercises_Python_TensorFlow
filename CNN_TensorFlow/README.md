@@ -365,12 +365,12 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
         return self._y_out_op
     ```
-- 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、疎なソフトマックス・クロス・エントロピー関数を使用
+- 損失関数は、`ConvolutionalNN.loss()` メソッドで行い、ソフトマックス・クロス・エントロピー関数を使用
     ```python
     def main():
         ...
-        cnn1.loss( SparseSoftmaxCrossEntropy() )
-        cnn2.loss( SparseSoftmaxCrossEntropy() )
+        cnn1.loss( SoftmaxCrossEntropy() )
+        cnn2.loss( SoftmaxCrossEntropy() )
     ```
 - モデルの最適化アルゴリズムは、`ConvolutionalNN.optimizer()` メソッドで行い、モメンタムを使用
     - 学習率 learning_rate は、0.0001 と 0.0005 の２つのモデルで異なる値で検証
@@ -384,8 +384,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 #### コードの実行結果
 
 ##### 損失関数のグラフ
-![cnn_1-2-2](https://user-images.githubusercontent.com/25688193/32940343-b5638ec4-cbc5-11e7-88e7-ec023053d917.png)
-> 損失関数として、疎なソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。<br>
+![cnn_1-1-1 _softmax-cross-entropy](https://user-images.githubusercontent.com/25688193/32997301-65714272-cdd1-11e7-8b42-ce042bc5042f.png)
+> 損失関数として、ソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。<br>
 > 赤線が学習率 0.0001 の CNN モデル（最適化アルゴリズムとして、モーメンタムアルゴリズム使用）。
 > 青線が学習率 0.0005 の CNN モデル（最適化アルゴリズムとして、モーメンタムアルゴリズム使用）。
 > 学習率が 0.0001 の場合、エポック数 500 で損失関数が収束しきれていないことが分かる。
@@ -396,44 +396,44 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 |ラベル|Acuraccy [test data]|サンプル数|
 |---|---|---|
-|全ラベルでの平均|0.857|10,000 個|
-|0|1.000|980<br>※全サンプル数でない|
-|1|1.000|1135<br>※全サンプル数でない|
-|2|1.000|1032<br>※全サンプル数でない|
-|3|1.000|1010<br>※全サンプル数でない|
-|4|0.982|982<br>※全サンプル数でない|
-|5|0.683|892<br>※全サンプル数でない|
-|6|1.000|958<br>※全サンプル数でない|
-|7|0.948|1028<br>※全サンプル数でない|
-|8|0.859|974<br>※全サンプル数でない|
-|9|1.000|1009<br>※全サンプル数でない|
+|全ラベルでの平均|0.837|10,000 個|
+|0|0.924|980（※全サンプル数でない）|
+|1|1.000|1135（※全サンプル数でない）|
+|2|1.000|1032（※全サンプル数でない）|
+|3|0.892|1010（※全サンプル数でない）|
+|4|0.941|982（※全サンプル数でない）|
+|5|1.000|892（※全サンプル数でない）|
+|6|1.000|958（※全サンプル数でない）|
+|7|0.985|1028（※全サンプル数でない）|
+|8|0.781|974（※全サンプル数でない）|
+|9|1.000|1009（※全サンプル数でない）|
 
-→ ５の識別率が低い傾向がある。
+→ 8 の正解率が低い傾向がある。
 
 - 学習済みモデルでのテストデータでの正解率 : 学習率=0.0005 の場合
 
 |ラベル|Acuraccy [test data]|サンプル数|
 |---|---|---|
 |全ラベルでの平均|0.958|10,000 個|
-|0|1.000|980<br>※全サンプル数でない|
-|1|1.000|1135<br>※全サンプル数でない|
-|2|0.989|1032<br>※全サンプル数でない|
-|3|0.955|1010<br>※全サンプル数でない|
-|4|0.975|982<br>※全サンプル数でない|
-|5|1.000|892<br>※全サンプル数でない|
-|6|1.000|958<br>※全サンプル数でない|
-|7|0.977|1028<br>※全サンプル数でない|
-|8|0.962|974<br>※全サンプル数でない|
-|9|1.000|1009<br>※全サンプル数でない|
+|0|1.000|980（※全サンプル数でない）|
+|1|1.000|1135（※全サンプル数でない）|
+|2|1.000|1032（※全サンプル数でない）|
+|3|0.997|1010（※全サンプル数でない）|
+|4|0.987|982（※全サンプル数でない）|
+|5|1.000|892（※全サンプル数でない）|
+|6|0.973|958（※全サンプル数でない）|
+|7|0.914|1028（※全サンプル数でない）|
+|8|1.000|974（※全サンプル数でない）|
+|9|1.000|1009（※全サンプル数でない）|
 
 
 ##### 識別に正解した画像
-![cnn_1-2-1](https://user-images.githubusercontent.com/25688193/32935286-c8eed470-cbb2-11e7-9188-cec154cc50e2.png)
+![cnn_1-2-1 _softmax-cross-entropy](https://user-images.githubusercontent.com/25688193/32997303-78819aba-cdd1-11e7-8be5-fc032cd0a3e2.png)
 > 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
 > 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
 ##### 識別に失敗した画像
-![cnn_1-3-1](https://user-images.githubusercontent.com/25688193/32937266-1a142abe-cbbb-11e7-81fd-1a66077ae3c5.png)
+![cnn_1-3-1 _softmax-cross-entropy](https://user-images.githubusercontent.com/25688193/32997541-c857168e-cdd4-11e7-81b1-198774d15fc3.png)
 > 学習率 0.0001 の CNN モデルにおいて、<br>
 > 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 > 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
@@ -626,3 +626,17 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - InvalidArgumentError (see above for traceback): logits and labels must be same size: logits_size=[100,10] labels_size=[1,100]
 	 [[Node: SoftmaxCrossEntropyWithLogits = SoftmaxCrossEntropyWithLogits[T=DT_FLOAT, _device="/job:localhost/replica:0/task:0/cpu:0"](Reshape_2, Reshape_3)]]
+
+- 
+
+```
+ValueError: Rank mismatch: Rank of labels (received 2) should equal rank of logits minus 1 (received 2).
+
+    def loss( self, t_holder, y_out_op ):
+        self._loss_op = tf.reduce_mean(
+                            tf.nn.sparse_softmax_cross_entropy_with_logits(
+                                logits = y_out_op,
+                                labels = t_holder
+                            )
+                        )
+```

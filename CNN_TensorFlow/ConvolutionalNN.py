@@ -167,7 +167,7 @@ class ConvolutionalNN( NeuralNetworkBase ):
 
         self._t_holder = tf.placeholder( 
                              tf.int32, 
-                             shape = [ None ]
+                             shape = [ None, n_labels ]
                          )
 
         self._keep_prob_holder = tf.placeholder( tf.float32 )
@@ -210,11 +210,10 @@ class ConvolutionalNN( NeuralNetworkBase ):
         print( "_keep_prob_holder : ", self._keep_prob_holder )
 
         print( "_weights : \n", self._weights )
-        if( self._session != None ):
+        if( (self._session != None) and (self._init_var_op != None) ):
             print( self._session.run( self._weights ) )
 
-        print( "_biases : \n", self._biases )
-        if( self._session != None ):
+        if( (self._session != None) and (self._init_var_op != None) ):
             print( self._session.run( self._biases ) )
         print( "----------------------------------" )
         return
@@ -470,14 +469,10 @@ class ConvolutionalNN( NeuralNetworkBase ):
         # for ループでエポック数分トレーニング
         for epoch in range( self._epochs ):
             # ミニバッチ学習処理のためランダムサンプリング
-            #X_train_shuffled, y_train_shuffled = shuffle( X_train, y_train )
             idx_shuffled = numpy.random.choice( len(X_train), size = self._batch_size )
             X_train_shuffled = X_train[ idx_shuffled ]
             y_train_shuffled = y_train[ idx_shuffled ]
-
             #print( "X_train_shuffled.shape", X_train_shuffled.shape )
-            #print( "X_train_shuffled", X_train_shuffled )
-            #print( "y_train_shuffled", y_train_shuffled )
 
             # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
             self._session.run(
@@ -518,12 +513,15 @@ class ConvolutionalNN( NeuralNetworkBase ):
             results : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
-        # shape を (n_samples, image_width, image_height) → (n_samples, image_width, image_height, 1) に reshape
-        X_test_reshaped = numpy.expand_dims( X_test, 3 )
+        # 入力データの shape にチェンネルデータがない場合
+        # shape = [image_height, image_width]
+        if( X_test.ndim == 3 ):
+            # shape を [image_height, image_width] → [image_height, image_width, n_channel=1] に reshape
+            X_test = numpy.expand_dims( X_test, axis = 3 )
 
         prob = self._session.run(
                    self._y_out_op,
-                   feed_dict = { self._X_holder: X_test_reshaped }
+                   feed_dict = { self._X_holder: X_test }
                )
         
         #print( "predicts :", predicts )
@@ -545,13 +543,16 @@ class ConvolutionalNN( NeuralNetworkBase ):
             X_test : numpy.ndarry ( shape = [n_samples, n_features] )
                 予想したい特徴行列
         """
-        # shape を (n_samples, image_width, image_height) → (n_samples, image_width, image_height, 1) に reshape
-        X_test_reshaped = numpy.expand_dims( X_test, 3 )
+        # 入力データの shape にチェンネルデータがない場合
+        # shape = [image_height, image_width]
+        if( X_test.ndim == 3 ):
+            # shape を [image_height, image_width] → [image_height, image_width, n_channel=1] に reshape
+            X_test = numpy.expand_dims( X_test, axis = 3 )
 
         prob = self._y_out_op.eval(
                    session = self._session,
                    feed_dict = {
-                       self._X_holder: X_test_reshaped 
+                       self._X_holder: X_test 
                    }
                )
         

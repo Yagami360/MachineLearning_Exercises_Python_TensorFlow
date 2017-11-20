@@ -86,6 +86,7 @@ def main():
     #---------------------------------------------------------------------
     # CIFAR-10 画像を plot
     #---------------------------------------------------------------------
+    """
     # 先頭の 0~9 のラベルの画像データを plot
     # plt.subplots(...) から,
     # Figure クラスのオブジェクト、Axis クラスのオブジェクト作成
@@ -126,6 +127,7 @@ def main():
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "CNN_2-2.png" )
     plt.show()
+    """
 
     #======================================================================
     # データを変換、正規化
@@ -239,12 +241,12 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
-    cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
+    cnn1.optimizer( Momentum( learning_rate = 0.001, momentum = 0.9 ) )
+    cnn2.optimizer( Momentum( learning_rate = 0.005, momentum = 0.9 ) )
 
     # トレーニングデータで fitting 処理
-    cnn1.fit( X_train, y_train )
-    cnn2.fit( X_train, y_train )
+    cnn1.fit( X_train, y_train_encoded )
+    cnn2.fit( X_train, y_train_encoded )
 
     cnn1.print( "after fit()" )
     #print( mlp1._session.run( mlp1._weights[0] ) )
@@ -259,14 +261,14 @@ def main():
     plt.clf()
     plt.plot(
         range( 0, 500 ), cnn1._losses_train,
-        label = 'train data : CNN1 = [50,50,100], learning_rate = 0.0001',
+        label = 'train data : CNN1 = [50,50,100], learning_rate = 0.001',
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
     )
     plt.plot(
         range( 0, 500 ), cnn2._losses_train,
-        label = 'train data : CNN2 = [50,50,100], learning_rate = 0.0005',
+        label = 'train data : CNN2 = [50,50,100], learning_rate = 0.005',
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'

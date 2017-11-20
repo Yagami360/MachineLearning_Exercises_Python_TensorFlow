@@ -126,6 +126,8 @@ def main():
                n_labels = 10
            )
 
+    #cnn1._t_holder = tf.placeholder( tf.int32, [None] )
+
     cnn2 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                epochs = 500,
@@ -142,6 +144,8 @@ def main():
                n_fullyLayers = 100,
                n_labels = 10
            )
+
+    #cnn2._t_holder = tf.placeholder( tf.int32, [None] )
 
     #cnn1.print( "after __init__()" )
 
@@ -166,14 +170,14 @@ def main():
     #======================================================================
     cnn1.model()
     cnn2.model()
-    #cnn1.print( "after model()" )
+    cnn1.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    cnn1.loss( SparseSoftmaxCrossEntropy() )
-    cnn2.loss( SparseSoftmaxCrossEntropy() )
+    cnn1.loss( SoftmaxCrossEntropy() )
+    cnn2.loss( SoftmaxCrossEntropy() )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -194,8 +198,8 @@ def main():
     cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
 
     # トレーニングデータで fitting 処理
-    cnn1.fit( X_train, y_train )
-    cnn2.fit( X_train, y_train )
+    cnn1.fit( X_train, y_train_encoded )
+    cnn2.fit( X_train, y_train_encoded )
 
     cnn1.print( "after fit()" )
     #print( mlp1._session.run( mlp1._weights[0] ) )
