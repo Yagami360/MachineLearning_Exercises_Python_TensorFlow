@@ -300,6 +300,9 @@ def main():
                         sharex = True, sharey = True     # x,y 軸をシャアする
                      )
 
+    # ２次元配列を１次元に変換
+    axis2 = axis2.flatten()
+
     for (idx, image) in enumerate( X_test[ ~corrects1 ][0:40] ):
         image = image.reshape(28,28)        # １次元配列を shape = [28 ,28] に reshape
         axis2[idx].imshow(

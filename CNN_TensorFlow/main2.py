@@ -249,8 +249,8 @@ def main():
     #     session.run(…)
     #======================================================================
     # モデルの最適化アルゴリズムを設定
-    learning_rate1 = 0.0001
-    learning_rate2 = 0.0005
+    learning_rate1 = 0.001
+    learning_rate2 = 0.005
     cnn1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
     cnn2.optimizer( GradientDecent( learning_rate = learning_rate2 ) )
     #cnn1.optimizer( GradientDecentDecay( learning_rate = learning_rate1, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )

@@ -549,9 +549,9 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 > - 又、そもそも CIFAR-10 画像の色がおかしい
 
 
-##### 学習率 : 0.001（固定値） と 0.005（固定値）：モメンタム<br>
-- 全結合層：100 ノード<br>
-![cnn_2-3-2](https://user-images.githubusercontent.com/25688193/32998027-c7de0400-cdda-11e7-827d-c0f4c072b12d.png)
+##### 学習率 : 0.001（固定値） と 0.005（固定値）：最急降下法
+- 全結合層：384 ノード<br>
+![cnn_2-3-6 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33021995-fe2b5ba4-ce46-11e7-81af-78ebc4448ce0.png)
 
 ##### 学習率 : 0.01（固定値） と 0.05（固定値）：モメンタム<br>
 - 全結合層：100 ノード<br>
@@ -565,7 +565,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 #### 学習済みモデルでの正解率の値
 
-- 学習済みモデルでのテストデータでの正解率：（学習率=0.01（固定値） 、最急降下法の場合）
+- 学習済みモデルでのテストデータでの正解率：（学習率=0.0001（固定値） 、最急降下法の場合）
 結果処理中...
 
 |ラベル|Acuraccy [test data]|サンプル数|
@@ -583,7 +583,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 |9||（※全サンプル数でない）|
 
 
-- 学習済みモデルでのテストデータでの正解率：（学習率=0.05（固定値） 、最急降下法の場合）
+- 学習済みモデルでのテストデータでの正解率：（学習率=0.0005（固定値） 、最急降下法の場合）
 結果処理中...
 
 |ラベル|Acuraccy [test data]|サンプル数|
@@ -606,7 +606,7 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
 - 学習率 0.0005 （固定値）：最急降下法
-![cnn_2-4-1 _gradientdecent](https://user-images.githubusercontent.com/25688193/33010234-288b8f6a-ce1d-11e7-9376-93e480ff435b.png)
+![cnn_2-6-2 _gradientdecent](https://user-images.githubusercontent.com/25688193/33016870-7e74d326-ce33-11e7-866d-5ef4f6ba3c4f.png)
 
 <br>
 
@@ -615,14 +615,8 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
 - 学習率 0.0005 （固定値）：最急降下法
+![cnn_2-7-2 _gradientdecent](https://user-images.githubusercontent.com/25688193/33016883-8d80066a-ce33-11e7-92fd-d83fbdf609be.png)
 
-
-<br>
-
-画像生成中...
-> 学習率 0.05 （固定値）の CNN モデルにおいて、<br>
-> 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
-> 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
 <br>
 <a id="ID_3-3"></a>
