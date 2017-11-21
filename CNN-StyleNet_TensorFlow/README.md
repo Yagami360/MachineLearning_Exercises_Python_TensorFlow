@@ -32,8 +32,10 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 >> 
 
 > Scipy ライブラリ
->> `scipy.misc` : 
->>> https://docs.scipy.org/doc/scipy/reference/misc.html
+>> `scipy.misc.imread(...)` : Read an image from a file as an array.
+>>> https://docs.scipy.org/doc/scipy/reference/generated/scipy.misc.imread.html<br>
+>> `scipy.io.loadmat` : MATLAB 用のオブジェクトファイルを読み込む
+>>> https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.io.loadmat.html
 
 > その他ライブラリ
 >>
@@ -69,11 +71,3 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 <a id="#背景理論"></a>
 
 ## 背景理論
-
-<a name="#背景理論１"></a>
-
-## 背景理論１
-
-<a name="#背景理論２"></a>
-
-## 背景理論２
