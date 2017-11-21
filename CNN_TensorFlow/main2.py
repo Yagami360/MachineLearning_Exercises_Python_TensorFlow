@@ -165,11 +165,14 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
+    cnn1_epochs = 1000
+    cnn2_epochs = 1000
+
     # CNN クラスのオブジェクト生成
     cnn1 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               epochs = 500,
-               batch_size = 100,
+               epochs = cnn1_epochs,
+               batch_size = 128,
                eval_step = 1,
                image_height = 32,                   # 32 pixel
                image_width = 32,                    # 32 pixel
@@ -188,8 +191,8 @@ def main():
 
     cnn2 = ConvolutionalNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               epochs = 500,
-               batch_size = 100,
+               epochs = cnn2_epochs,
+               batch_size = 128,
                eval_step = 1,
                image_height = 32,                   # 32 pixel
                image_width = 32,                    # 32 pixel
@@ -255,8 +258,10 @@ def main():
     # モデルの最適化アルゴリズムを設定
     learning_rate1 = 0.001
     learning_rate2 = 0.005
-    cnn1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
-    cnn2.optimizer( GradientDecent( learning_rate = learning_rate2 ) )
+    #cnn1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
+    #cnn2.optimizer( GradientDecent( learning_rate = learning_rate2 ) )
+    cnn1.optimizer( Momentum( learning_rate = learning_rate1, momentum = 0.9 ) )
+    cnn2.optimizer( Momentum( learning_rate = learning_rate2, momentum = 0.9 ) )
     #cnn1.optimizer( GradientDecentDecay( learning_rate = learning_rate1, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )
     #cnn2.optimizer( GradientDecentDecay( learning_rate = learning_rate2, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )
 
@@ -276,14 +281,14 @@ def main():
     #-------------------------------------------------------------------
     plt.clf()
     plt.plot(
-        range( 0, 500 ), cnn1._losses_train,
+        range( 0, cnn1_epochs ), cnn1._losses_train,
         label = 'train data : CNN1 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate1,
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
     )
     plt.plot(
-        range( 0, 500 ), cnn2._losses_train,
+        range( 0, cnn2_epochs ), cnn2._losses_train,
         label = 'train data : CNN2 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate2,
         linestyle = '--',
         #linewidth = 2,

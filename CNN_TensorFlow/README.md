@@ -24,7 +24,9 @@ TensorFlow での CNN の処理をクラス（任意の層に DNN 化可能な�
     1. [CNN による MNIST データの識別 : `main1.py`](#ID_3-1)
     1. [CNN による CIFAR-10 データの識別 : `main2.py`](#ID_3-2)
     1. [Queue（画像パイプライン）を用いた CNN による CIFAR-10 データの識別 : `main3.py`](#ID3-3)
-    1. [既存の CNN モデルの再学習処理 : `main4.py`](#ID_3-4)
+    1. [学習済み CNN モデルの再学習処理（転移学習）](#ID_3-4)
+        1. [学習済み CNN モデルの保存、読み込み : `main4_1.py`](#ID_3-4-1)
+        1. [GoogLeNet（インセプション） : `main4_2.py`](#ID_3-4-2)
 1. [背景理論](#ID_4)
     1. [CNN の概要](#ID_4-1)
     1. [畳み込み [convolution] 処理について](#ID_4-2)
@@ -615,30 +617,22 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     cnn2.loss( SoftmaxCrossEntropy() )
     ```
 - モデルの最適化アルゴリズムは、`ConvolutionalNN.optimizer()` メソッドで行い、<br>
-　最急降下法 `GradientDecent(...)` を使用する。
+　最急降下法 `GradientDecent(...)` or モメンタム `Momentum(...)` を使用する。
     - 学習率 `learning_rate` は、の２つのモデルで異なる値、及び固定値 or 減衰する値の組み合わせで検証
+<!--
     - 尚、幾何学的に減衰する学習率は `tf.train.exponential_decay(...)` を使用し、エポック数の 1/100 回数度に 10% を学習率を減衰させる。
         - 式で書くと、rate * ( 1.0 - rate )^(n_generation/n_gen_to_wait)<br>
         rate = 0.1, (n_generation/n_gen_to_wait) = 0.01
+-->
         ```python
         # 最急降下法：固定値の学習率
         cnn1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
         cnn2.optimizer( GradientDecent( learning_rate = learning_rate2 ) )
         ```
         ```python
-        # 最急降下法：減衰する学習率
-        cnn1.optimizer( 
-            GradientDecentDecay( 
-                learning_rate = learning_rate1, 
-                n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 
-            ) 
-        )
-        cnn2.optimizer( 
-            GradientDecentDecay(
-                learning_rate = learning_rate2, 
-                n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1
-            )
-        )
+        # モメンタム：減衰する学習率
+        cnn1.optimizer( Momentum( learning_rate = learning_rate1, momentum = 0.9 ) )
+        cnn2.optimizer( Momentum( learning_rate = learning_rate2, momentum = 0.9 ) )
         ```
 
 #### コードの実行結果
@@ -648,37 +642,46 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - 学習率 : 0.0001（固定値） と 0.0005（固定値）：最急降下法
     - 全結合層：100 ノード
+    - エポック数：500、バッチサイズ：100
     ![cnn_2-3-1 _gradentdecent](https://user-images.githubusercontent.com/25688193/33002539-2d29d70e-cdf8-11e7-888f-b587f693a715.png)
     - 全結合層：384 ノード
+    - エポック数：500、バッチサイズ：100
     ![cnn_2-3-4 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33010288-52f77994-ce1d-11e7-9191-07a3e06aa7cc.png)
 
 - 学習率 : 0.001（固定値） と 0.005（固定値）：最急降下法
     - 全結合層：384 ノード<br>
+    - エポック数：500、バッチサイズ：100
     ![cnn_2-3-6 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33021995-fe2b5ba4-ce46-11e7-81af-78ebc4448ce0.png)
-
-> 損失関数のグラフより、
-> - 値が 0 付近に収束しきれていない。トレーニング回数が少ないため？
-> - ノイズが大きい。ノイズミニバッチサイズが小さいため？
-> - 収束値に近づくにつれ、ノイズが大きい。減衰する学習率を使用する必要あり？
 
 - 学習率 : 0.01（固定値） と 0.05（固定値）：最急降下法
     - 全結合層：384 ノード<br>
+    - エポック数：500、バッチサイズ：100
 ![cnn_2-3-7 _gradebtdecent](https://user-images.githubusercontent.com/25688193/33040654-13d324f4-ce7f-11e7-8b0b-4876c3a7f3c8.png)
 
-- 学習率 : 0.0001（減衰値） と 0.0005（減衰値）：最急降下法
+> 損失関数のグラフより、
+> - 値が 0 付近に収束しきれていおらず、2.3 付近に収束している。
+> - ノイズが大きい。ミニバッチサイズが小さいため？
+> - 収束値に近づくにつれ、ノイズが大きい。過学習が発生している？減衰する学習率を使用する必要あり？
 
+- 学習率 : 0.001（減衰値） と 0.005（減衰値）：モメンタム
+    - 全結合層：384 ノード<br>
+    - エポック数：1000、バッチサイズ：128
+> 処理中...
 
 
 <br>
 
 #### 学習済みモデルでの正解率の値
 
-- 学習済みモデルでのテストデータでの正解率：（学習率=0.001（固定値） 、最急降下法の場合）
-結果処理中...
+- 学習済みモデルでのテストデータでの正解率
+    - 学習率=0.001（固定値） 、モメンタム
+    - エポック数：1000, ミニバッチサイズ：128
+> 処理中...
 
 |ラベル|Acuraccy [test data]|サンプル数|
 |---|---|---|
 |全ラベルでの平均||10,000 個|
+<!--
 |0||（※全サンプル数でない）|
 |1||（※全サンプル数でない）|
 |2||（※全サンプル数でない）|
@@ -689,14 +692,17 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 |7||（※全サンプル数でない）|
 |8||（※全サンプル数でない）|
 |9||（※全サンプル数でない）|
+-->
 
+- 学習済みモデルでのテストデータでの正解率
+    - 学習率=0.005（固定値） 、モメンタム
+    - エポック数：1000, ミニバッチサイズ：128
 
-- 学習済みモデルでのテストデータでの正解率：（学習率=0.005（固定値） 、最急降下法の場合）
-結果処理中...
-
+> 処理中...
 |ラベル|Acuraccy [test data]|サンプル数|
 |---|---|---|
 |全ラベルでの平均||10,000 個|
+<!--
 |0||（※全サンプル数でない）|
 |1||（※全サンプル数でない）|
 |2||（※全サンプル数でない）|
@@ -707,13 +713,20 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 |7||（※全サンプル数でない）|
 |8||（※全サンプル数でない）|
 |9||（※全サンプル数でない）|
-
+-->
 
 #### 識別に正解した画像
 識別に正解したテストデータの画像の内、前方から 40 個のサンプル。<br>
 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
-- 学習率 0.0005 （固定値）：最急降下法
+- 学習率 0.001 （減衰値）：モメンタム
+    - エポック数：1500、バッチサイズ：128<br>
+> 処理中...
+
+- 学習率 0.005 （減衰値）：モメンタム
+    - エポック数：1500、バッチサイズ：128<br>
+> 処理中...
+
 ![cnn_2-6-2 _gradientdecent](https://user-images.githubusercontent.com/25688193/33016870-7e74d326-ce33-11e7-866d-5ef4f6ba3c4f.png)
 
 <br>
@@ -722,7 +735,14 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 識別に失敗したテストデータの画像の内、前方から 40 個のサンプル。<br>
 各画像のタイトルの Actual は実際のラベル値、Pred は予測したラベル値を示す。
 
-- 学習率 0.0005 （固定値）：最急降下法
+- 学習率 0.001 （減衰値）：モメンタム
+    - エポック数：1000、バッチサイズ：128<br>
+> 処理中...
+    
+- 学習率 0.005 （減衰値）：モメンタム
+    - エポック数：1000、バッチサイズ：128<br>
+> 処理中...
+
 ![cnn_2-7-2 _gradientdecent](https://user-images.githubusercontent.com/25688193/33016883-8d80066a-ce33-11e7-92fd-d83fbdf609be.png)
 
 
@@ -734,10 +754,47 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - バイナリー形式の CIFAR-10 データセットを使用
     - xxx
-
 - **画像は、ランダムに加工した上でトレーニングデータとして利用する**
     - 加工は、画像の一部の切り出し、左右の反転、明るさの変更からなる。
     - 画像の分類精度を向上させるには、画像の枚数が必要となるが、画像を加工することで画像を水増しすることが出来るため、このような処理を行う。
+- 画像パイプライン（キュー）を用いた処理は以下のようになる。
+    - パイプラインを使用する場合は、session の `run(...)` 時に Placeholder を feed_dict する必要はない。
+    - パイプラインの初期化は、`tf.train.start_queue_runners(...)` で行う。
+    - https://www.tensorflow.org/api_docs/python/tf/train/start_queue_runners
+    - http://tensorflow.classcat.com/2016/02/13/tensorflow-how-tos-reading-data/
+- xxx
+    
+<br>
+
+<a id="ID_3-4"></a>
+
+### 学習済み CNN モデルの再学習処理（転移学習） 
+
+<a id="ID_3-4-1"></a>
+
+#### 学習済み CNN モデルの保存、読み込み : `main4_1.py`
+> コード実装中...
+
+- `tf.train.Saver` を使用した、モデルの保存＆読み出し
+    - https://www.tensorflow.org/api_docs/python/tf/train/Saver
+    - https://qiita.com/yukiB/items/a7a92af4b27e0c4e6eb2
+    - http://testpy.hatenablog.com/entry/2017/02/02/000000
+    - http://arakan-pgm-ai.hatenablog.com/entry/2017/05/17/194414
+- xxx
+
+<br>
+<a id="ID_3-4-2"></a>
+
+#### GoogLeNet（インセプション）: `main4_2.py`
+> コード実装中...
+
+- http://tensorflow.classcat.com/2016/10/21/tensorflow-googlenet-inception/
+- チュートリアルのレポジトリを git clone する。
+- コマンドプロンプトで指定の python プログラムを実行し ($ python3 ...)、
+展開した画像を`TFRecords` オブジェクトに変換する。
+- Bazel をインストールし、トレーニングを行う。
+- xxx
+
 
 <br>
 
