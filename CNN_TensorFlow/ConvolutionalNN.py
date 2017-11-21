@@ -6,7 +6,8 @@
     [17/11/04] : 新規作成
     [17/11/19] : NeuralNetworkBase クラスの子クラスになるように修正
                : 畳み込み層でのカーネルのサイズ、プーリング層でのウィンドウサイズ、ストライドサイズの値をコンストラクタで設定出来るように修正
-               : 
+    [17/11/21] : 全結合層が複数層に出来るように修正
+
 """
 
 import numpy
@@ -89,15 +90,18 @@ class ConvolutionalNN( NeuralNetworkBase ):
         _n_pool_strides : int
             プーリング処理時のストライドさせる pixel 数
 
-        _n_fullyLayers : int
-            全結合層の入力側のノード数
+        _n_fullyLayers : list <int>
+            全結合層のノード数のリスト
+            fc1 : _n_fullyLayers[0]
+            fc2 : _n_fullyLayers[1]
+            ...
         _n_labels : int
             出力ラベル数（全結合層の出力側のノード数）
 
         _losses_train : list <float32>
             トレーニングデータでの損失関数の値の list
 
-        _X_holder : placeholder
+        _image_holder : placeholder
             入力層にデータを供給するための placeholder
         _t_holder : placeholder
             出力層に教師データを供給するための placeholder
@@ -125,7 +129,7 @@ class ConvolutionalNN( NeuralNetworkBase ):
             n_strides = 1,
             n_pool_wndsize = 2,
             n_pool_strides = 2,
-            n_fullyLayers = 100,
+            n_fullyLayers = [100, 50],
             n_labels = 10
         ) :
         """
@@ -355,7 +359,7 @@ class ConvolutionalNN( NeuralNetworkBase ):
         #----------------------------------------------------------------------
         # ~ 全結合層 ~ 出力層
         #----------------------------------------------------------------------
-        # 全結合層の入力側
+        # 全結合層１
         # 重み & バイアス項の Variable の list に、全結合層の入力側に対応する値を追加
         fullyLayers_width = self._image_width // (2*2)    # ? (2 * 2 : pooling 処理の範囲)
         fullyLayers_height = self._image_height // (2*2)  # ?
@@ -364,12 +368,12 @@ class ConvolutionalNN( NeuralNetworkBase ):
 
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [ fullyLayers_input_size, self._n_fullyLayers ] 
+                input_shape = [ fullyLayers_input_size, self._n_fullyLayers[0] ] 
             )
         )
-        self._biases.append( self.init_bias_variable( input_shape = [ self._n_fullyLayers ] ) )
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_fullyLayers[0] ] ) )
 
-        # 全結合層への入力
+        # 全結合層１への入力
         # 1 * N のユニットに対応するように reshape
         pool_op_shape = pool_op2.get_shape().as_list()      # ? [batch_size, 7, 7, _n_ConvLayer_features[-1] ]
         print( "pool_op2.get_shape().as_list() :\n", pool_op_shape )
@@ -378,21 +382,34 @@ class ConvolutionalNN( NeuralNetworkBase ):
         #flatted_input = numpy.reshape( pool_op2, (None, fullyLayers_shape) )
         print( "flatted_input :", flatted_input )
 
-        # 全結合層の入力側へのオペレーター
-        fullyLayers_in_op = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-1] ), self._biases[-1] ) )
+        # 全結合層１のオペレーター
+        fullyLayers_op1 = Relu().activate( tf.add( tf.matmul( flatted_input, self._weights[-1] ), self._biases[-1] ) )
 
 
-        # 全結合層の出力側
+        # 全結合層２
         # 重み & バイアス項のの Variable の list に、全結合層の出力側に対応する値を追加
         self._weights.append( 
             self.init_weight_variable( 
-                input_shape = [ self._n_fullyLayers, self._n_labels ] 
+                input_shape = [ self._n_fullyLayers[0], self._n_fullyLayers[1] ] 
+            )
+        )
+        self._biases.append( self.init_bias_variable( input_shape = [ self._n_fullyLayers[1] ] ) )
+        
+        # 全結合層の２のオペレーター
+        fullyLayers_op2 = Relu().activate( tf.add( tf.matmul( fullyLayers_op1, self._weights[-1] ), self._biases[-1] ) )
+
+        # 全結合層２の出力側
+        # 重み & バイアス項のの Variable の list に、全結合層の出力側に対応する値を追加
+        self._weights.append( 
+            self.init_weight_variable( 
+                input_shape = [ self._n_fullyLayers[1], self._n_labels ] 
             )
         )
         self._biases.append( self.init_bias_variable( input_shape = [ self._n_labels ] ) )
         
-        # 全結合層の出力側へのオペレーター
-        fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_in_op, self._weights[-1] ), self._biases[-1] )
+        # 最終出力のオペレーター
+        fullyLayers_out_op = tf.add( tf.matmul( fullyLayers_op2, self._weights[-1] ), self._biases[-1] )
+
         self._y_out_op = fullyLayers_out_op
 
         return self._y_out_op

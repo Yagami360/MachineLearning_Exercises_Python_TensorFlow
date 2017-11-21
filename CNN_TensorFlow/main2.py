@@ -75,7 +75,8 @@ def main():
     # CIFAR-10 データが格納されているフォルダへのパス
     cifar10_path = "D:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-bin"
 
-    X_train, y_train = MLPreProcess.load_cifar10_train( cifar10_path, fileName = "data_batch_1.bin" )
+    #X_train, y_train = MLPreProcess.load_cifar10_train( cifar10_path, fileName = "data_batch_1.bin" )
+    X_train, y_train = MLPreProcess.load_cifar10_trains( cifar10_path )
     X_test, y_test = MLPreProcess.load_cifar10_test( cifar10_path )
     
     # [n_channel, image_height, image_width] = [3,32,32] に reshape
@@ -165,8 +166,8 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    cnn1_epochs = 1000
-    cnn2_epochs = 1000
+    cnn1_epochs = 500
+    cnn2_epochs = 2000
 
     # CNN クラスのオブジェクト生成
     cnn1 = ConvolutionalNN(
@@ -182,7 +183,7 @@ def main():
                n_strides = 1,
                n_pool_wndsize = 3,
                n_pool_strides = 2,
-               n_fullyLayers = 384,
+               n_fullyLayers = [384,192],           # fc1 : 384, fc2 : 192
                n_labels = 10
            )
 
@@ -202,7 +203,7 @@ def main():
                n_strides = 1,
                n_pool_wndsize = 3,
                n_pool_strides = 2,
-               n_fullyLayers = 384,
+               n_fullyLayers = [384,192],           # fc1 : 384, fc2 : 192
                n_labels = 10
            )
 
@@ -282,14 +283,14 @@ def main():
     plt.clf()
     plt.plot(
         range( 0, cnn1_epochs ), cnn1._losses_train,
-        label = 'train data : CNN1 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate1,
+        label = 'train data : CNN1 = [conv1(50) - max_pool1- conv2(50) - max_pool2 - fc1(384) - fc(192)], learning_rate = %0.4f' % learning_rate1,
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
     )
     plt.plot(
         range( 0, cnn2_epochs ), cnn2._losses_train,
-        label = 'train data : CNN2 = [50 - 50 - 384], learning_rate = %0.4f' % learning_rate2,
+        label = 'train data : CNN2 = [conv1(50) - max_pool1- conv2(50) - max_pool2 - fc1(384) - fc(192)], learning_rate = %0.4f' % learning_rate2,
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'

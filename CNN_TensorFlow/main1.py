@@ -122,7 +122,7 @@ def main():
                n_strides = 1,
                n_pool_wndsize = 2,
                n_pool_strides = 2,
-               n_fullyLayers = 100,
+               n_fullyLayers = [100,100],
                n_labels = 10
            )
 
@@ -141,7 +141,7 @@ def main():
                n_strides = 1,
                n_pool_wndsize = 2,
                n_pool_strides = 2,
-               n_fullyLayers = 100,
+               n_fullyLayers = [100,100],
                n_labels = 10
            )
 
