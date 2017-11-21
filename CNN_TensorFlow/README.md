@@ -675,6 +675,14 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     **data_batch_1.bin ~ data_batch_5.bin（50000サンプル）を使用するように変更**
 ![cnn_2-3-3 _momentum](https://user-images.githubusercontent.com/25688193/33074742-a05f4dd6-cf0a-11e7-978b-8ac5d958b249.png)
 
+- 学習率 : 0.001（減衰値） と学習率 0.005（減衰値）：モメンタム
+    - 全結合層を２層に変更：fc1(384) - fc2(192) <br>
+    - エポック数：20000、バッチサイズ：128<br>
+    - **学習データとして、全てのトレーニング用データ**
+    **data_batch_1.bin ~ data_batch_5.bin（50000サンプル）を使用するように変更**
+![cnn_2-3-4 _momentum](https://user-images.githubusercontent.com/25688193/33092846-b7fc3c9a-cf3e-11e7-9e77-17169843bc2f.png)
+
+
 <br>
 
 #### 学習済みモデルでのテストデータでの正解率
@@ -702,12 +710,13 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - 学習率 0.005（減衰値）：モメンタム
     - 全結合層を２層に変更：fc1(384) - fc2(192) <br>
-    - エポック数：2000、バッチサイズ：128<br>
-> 処理中...
+    - エポック数：20000、バッチサイズ：128<br>
+    - **学習データとして、全てのトレーニング用データ**
+    **data_batch_1.bin ~ data_batch_5.bin（50000サンプル）を使用するように変更**
 
 |ラベル|Acuraccy [test data]|サンプル数|
 |---|---|---|
-|全ラベルでの平均|0.xxx|50,000 個|
+|全ラベルでの平均|0.154|50,000 個|
 
 <br>
 
@@ -721,8 +730,10 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 
 - 学習率 0.005（減衰値）：モメンタム
     - 全結合層を２層に変更：fc1(384) - fc2(192) <br>
-    - エポック数：2000、バッチサイズ：128<br>
-> 処理中...
+    - エポック数：20000、バッチサイズ：128<br>
+    - **学習データとして、全てのトレーニング用データ**
+    **data_batch_1.bin ~ data_batch_5.bin（50000サンプル）を使用するように変更**
+![cnn_2-6-2 _momentum](https://user-images.githubusercontent.com/25688193/33092953-006662ee-cf3f-11e7-82c5-522741698f44.png)
 
 <br>
 
@@ -733,11 +744,6 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
 - 学習率 0.005 （減衰値）：モメンタム
     - エポック数：1000、バッチサイズ：128<br>
 ![cnn_2-7-1 _momentum](https://user-images.githubusercontent.com/25688193/33066747-82b01484-ceef-11e7-8903-1ef5fcb8313b.png)
-
-- 学習率 0.005（減衰値）：モメンタム
-    - 全結合層を２層に変更：fc1(384) - fc2(192) <br>
-    - エポック数：2000、バッチサイズ：128<br>
-> 処理中...
 
 
 <br>
