@@ -56,6 +56,11 @@ class CNNStyleNet( object ):
         _loss_op : Operator
             損失関数を表すオペレーター
             （画像内容層の損失関数＋画像スタイル層の損失関数＋全変動ノイズの損失関数）からなる
+        _loss_content_op : Operator
+        _loss_style_op : Operator
+        _loss_total_var_op : Operator
+            全変動損失
+
         _optimizer : Optimizer
             モデルの最適化アルゴリズム
         _train_step : 
@@ -65,15 +70,13 @@ class CNNStyleNet( object ):
 
         _weights : list <Variable>
             モデルの各層の重みの Variable からなる list
-        _biases : list <Variable>
-            モデルの各層のバイアス項の  Variable からなる list
+        _biases : list <float>
+            モデルの各層のバイアス項からなる list
 
         _epochs : int
             エポック数（トレーニング回数）
-        _batch_size : int
-            ミニバッチ学習でのバッチサイズ
         _eval_step : int
-            学習処理時に評価指数の算出処理を行う step 間隔
+            学習処理時に評価指数の算出処理＆途中生成画像の出力を行う step 間隔
 
         _image_content_path : str
             内容画像ファイルのパス
@@ -98,6 +101,13 @@ class CNNStyleNet( object ):
             内容層の構成。"relu4_2"
         _style_layers : list <str>
             スタイル層の構成。reluX_1 層の組み合わせ
+        _vgg_network : list <Tensor>
+            _vgg_layers で定義した各層の中身（Tensor）
+
+        _features_content : list <>
+            内容層の特徴量
+        _features_style : list <>
+            画像層の特徴量
 
         _n_conv_strides : int
             CNN の畳み込み処理（特徴マップ生成）でストライドさせる pixel 数
@@ -126,9 +136,8 @@ class CNNStyleNet( object ):
             image_content_path,
             image_style_path,
             session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-            epochs = 250,
-            batch_size = 1,
-            eval_step = 1,
+            epochs = 1000,
+            eval_step = 50,
             weight_image_content = 5.0,
             weight_image_style = 500.0,
             weight_regularization = 100,
@@ -144,6 +153,9 @@ class CNNStyleNet( object ):
         self._init_var_op = None
 
         self._loss_op = None
+        self._loss_content_op = None
+        self._loss_style_op = None
+        self._loss_total_var_op = None
         self._optimizer = None
         self._train_step = None
         self._y_out_op = None
@@ -153,13 +165,14 @@ class CNNStyleNet( object ):
 
         # 各パラメータの初期化
         self._epochs = epochs
-        self._batch_size = batch_size
         self._eval_step = eval_step
         
         self._image_content_path = image_content_path
         self._image_style_path = image_style_path
         self._image_content = None
         self._image_style = None
+        self._features_content = {}
+        self._features_style = {}
 
         self._weight_image_content = weight_image_content
         self._weight_image_style = weight_image_style
@@ -171,6 +184,9 @@ class CNNStyleNet( object ):
 
         # evaluate 関連の初期化
         self._losses_train = []
+        self._losses_content_train = []
+        self._losses_style_train = []
+        self._losses_total_var_train = []
 
         # 画像の読み込み
         self.load_image_contant_style( image_content_path, image_style_path )
@@ -198,18 +214,25 @@ class CNNStyleNet( object ):
         self._content_layer = "relu4_2"
         self._style_layers = [ "relu1_1", "relu2_1", "relu3_1", "relu4_1", "relu5_1" ]
 
+        self._vgg_network = {}
+
         # place holder の設定
         self._image_content_holder = \
-        tf.placeholder( 
-            "float", 
-            shape = ( (1,) + self._image_content.shape )    # ? : 4 つの次元を持つように画像の行列の形状を reshape 
-        )
+            tf.placeholder( 
+                "float", 
+                shape = ( (1,) + self._image_content.shape )    # ? : 4 つの次元を持つように画像の行列の形状を reshape 
+            )
 
         self._image_style_holder = \
-        tf.placeholder( 
-            "float", 
-            shape = ( (1,) + self._image_style.shape )      # ? : 4 つの次元を持つように画像の行列の形状を reshape
-        )
+            tf.placeholder( 
+                "float", 
+                shape = ( (1,) + self._image_style.shape )      # ? : 4 つの次元を持つように画像の行列の形状を reshape
+            )
+
+        # 
+        self._noize_image_var = tf.Variable(
+                            tf.random_normal( shape = (1,) + self._image_content.shape ) * 0.256
+                        )
 
         return
 
@@ -240,13 +263,19 @@ class CNNStyleNet( object ):
         print( "_vgg_layers : \n", self._vgg_layers )
         print( "_content_layer : ", self._content_layer )        
         print( "_style_layers : ", self._style_layers )
+        print( "_vgg_network : \n", self._vgg_network )
 
-        print( "_image_content_holder : ", self._image_content_holder )
-        print( "_image_style_holder : ", self._image_style_holder )
-
-        print( "_image_content : \n", self._image_content )
-        print( "_image_style : \n", self._image_style )
+        print( "_image_content.shape : \n", self._image_content.shape )
+        print( "_image_style.shape : \n", self._image_style.shape )
         
+        print( "_image_content_holder : \n", self._image_content_holder )
+        print( "_image_style_holder : \n", self._image_style_holder )
+
+        print( "_features_content :", self._features_content )
+        print( "_features_style :", self._features_style )
+
+        print( "_noize_image_var :", self._noize_image_var )
+
         print( "_n_strides : " , self._n_strides )
         print( "_n_pool_wndsize : " , self._n_pool_wndsize )
         print( "_n_pool_strides : " , self._n_pool_strides )
@@ -256,8 +285,8 @@ class CNNStyleNet( object ):
             print( self._session.run( self._weights ) )
 
         print( "_biases : \n", self._biases )
-        if( (self._session != None) and (self._init_var_op != None) ):
-            print( self._session.run( self._biases ) )
+        #if( (self._session != None) and (self._init_var_op != None) ):
+            #print( self._session.run( self._biases ) )
 
         print( "----------------------------------" )
 
@@ -367,8 +396,9 @@ class CNNStyleNet( object ):
         #------------------------------------
         # 内容画像層の構築
         #------------------------------------
-        network_content = {}    # 内容画像層のモデル構造
-        features_content = {}   # 内容画像層の特徴量
+        image_content_tsr = self._image_content_holder  # 入力 Tensor, 一時保存用 Tensor の設定
+        network_content = {}                            # 内容画像層のモデル構造（Tensor型の list）
+        self._features_content = {}                     # 内容画像層の特徴量
 
         # _vgg_layers を構成する layer から layer を取り出し、
         # 種類に応じて、モデルを具体的に構築していく。
@@ -386,53 +416,189 @@ class CNNStyleNet( object ):
 
                 # 畳み込み層を構築
                 conv_layer_op = \
-                tf.nn.conv2d(
-                    input = self._image_content_holder,
-                    filter = tf.constant( weights ),                       # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
-                    strides = [ 1, self._n_strides, self._n_strides, 1 ],  # strides[0] = strides[3] = 1. とする必要がある]
-                    padding = "SAME"                                       # ゼロパディングを利用する場合は SAME を指定
-                )
+                    tf.nn.conv2d(
+                        input = image_content_tsr,
+                        filter = tf.constant( weights ),                       # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
+                        strides = [ 1, self._n_strides, self._n_strides, 1 ],  # strides[0] = strides[3] = 1. とする必要がある]
+                        padding = "SAME"                                       # ゼロパディングを利用する場合は SAME を指定
+                    )
 
-                self._image_content_holder = tf.nn.bias_add( conv_layer_op, bias )
-
-                #print( "_image_content_holder :\n", self._image_content_holder )
-                #print( "conv_layer_op :\n", conv_layer_op )
-
+                image_content_tsr = tf.nn.bias_add( conv_layer_op, bias )
+                
                 # リストに追加しておく
                 self._weights.append( tf.constant( weights ) )
                 self._biases.append( bias )
 
-            # layer "ponvx_x" の先頭の文字列がプーリング層を表す "p" の場合 
-            elif ( layer[0] == "p" ):
-                self._image_content_holder = \
-                tf.nn.max_pool(
-                    value = self._image_content_holder,
-                    ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
-                    strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
-                    padding = "SAME"                                                 # ゼロパディングを利用する場合は SAME を指定
-                )
-
             # layer "relux_x" の先頭の文字列が Relu を表す "r" の場合 
             elif ( layer[0] == "r" ):
-                self._image_content_holder = \
-                tf.nn.relu( self._image_content_holder )
-            
-            network_content[ layer ] = self._image_content_holder
+                image_content_tsr = tf.nn.relu( image_content_tsr )
 
+            # layer "pool_x" の先頭の文字列がプーリング層を表す "p" の場合 
+            else:
+                image_content_tsr = \
+                    tf.nn.max_pool(
+                        value = image_content_tsr,
+                        ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
+                        strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
+                        padding = "SAME"                                                 # ゼロパディングを利用する場合は SAME を指定
+                    )
+            
+            network_content[ layer ] = image_content_tsr
+            print( "image_content_tsr :\n", image_content_tsr )
         #
         print( "network_content :\n", network_content )
-        print( "_image_content_holder :\n", self._image_content_holder )
 
         # 内容画像の行列を正規化
         content_minus_mean_matrix = self._image_content - norm_mean_matrix
         content_norm_matrix = np.array( [content_minus_mean_matrix] )
 
-        print( "content_minus_mean_matrix :\n", content_minus_mean_matrix )
-        print( "content_norm_matrix :\n", content_norm_matrix )
+        print( "content_minus_mean_matrix :\n", content_minus_mean_matrix.shape )
+        print( "content_norm_matrix.shape :\n", content_norm_matrix.shape )
+
+        # 構築した 内容画像層のモデルを session.run(...) し、
+        # 学習済み CNN モデルから、内容層の特徴量（画像の内容、形状）を抽出する。
+        self._features_content[ self._content_layer ] =\
+            self._session.run( 
+                network_content[ self._content_layer ], 
+                feed_dict = { self._image_content_holder : content_norm_matrix } 
+            )
 
         #------------------------------------
         # スタイル画像層の構築
         #------------------------------------
+        image_style_tsr = self._image_style_holder
+        network_style = {}          # スタイル画像層のモデル構造
+        self._features_style = {}   # スタイル画像層の特徴量
+
+        # _vgg_layers を構成する layer から layer を取り出し、
+        # 種類に応じて、モデルを具体的に構築していく。
+        for ( i, layer ) in enumerate( self._vgg_layers ):
+            # layer "convx_x" の先頭の文字列が畳み込み層を表す "c" の場合 
+            if ( layer[0] == "c" ):
+                # network_weights から weights とバイアス項に対応するデータを抽出
+                weights, bias = network_weights[i][0][0][0][0]
+
+                # StyleNet モデルに対応するように reshape
+                weights = np.transpose( weights, (1,0,2,3) )
+                bias = bias.reshape(-1)
+
+                # 畳み込み層を構築
+                conv_layer_op = \
+                    tf.nn.conv2d(
+                        input = image_style_tsr,
+                        filter = tf.constant( weights ),                       # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
+                        strides = [ 1, self._n_strides, self._n_strides, 1 ],  # strides[0] = strides[3] = 1. とする必要がある]
+                        padding = "SAME"                                       # ゼロパディングを利用する場合は SAME を指定
+                    )
+
+                image_style_tsr = tf.nn.bias_add( conv_layer_op, bias )
+
+                # リストに追加しておく
+                self._weights.append( tf.constant( weights ) )
+                self._biases.append( bias )
+
+            # layer "relux_x" の先頭の文字列が Relu を表す "r" の場合 
+            elif ( layer[0] == "r" ):
+                image_style_tsr = tf.nn.relu( image_style_tsr )
+
+            # layer "pool_x" の先頭の文字列がプーリング層を表す "p" の場合 
+            else:
+                image_style_tsr = \
+                    tf.nn.max_pool(
+                        value = image_style_tsr,
+                        ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
+                        strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
+                        padding = "SAME"                                                 # ゼロパディングを利用する場合は SAME を指定
+                    )
+
+            
+            network_style[ layer ] = image_style_tsr
+            print( "image_style_tsr :\n", image_style_tsr )
+        #
+        print( "network_style :\n", network_style )
+
+        # スタイル画像の行列を正規化
+        style_minus_mean_matrix = self._image_style - norm_mean_matrix
+        style_norm_matrix = np.array( [style_minus_mean_matrix] )
+
+        print( "style_minus_mean_matrix :\n", style_minus_mean_matrix.shape )
+        print( "style_norm_matrix.shape :\n", style_norm_matrix.shape )
+
+        # 構築した スタイル画像層のモデルを session.run(...) し、
+        # 学習済み CNN モデルから、内容層の特徴量（画像の内容、形状）を抽出する。
+        for layer in self._style_layers:
+            layer_output =\
+                self._session.run( 
+                    network_style[ layer ], 
+                    feed_dict = { self._image_style_holder : style_norm_matrix } 
+                )
+
+            # ?
+            layer_output = np.reshape( layer_output, ( -1, layer_output.shape[3] ) )
+
+            # ? グラム行列 A^T * A
+            style_gram_matrix = np.matmul( layer_output.T, layer_output ) / layer_output.size
+
+            # 特徴量のリストに格納
+            self._features_style[ layer ] = style_gram_matrix
+
+        #--------------------------------------------------------------------
+        # 内容画像とスタイル画像を組み合わせる処理のモデルを構築
+        # ここで構築したモデル（Variable）が、StyleNet のトレーニング対象となる
+        # この処理は、ランダムノイズを適用した Variable に対する vgg_net
+        #--------------------------------------------------------------------
+        self._noize_image_var = tf.Variable(
+                            tf.random_normal( shape = (1,) + self._image_content.shape ) * 0.256
+                        )
+        noize_image_str = self._noize_image_var
+
+        # _vgg_layers を構成する layer から layer を取り出し、
+        # 種類に応じて、モデルを具体的に構築していく。
+        for ( i, layer ) in enumerate( self._vgg_layers ):
+            # layer "convx_x" の先頭の文字列が畳み込み層を表す "c" の場合 
+            if ( layer[0] == "c" ):
+                # network_weights から weights とバイアス項に対応するデータを抽出
+                weights, bias = network_weights[i][0][0][0][0]
+
+                # StyleNet モデルに対応するように reshape
+                weights = np.transpose( weights, (1,0,2,3) )
+                bias = bias.reshape(-1)
+
+                # 畳み込み層を構築
+                conv_layer_op = \
+                    tf.nn.conv2d(
+                        input = noize_image_str,
+                        filter = tf.constant( weights ),                       # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
+                        strides = [ 1, self._n_strides, self._n_strides, 1 ],  # strides[0] = strides[3] = 1. とする必要がある]
+                        padding = "SAME"                                       # ゼロパディングを利用する場合は SAME を指定
+                    )
+
+                noize_image_str = tf.nn.bias_add( conv_layer_op, bias )
+
+                # リストに追加しておく
+                self._weights.append( tf.constant( weights ) )
+                self._biases.append( bias )
+
+            # layer "relux_x" の先頭の文字列が Relu を表す "r" の場合 
+            elif ( layer[0] == "r" ):
+                noize_image_str = tf.nn.relu( noize_image_str )
+
+            # layer "pool_x" の先頭の文字列がプーリング層を表す "p" の場合 
+            else:
+                noize_image_str = \
+                    tf.nn.max_pool(
+                        value = noize_image_str,
+                        ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
+                        strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
+                        padding = "SAME"                                                 # ゼロパディングを利用する場合は SAME を指定
+                    )
+
+            
+            self._vgg_network[ layer ] = noize_image_str
+            print( "noize_image_str :\n", noize_image_str )
+        #
+        print( "_vgg_network :\n", self._vgg_network )
+        #self._y_out_op = self._vgg_network
 
         return self._y_out_op
 
@@ -445,7 +611,19 @@ class CNNStyleNet( object ):
             self._loss_op : Operator
                 損失関数を表すオペレーター
         """
-        self._loss_op = L2Norm().loss( t_holder = None, y_out_op = None )
+        #-------------------------------------------------------
+        # 内容画像層の損失値
+        #-------------------------------------------------------
+        loss_content_op = \
+        self._weight_image_content * \
+        ( 2 * tf.nn.l2_loss( 
+                  self._vgg_network[self._content_layer] - self._features_content [self._content_layer] 
+              ) / self._features_content[ self._content_layer ].size
+        )
+
+
+
+        self._loss_op = loss_content_op
         
         return self._loss_op
 
@@ -464,12 +642,12 @@ class CNNStyleNet( object ):
         return self._train_step
 
 
-    def run():
+    def run( self ):
         """
-        StyleNet を駆動し、損失値と途中生成画像を一時保存する。
+        StyleNet を駆動し、損失値と途中生成画像を生成し、一時保存する。
         """
         #----------------------------
-        # 学習開始処理
+        # 画像生成開始処理
         #----------------------------
         # Variable の初期化オペレーター
         self._init_var_op = tf.global_variables_initializer()
@@ -477,21 +655,53 @@ class CNNStyleNet( object ):
         # Session の run（初期化オペレーター）
         self._session.run( self._init_var_op )
 
-        #-------------------
-        # 学習処理
-        #-------------------
+        # 合成画像保存用ディレクトリの作成
+        if ( os.path.isdir( "output_image" ) == False):
+            os.makedirs( "output_image" )
 
+        #-----------------------------------------
+        # 画像生成処理
+        #-----------------------------------------
+        for epoch in range( self._epochs ):
+            # 設定された最適化アルゴリズム Optimizer で
+            # トレーニング処理（内容画像とスタイル画像に対するがノイズ付き合成）を run
+            self._session.run( self._train_step )
+
+            # 評価処理ステップの場合
+            if ( (epoch + 1) % self._eval_step == 0 ):
+                # 損失関数値の算出
+                loss = self._session.run( self._loss_op )
+                self._losses_train.append( loss )
+                print( "epoch %d / loss = %f" % ( epoch, loss ) )
+                
+                # 途中生成画像の保存
+                image_eval = self._session.run( self._noize_image_var )
+                image_eval = image_eval.reshape( self._image_content.shape )
+
+                output_file = "output_image/temp_output_image{}.jpg".format( epoch )
+                scipy.misc.imsave( output_file, image_eval )
+
+
+        # 最終生成画像の保存
+        image_eval = self._session.run( self._noize_image_var )
+        image_eval = image_eval.reshape(
+                         self._image_content.shape
+                     )
+
+        output_file = "output_image/output_image.jpg"
+        scipy.misc.imsave( output_file, image_eval )
 
         return
 
-    def show_output_image():
+
+    def show_output_image( self ):
         """
         合成出力した画像を plot する。
         """
         return
 
 
-    def save_output_image( file_dir, file_name ):
+    def save_output_image( self, file_dir, file_name ):
         """
         合成出力した画像を保存する。
 
