@@ -124,15 +124,16 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 
 - 生成画像<br>
     - エポック数：50 での生成画像<br>
-        - 正規化あり
-![temp_output_add_mean_image50](https://user-images.githubusercontent.com/25688193/33220246-0550d0d0-d18a-11e7-8650-e6e32b378b67.jpg)
-        - 正規化なし
-![temp_output_image50](https://user-images.githubusercontent.com/25688193/33220248-05e8f374-d18a-11e7-9ea0-8afb8956ee7c.jpg)
+        - 正規化あり<br>
+![temp_output_add_mean_image50](https://user-images.githubusercontent.com/25688193/33220246-0550d0d0-d18a-11e7-8650-e6e32b378b67.jpg)<br>
+        - 正規化なし<br>
+![temp_output_image50](https://user-images.githubusercontent.com/25688193/33220248-05e8f374-d18a-11e7-9ea0-8afb8956ee7c.jpg)<br>
+
     - エポック数：100 での生成画像<br>
-        - 正規化あり
-![temp_output_add_mean_image100](https://user-images.githubusercontent.com/25688193/33220247-05b17692-d18a-11e7-8da3-672da5f8e56a.jpg)
-        - 正規化なし
-![temp_output_image100](https://user-images.githubusercontent.com/25688193/33220249-062d0636-d18a-11e7-8e67-6868ffddbb9e.jpg)
+        - 正規化あり<br>
+![temp_output_add_mean_image100](https://user-images.githubusercontent.com/25688193/33220247-05b17692-d18a-11e7-8da3-672da5f8e56a.jpg)<br>
+        - 正規化なし<br>
+![temp_output_image100](https://user-images.githubusercontent.com/25688193/33220249-062d0636-d18a-11e7-8e67-6868ffddbb9e.jpg)<br>
     - エポック数：200 での生成画像<br>
     > 処理中...
     - 最終生成画像<br>
