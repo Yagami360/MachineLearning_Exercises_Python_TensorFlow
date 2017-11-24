@@ -385,7 +385,7 @@ class CNNStyleNet( object ):
         #------------------------------------------------------
         # 学習済み StyleNet 用 CNN モデルのパラメータを読み込む
         #------------------------------------------------------
-        vgg_file_path = "D:\Data\MachineLearning_DataSet\CNN-StyleNet\imagenet-vgg-verydeep-19.mat"
+        vgg_file_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\imagenet-vgg-verydeep-19.mat"
 
         # 学習済み CNN モデルの重み＋バイアス項を含んだ network_weights と
         # 画像を正規化するための正規化行列を取り出す。
@@ -614,16 +614,70 @@ class CNNStyleNet( object ):
         #-------------------------------------------------------
         # 内容画像層の損失値
         #-------------------------------------------------------
-        loss_content_op = \
-        self._weight_image_content * \
-        ( 2 * tf.nn.l2_loss( 
-                  self._vgg_network[self._content_layer] - self._features_content [self._content_layer] 
-              ) / self._features_content[ self._content_layer ].size
+        self._loss_content_op = \
+            self._weight_image_content * \
+            ( 2 * tf.nn.l2_loss( 
+                      self._vgg_network[self._content_layer] - self._features_content [self._content_layer] 
+                  ) / self._features_content[ self._content_layer ].size
+            )
+
+        #-------------------------------------------------------
+        # 内容画像層の損失値
+        #-------------------------------------------------------
+        loss_style = 0
+        style_losses = []
+        for style_layer in self._style_layers:
+            # スタイル層の style_layer 番目のモデルの内容を抽出
+            layer = self._vgg_network[ style_layer ]
+
+            #
+            feats, height, width, channels = [x.value for x in layer.get_shape()]
+            size = height * width * channels
+            features = tf.reshape( layer, (-1, channels) )
+
+            style_gram_matrix = tf.matmul( tf.transpose(features), features ) / size
+            style_expected = self._features_style[ style_layer ]
+            #style_temp_loss = sess.run(2 * tf.nn.l2_loss(style_gram_matrix - style_expected) / style_expected.size)
+            #print('Layer: {}, Loss: {}'.format(style_layer, style_temp_loss))
+
+            style_losses.append(
+                2 * tf.nn.l2_loss( style_gram_matrix - style_expected ) / style_expected.size
+            )
+
+        self._loss_style_op = self._weight_image_style  * tf.reduce_sum( style_losses )
+
+        #-------------------------------------------------------
+        # 内容層とスタイル層のノイズ付き合成加工に応じた、全変動損失関数
+        # 滑らかな結果を得るためことを目的としている
+        #-------------------------------------------------------
+        # ?
+        # tf.reduce_prod(...) :
+        total_var_x = self._session.run( 
+            tf.reduce_prod( self._noize_image_var[ :, 1:, :, : ].get_shape() )   #  
+        )
+        total_var_y = self._session.run(
+            tf.reduce_prod( self._noize_image_var[ :, :, 1:, : ].get_shape() )
         )
 
+        # ?
+        first_term = self._weight_regularization  * 2
+        second_term_numerator = tf.nn.l2_loss(
+                                    self._noize_image_var[ :, 1:, :, : ] 
+                                    - self._noize_image_var[ :, :( (1,) + self._image_content.shape )[1] - 1, :, : ]
+                                )
+        second_term = second_term_numerator / total_var_y
+        third_term = ( 
+                         tf.nn.l2_loss( 
+                             self._noize_image_var[ :, :, 1:, : ] 
+                             - self._noize_image_var[ :, :, :( (1,) + self._image_content.shape )[2] - 1, : ] 
+                         ) / total_var_x 
+                     )
+        self._loss_total_var_op = first_term * ( second_term + third_term )
 
-
-        self._loss_op = loss_content_op
+        #-------------------------------------------------------
+        # 最終的な損失関数の Operator
+        #-------------------------------------------------------
+        self._loss_op = self._loss_content_op + self._loss_content_op + self._loss_total_var_op
         
         return self._loss_op
 
