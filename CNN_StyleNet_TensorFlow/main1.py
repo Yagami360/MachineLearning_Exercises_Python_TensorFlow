@@ -76,7 +76,7 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    learning_rate1 = 0.005
+    learning_rate1 = 0.001
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
@@ -118,8 +118,8 @@ def main():
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
-    #styleNet1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
-    styleNet1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    styleNet1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
+    #styleNet1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）

@@ -136,7 +136,7 @@ class CNNStyleNet( object ):
             image_content_path,
             image_style_path,
             session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-            epochs = 1000,
+            epochs = 5000,
             eval_step = 50,
             weight_image_content = 5.0,
             weight_image_style = 500.0,
@@ -233,6 +233,8 @@ class CNNStyleNet( object ):
         self._noize_image_var = tf.Variable(
                             tf.random_normal( shape = (1,) + self._image_content.shape ) * 0.256
                         )
+
+        self._norm_mean_matrix = None
 
         return
 
@@ -389,8 +391,8 @@ class CNNStyleNet( object ):
 
         # 学習済み CNN モデルの重み＋バイアス項を含んだ network_weights と
         # 画像を正規化するための正規化行列を取り出す。
-        norm_mean_matrix, network_weights = self.load_model_info( mat_file_path = vgg_file_path )
-        print( "norm_mean_matrix :\n", norm_mean_matrix )
+        self._norm_mean_matrix, network_weights = self.load_model_info( mat_file_path = vgg_file_path )
+        #print( "norm_mean_matrix :\n", self._norm_mean_matrix )
         #print( "network_weights :\n", network_weights )
 
         #------------------------------------
@@ -449,7 +451,7 @@ class CNNStyleNet( object ):
         print( "network_content :\n", network_content )
 
         # 内容画像の行列を正規化
-        content_minus_mean_matrix = self._image_content - norm_mean_matrix
+        content_minus_mean_matrix = self._image_content - self._norm_mean_matrix
         content_norm_matrix = np.array( [content_minus_mean_matrix] )
 
         print( "content_minus_mean_matrix :\n", content_minus_mean_matrix.shape )
@@ -518,7 +520,7 @@ class CNNStyleNet( object ):
         print( "network_style :\n", network_style )
 
         # スタイル画像の行列を正規化
-        style_minus_mean_matrix = self._image_style - norm_mean_matrix
+        style_minus_mean_matrix = self._image_style - self._norm_mean_matrix
         style_norm_matrix = np.array( [style_minus_mean_matrix] )
 
         print( "style_minus_mean_matrix :\n", style_minus_mean_matrix.shape )
@@ -726,16 +728,27 @@ class CNNStyleNet( object ):
             if ( (epoch + 1) % self._eval_step == 0 ):
                 # 損失関数値の算出
                 loss = self._session.run( self._loss_op )
+                loss_content = self._session.run( self._loss_content_op )
+                loss_style = self._session.run( self._loss_style_op )
+                loss_total_var = self._session.run( self._loss_total_var_op )
+
                 self._losses_train.append( loss )
-                print( "epoch %d / loss = %f" % ( epoch, loss ) )
+                self._losses_content_train.append( loss_content )
+                self._losses_content_train.append( loss_style )
+                self._losses_content_train.append( loss_total_var )
+
+                print( "epoch %d / loss = %0.1f / loss_content = %0.1f / loss_style = %0.1f / loss_total_var = %0.1f" % 
+                      ( epoch + 1, loss, loss_content, loss_style, loss_total_var ) )
                 
                 # 途中生成画像の保存
                 image_eval = self._session.run( self._noize_image_var )
                 image_eval = image_eval.reshape( self._image_content.shape )
+                image_eval_add_mean = image_eval + self._norm_mean_matrix
 
-                output_file = "output_image/temp_output_image{}.jpg".format( epoch )
+                output_file = "output_image/temp_output_image{}.jpg".format( epoch + 1 )
+                output_add_mean_file = "output_image/temp_output_add_mean_image{}.jpg".format( epoch + 1 )
                 scipy.misc.imsave( output_file, image_eval )
-
+                scipy.misc.imsave( output_add_mean_file, image_eval_add_mean )
 
         # 最終生成画像の保存
         image_eval = self._session.run( self._noize_image_var )
