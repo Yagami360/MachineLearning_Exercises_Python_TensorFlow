@@ -36,6 +36,7 @@ from NNOptimizer import Momentum
 from NNOptimizer import NesterovMomentum
 from NNOptimizer import Adagrad
 from NNOptimizer import Adadelta
+from NNOptimizer import Adam
 
 from CNNStyleNet import CNNStyleNet
 
@@ -75,7 +76,9 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    learning_rate1 = 0.001
+    learning_rate1 = 0.005
+    adam_beta1 = 0.9        # For the Adam optimizer
+    adam_beta2 = 0.999      # For the Adam optimizer
 
     #======================================================================
     # 変数とプレースホルダを設定
@@ -90,8 +93,8 @@ def main():
     #     y_input_holder = tf.placeholder(tf.fload32, [None, num_classes])
     #======================================================================
     styleNet1 = CNNStyleNet(
-                    image_content_path = "D:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\book_cover.jpg",
-                    image_style_path = "D:\Data\MachineLearning_DataSet\CNN-StyleNet\image_style\starry_night.jpg",
+                    image_content_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\book_cover.jpg",
+                    image_style_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_style\starry_night.jpg",
                     session = tf.Session( config = tf.ConfigProto(log_device_placement=True) )
                 )
     
@@ -115,7 +118,8 @@ def main():
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
-    styleNet1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
+    #styleNet1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
+    styleNet1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）

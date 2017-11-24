@@ -254,3 +254,32 @@ class Adadelta( NNOptimzer ):
         self._train_step = self._optimizer.minimize( loss_op )
         return self._train_step
 
+
+class Adam( NNOptimzer ):
+    """
+    Adam アルゴリズムを表すクラス
+    NNOptimizer クラスの子クラスとして定義
+    """
+    def __init__( self, learning_rate = 0.001, beta1 = 0.9, beta2 = 0.99, node_name = "Momentum_Optimizer" ):
+        self._learning_rate = learning_rate
+        self._beta1 = beta1
+        self._beta2 = beta2
+        self._node_name = node_name
+        self._optimizer = self.optimizer()
+        self._train_step = None
+
+        return
+    
+    def optimizer( self ):
+        self._optimizer = tf.train.AdamOptimizer( 
+                              learning_rate = self._learning_rate, 
+                              beta1 = self._beta1,
+                              beta2 = self._beta2
+                          )
+
+        return self._optimizer
+
+    def train_step( self, loss_op ):
+        self._train_step = self._optimizer.minimize( loss_op )
+        return self._train_step
+

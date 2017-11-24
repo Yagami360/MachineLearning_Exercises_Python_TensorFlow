@@ -550,7 +550,7 @@ class CNNStyleNet( object ):
         self._noize_image_var = tf.Variable(
                             tf.random_normal( shape = (1,) + self._image_content.shape ) * 0.256
                         )
-        noize_image_str = self._noize_image_var
+        noize_image_tsr = self._noize_image_var
 
         # _vgg_layers を構成する layer から layer を取り出し、
         # 種類に応じて、モデルを具体的に構築していく。
@@ -567,13 +567,13 @@ class CNNStyleNet( object ):
                 # 畳み込み層を構築
                 conv_layer_op = \
                     tf.nn.conv2d(
-                        input = noize_image_str,
+                        input = noize_image_tsr,
                         filter = tf.constant( weights ),                       # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
                         strides = [ 1, self._n_strides, self._n_strides, 1 ],  # strides[0] = strides[3] = 1. とする必要がある]
                         padding = "SAME"                                       # ゼロパディングを利用する場合は SAME を指定
                     )
 
-                noize_image_str = tf.nn.bias_add( conv_layer_op, bias )
+                noize_image_tsr = tf.nn.bias_add( conv_layer_op, bias )
 
                 # リストに追加しておく
                 self._weights.append( tf.constant( weights ) )
@@ -581,21 +581,21 @@ class CNNStyleNet( object ):
 
             # layer "relux_x" の先頭の文字列が Relu を表す "r" の場合 
             elif ( layer[0] == "r" ):
-                noize_image_str = tf.nn.relu( noize_image_str )
+                noize_image_tsr = tf.nn.relu( noize_image_tsr )
 
             # layer "pool_x" の先頭の文字列がプーリング層を表す "p" の場合 
             else:
-                noize_image_str = \
+                noize_image_tsr = \
                     tf.nn.max_pool(
-                        value = noize_image_str,
+                        value = noize_image_tsr,
                         ksize = [ 1, self._n_pool_wndsize, self._n_pool_wndsize, 1 ],    # プーリングする範囲（ウィンドウ）のサイズ
                         strides = [ 1, self._n_pool_strides, self._n_pool_strides, 1 ],  # ストライドサイズ strides[0] = strides[3] = 1. とする必要がある
                         padding = "SAME"                                                 # ゼロパディングを利用する場合は SAME を指定
                     )
 
             
-            self._vgg_network[ layer ] = noize_image_str
-            print( "noize_image_str :\n", noize_image_str )
+            self._vgg_network[ layer ] = noize_image_tsr
+            print( "noize_image_tsr :\n", noize_image_tsr )
         #
         print( "_vgg_network :\n", self._vgg_network )
         #self._y_out_op = self._vgg_network
@@ -617,7 +617,7 @@ class CNNStyleNet( object ):
         self._loss_content_op = \
             self._weight_image_content * \
             ( 2 * tf.nn.l2_loss( 
-                      self._vgg_network[self._content_layer] - self._features_content [self._content_layer] 
+                      self._vgg_network[self._content_layer] - self._features_content[self._content_layer] 
                   ) / self._features_content[ self._content_layer ].size
             )
 
@@ -644,14 +644,15 @@ class CNNStyleNet( object ):
                 2 * tf.nn.l2_loss( style_gram_matrix - style_expected ) / style_expected.size
             )
 
-        self._loss_style_op = self._weight_image_style  * tf.reduce_sum( style_losses )
+        self._loss_style_op = 0
+        self._loss_style_op += self._weight_image_style  * tf.reduce_sum( style_losses )
 
         #-------------------------------------------------------
         # 内容層とスタイル層のノイズ付き合成加工に応じた、全変動損失関数
         # 滑らかな結果を得るためことを目的としている
         #-------------------------------------------------------
         # ?
-        # tf.reduce_prod(...) :
+        # tf.reduce_prod(...) : 積の操作で縮約
         total_var_x = self._session.run( 
             tf.reduce_prod( self._noize_image_var[ :, 1:, :, : ].get_shape() )   #  
         )
@@ -677,7 +678,7 @@ class CNNStyleNet( object ):
         #-------------------------------------------------------
         # 最終的な損失関数の Operator
         #-------------------------------------------------------
-        self._loss_op = self._loss_content_op + self._loss_content_op + self._loss_total_var_op
+        self._loss_op = self._loss_content_op + self._loss_style_op + self._loss_total_var_op
         
         return self._loss_op
 
