@@ -720,6 +720,7 @@ class CNNStyleNet( object ):
         # 画像生成処理
         #-----------------------------------------
         for epoch in range( self._epochs ):
+            print( "epoch : %d" % epoch )
             # 設定された最適化アルゴリズム Optimizer で
             # トレーニング処理（内容画像とスタイル画像に対するがノイズ付き合成）を run
             self._session.run( self._train_step )
@@ -742,19 +743,14 @@ class CNNStyleNet( object ):
                 
                 # 途中生成画像の保存
                 image_eval = self._session.run( self._noize_image_var )
-                image_eval = image_eval.reshape( self._image_content.shape )
-                image_eval_add_mean = image_eval + self._norm_mean_matrix
+                image_eval = image_eval.reshape( self._image_content.shape ) + self._norm_mean_matrix
 
                 output_file = "output_image/temp_output_image{}.jpg".format( epoch + 1 )
-                output_add_mean_file = "output_image/temp_output_add_mean_image{}.jpg".format( epoch + 1 )
                 scipy.misc.imsave( output_file, image_eval )
-                scipy.misc.imsave( output_add_mean_file, image_eval_add_mean )
 
         # 最終生成画像の保存
         image_eval = self._session.run( self._noize_image_var )
-        image_eval = image_eval.reshape(
-                         self._image_content.shape
-                     )
+        image_eval = image_eval.reshape( self._image_content.shape ) + self._norm_mean_matrix
 
         output_file = "output_image/output_image.jpg"
         scipy.misc.imsave( output_file, image_eval )

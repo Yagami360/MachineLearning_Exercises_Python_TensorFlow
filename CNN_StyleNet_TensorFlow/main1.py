@@ -76,7 +76,7 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    learning_rate1 = 0.001
+    learning_rate1 = 0.5
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
@@ -93,9 +93,18 @@ def main():
     #     y_input_holder = tf.placeholder(tf.fload32, [None, num_classes])
     #======================================================================
     styleNet1 = CNNStyleNet(
-                    image_content_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\book_cover.jpg",
+#                    image_content_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\book_cover.jpg",
+                    image_content_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\neko-sensei.jpg",
                     image_style_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_style\starry_night.jpg",
-                    session = tf.Session( config = tf.ConfigProto(log_device_placement=True) )
+                    session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+                    epochs = 5000,
+                    eval_step = 10,
+                    weight_image_content = 200.0,
+                    weight_image_style = 200.0,
+                    weight_regularization = 100,
+                    n_strides = 1,
+                    n_pool_wndsize = 2,
+                    n_pool_strides = 2
                 )
     
     styleNet1.print( "" )
@@ -118,8 +127,9 @@ def main():
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
-    styleNet1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
-    #styleNet1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    styleNet1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    #styleNet1._session.run( tf.global_variables_initializer() )
+    #styleNet1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）

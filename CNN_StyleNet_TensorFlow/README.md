@@ -17,7 +17,9 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 
 - 参考サイト
     - https://research.preferred.jp/2015/09/chainer-gogh/
-    
+    - https://elix-tech.github.io/ja/2016/08/22/art.html
+
+
 ### 項目 [Contents]
 
 1. [使用するライブラリ](#ID_1)
@@ -117,38 +119,42 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 ### コードの実行結果
 
 - 内容画像<br>
-![book_cover](https://user-images.githubusercontent.com/25688193/33214839-e18e0fdc-d170-11e7-9860-fb31a6dcbf9e.jpg)
+![neko-sensei](https://user-images.githubusercontent.com/25688193/33228168-0bc7598e-d1f8-11e7-8a0e-788ea073154a.jpg)
 
 - スタイル画像<br>
 ![starry_night](https://user-images.githubusercontent.com/25688193/33214900-064aa77c-d171-11e7-9f4a-00220ac4d9a2.jpg)
 
 - 生成画像<br>
-    - エポック数：50 での生成画像<br>
-        - 正規化あり<br>
-![temp_output_add_mean_image50](https://user-images.githubusercontent.com/25688193/33220246-0550d0d0-d18a-11e7-8650-e6e32b378b67.jpg)<br>
-        - 正規化なし<br>
-![temp_output_image50](https://user-images.githubusercontent.com/25688193/33220248-05e8f374-d18a-11e7-9ea0-8afb8956ee7c.jpg)<br>
 
-    - エポック数：100 での生成画像<br>
-        - 正規化あり<br>
-![temp_output_add_mean_image100](https://user-images.githubusercontent.com/25688193/33220247-05b17692-d18a-11e7-8da3-672da5f8e56a.jpg)<br>
-        - 正規化なし<br>
-![temp_output_image100](https://user-images.githubusercontent.com/25688193/33220249-062d0636-d18a-11e7-8e67-6868ffddbb9e.jpg)<br>
-    - エポック数：200 での生成画像<br>
-    > 処理中...
-    - 最終生成画像<br>
-    > 処理中...
+|パラメータ|引数名|値|
+|---|---|---|
+|最適化アルゴリズム|`optimizer`|Adam アルゴリズム|
+|学習率 |`learning_rate`|0.500|
+||`beta1`|0.900|
+||`beta2`|0.990|
+|内容画像のウェイト値|`weight_image_content`|200.0|
+|スタイル画像のウェイト値|`weight_image_style`|200.0|
+|全変動損失のウェイト値|`weight_regularization`|100.0|
+|畳み込み処理のストライド値|`n_strides`|1|
+|プーリング処理のウィンドウサイズ|`n_pool_wndsize`|2|
+|プーリング処理のストライド値|`n_pool_strides`|2|
 
-    - エポック数：500 での生成画像<br>
-    > 処理中...
-    - 最終生成画像<br>
-    > 処理中...
+- エポック数：50 での生成画像<br>
+![temp_output_add_mean_image50](https://user-images.githubusercontent.com/25688193/33228156-d6181eea-d1f7-11e7-9aba-9e213f799dcc.jpg)
 
-    - エポック数：1000 での生成画像<br>
-    > 処理中...
-    - 最終生成画像<br>
-    > 処理中...
+- エポック数：100 での生成画像<br>
+![temp_output_add_mean_image100](https://user-images.githubusercontent.com/25688193/33228160-e3bfeef6-d1f7-11e7-84df-945b3606c019.jpg)
 
+- エポック数：200 での生成画像<br>
+![temp_output_add_mean_image200](https://user-images.githubusercontent.com/25688193/33228183-435ceba2-d1f8-11e7-99b5-5b21ed4e26c9.jpg)
+
+- エポック数：500 での生成画像<br>
+![temp_output_add_mean_image500](https://user-images.githubusercontent.com/25688193/33228165-f0f04f3a-d1f7-11e7-84e2-5babcaeb6268.jpg)
+
+- エポック数：1000 での生成画像<br>
+> 処理中...
+
+![stylenet_1](https://user-images.githubusercontent.com/25688193/33228206-c67ba3b6-d1f8-11e7-86e4-571aee469081.gif)
 
 <br>
 
