@@ -741,8 +741,8 @@ class CNNStyleNet( object ):
 
                 self._losses_train.append( loss )
                 self._losses_content_train.append( loss_content )
-                self._losses_content_train.append( loss_style )
-                self._losses_content_train.append( loss_total_var )
+                self._losses_style_train.append( loss_style )
+                self._losses_total_var_train.append( loss_total_var )
 
                 print( "epoch %d / loss = %0.1f / loss_content = %0.1f / loss_style = %0.1f / loss_total_var = %0.1f" % 
                       ( epoch + 1, loss, loss_content, loss_style, loss_total_var ) )

@@ -15,6 +15,8 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 # 自作クラス
+#from MLPlot import MLPlot
+
 import NNActivation                                     # ニューラルネットワークの活性化関数を表すクラス
 from NNActivation import NNActivation
 from NNActivation import Sigmoid
@@ -99,8 +101,8 @@ def main():
                     image_style_path = image_style_path1,
                     vgg_mat_file = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\imagenet-vgg-verydeep-19.mat",
                     session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-                    epochs = 100,
-                    eval_step = 10,
+                    epochs = 1000,
+                    eval_step = 50,
                     weight_image_content = 200.0,
                     weight_image_style = 200.0,
                     weight_regularization = 100,
@@ -163,40 +165,40 @@ def main():
     #-------------------------------------------------------------------
     plt.clf()
     plt.plot(
-        range( 0, styleNet1._epochs ), styleNet1._losses_train,
+        range( len(styleNet1._losses_train) ), styleNet1._losses_train,
         label = "losses",
         linestyle = '-',
         #linewidth = 2,
         color = 'black'
     )
     plt.plot(
-        range( 0, styleNet1._epochs ), styleNet1._losses_content_train,
+        range( len(styleNet1._losses_content_train) ), styleNet1._losses_content_train,
         label = "losses_content",
         linestyle = '--',
         #linewidth = 2,
         color = 'red'
     )
     plt.plot(
-        range( 0, styleNet1._epochs ), styleNet1._losses_style_train,
+        range( len(styleNet1._losses_style_train) ), styleNet1._losses_style_train,
         label = "losses_style",
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'
     )
     plt.plot(
-        range( 0, styleNet1._epochs ), styleNet1._losses_total_var_train,
+        range( len(styleNet1._losses_total_var_train) ), styleNet1._losses_total_var_train,
         label = "losses_total_var",
         linestyle = '--',
         #linewidth = 2,
         color = 'green'
     )
-    plt.title( "loss",  styleNet1._optimizer )
+    plt.title( "loss : AdamOptimizer" )
     plt.legend( loc = 'best' )
     #plt.ylim( [0, 1.05] )
-    plt.xlabel( "Epocs" )
+    plt.xlabel( "Epocs %d / eval_step %d" % ( styleNet1._epochs, styleNet1._eval_step ) )
     plt.tight_layout()
    
-    MLPlot.saveFigure( fileName = "CNN_StyleNet_1-1.png" )
+    plt.savefig("CNN_StyleNet_1-1.png", dpi = 300, bbox_inches = "tight" )
     plt.show()
 
     #======================================================================
