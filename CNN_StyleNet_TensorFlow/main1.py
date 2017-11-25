@@ -76,6 +76,8 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
+    image_content_path1 = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\neko-sensei.jpg"
+    image_style_path1 = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_style\starry_night.jpg"
     learning_rate1 = 0.5
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
@@ -93,11 +95,11 @@ def main():
     #     y_input_holder = tf.placeholder(tf.fload32, [None, num_classes])
     #======================================================================
     styleNet1 = CNNStyleNet(
-#                    image_content_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\book_cover.jpg",
-                    image_content_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\neko-sensei.jpg",
-                    image_style_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_style\starry_night.jpg",
+                    image_content_path = image_content_path1,
+                    image_style_path = image_style_path1,
+                    vgg_mat_file = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\imagenet-vgg-verydeep-19.mat",
                     session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-                    epochs = 5000,
+                    epochs = 100,
                     eval_step = 10,
                     weight_image_content = 200.0,
                     weight_image_style = 200.0,
@@ -151,9 +153,51 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    styleNet1.show_output_image()
-    styleNet1.save_output_image( "", "CNN-StyleNet_output_image_1.png" )
-    styleNet1.save_output_image_gif( "", "CNN-StyleNet_output_image_1.gif" )
+    #styleNet1.show_output_image()
+    #styleNet1.save_output_image( "", "CNN-StyleNet_output_image_1.png" )
+    #styleNet1.save_output_image_gif( "", "CNN-StyleNet_output_image_1.gif" )
+
+
+    #-------------------------------------------------------------------
+    # トレーニング回数に対する loss 値の plot
+    #-------------------------------------------------------------------
+    plt.clf()
+    plt.plot(
+        range( 0, styleNet1._epochs ), styleNet1._losses_train,
+        label = "losses",
+        linestyle = '-',
+        #linewidth = 2,
+        color = 'black'
+    )
+    plt.plot(
+        range( 0, styleNet1._epochs ), styleNet1._losses_content_train,
+        label = "losses_content",
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'red'
+    )
+    plt.plot(
+        range( 0, styleNet1._epochs ), styleNet1._losses_style_train,
+        label = "losses_style",
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'blue'
+    )
+    plt.plot(
+        range( 0, styleNet1._epochs ), styleNet1._losses_total_var_train,
+        label = "losses_total_var",
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'green'
+    )
+    plt.title( "loss",  styleNet1._optimizer )
+    plt.legend( loc = 'best' )
+    #plt.ylim( [0, 1.05] )
+    plt.xlabel( "Epocs" )
+    plt.tight_layout()
+   
+    MLPlot.saveFigure( fileName = "CNN_StyleNet_1-1.png" )
+    plt.show()
 
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)

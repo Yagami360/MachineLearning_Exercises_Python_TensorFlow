@@ -68,6 +68,9 @@ class CNNStyleNet( object ):
         _y_out_op : Operator
             モデルの出力のオペレーター
 
+        _image_var : Variable
+          トレーニング対象の画像データ（Variable）
+          
         _weights : list <Variable>
             モデルの各層の重みの Variable からなる list
         _biases : list <float>
@@ -82,6 +85,9 @@ class CNNStyleNet( object ):
             内容画像ファイルのパス
         _image_style_path : str
             スタイル画像ファイルのパス
+        _vgg_mat_file : str
+            学習済み CNN モデル（VGG）の mat ファイルのパス
+
         _image_content :　ndarray
             内容画像の配列　The array obtained by reading the image.
         _image_style :　ndarray
@@ -135,6 +141,7 @@ class CNNStyleNet( object ):
             self,
             image_content_path,
             image_style_path,
+            vgg_mat_file,
             session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
             epochs = 5000,
             eval_step = 50,
@@ -169,6 +176,8 @@ class CNNStyleNet( object ):
         
         self._image_content_path = image_content_path
         self._image_style_path = image_style_path
+        self._vgg_mat_file = vgg_mat_file
+
         self._image_content = None
         self._image_style = None
         self._features_content = {}
@@ -229,10 +238,8 @@ class CNNStyleNet( object ):
                 shape = ( (1,) + self._image_style.shape )      # ? : 4 つの次元を持つように画像の行列の形状を reshape
             )
 
-        # 
-        self._noize_image_var = tf.Variable(
-                            tf.random_normal( shape = (1,) + self._image_content.shape ) * 0.256
-                        )
+        # トレーニング対象の画像データ（Variable）
+        self._image_var = tf.Variable( tf.random_normal( shape = (1,) + self._image_content.shape ) * 0.256 )
 
         self._norm_mean_matrix = None
 
@@ -252,11 +259,14 @@ class CNNStyleNet( object ):
 
         print( "_y_out_op : ", self._y_out_op )
 
+        print( "_image_var :", self._image_var )
+
         print( "_epoches : ", self._epochs )
         print( "_eval_step : ", self._eval_step )
 
         print( "_image_content_path : ", self._image_content_path )
         print( "_image_style_path : ", self._image_style_path )
+        print( "_vgg_mat_file : ", self._vgg_mat_file )
 
         print( "_weight_image_content : ", self._weight_image_content )
         print( "_weight_image_style : ", self._weight_image_style )
@@ -275,8 +285,6 @@ class CNNStyleNet( object ):
 
         print( "_features_content :", self._features_content )
         print( "_features_style :", self._features_style )
-
-        print( "_noize_image_var :", self._noize_image_var )
 
         print( "_n_strides : " , self._n_strides )
         print( "_n_pool_wndsize : " , self._n_pool_wndsize )
@@ -387,11 +395,9 @@ class CNNStyleNet( object ):
         #------------------------------------------------------
         # 学習済み StyleNet 用 CNN モデルのパラメータを読み込む
         #------------------------------------------------------
-        vgg_file_path = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\imagenet-vgg-verydeep-19.mat"
-
         # 学習済み CNN モデルの重み＋バイアス項を含んだ network_weights と
         # 画像を正規化するための正規化行列を取り出す。
-        self._norm_mean_matrix, network_weights = self.load_model_info( mat_file_path = vgg_file_path )
+        self._norm_mean_matrix, network_weights = self.load_model_info( mat_file_path = self._vgg_mat_file )
         #print( "norm_mean_matrix :\n", self._norm_mean_matrix )
         #print( "network_weights :\n", network_weights )
 
@@ -446,16 +452,16 @@ class CNNStyleNet( object ):
                     )
             
             network_content[ layer ] = image_content_tsr
-            print( "image_content_tsr :\n", image_content_tsr )
+            #print( "image_content_tsr :\n", image_content_tsr )
         #
-        print( "network_content :\n", network_content )
+        #print( "network_content :\n", network_content )
 
         # 内容画像の行列を正規化
         content_minus_mean_matrix = self._image_content - self._norm_mean_matrix
         content_norm_matrix = np.array( [content_minus_mean_matrix] )
 
-        print( "content_minus_mean_matrix :\n", content_minus_mean_matrix.shape )
-        print( "content_norm_matrix.shape :\n", content_norm_matrix.shape )
+        #print( "content_minus_mean_matrix :\n", content_minus_mean_matrix.shape )
+        #print( "content_norm_matrix.shape :\n", content_norm_matrix.shape )
 
         # 構築した 内容画像層のモデルを session.run(...) し、
         # 学習済み CNN モデルから、内容層の特徴量（画像の内容、形状）を抽出する。
@@ -515,16 +521,16 @@ class CNNStyleNet( object ):
 
             
             network_style[ layer ] = image_style_tsr
-            print( "image_style_tsr :\n", image_style_tsr )
+            #print( "image_style_tsr :\n", image_style_tsr )
         #
-        print( "network_style :\n", network_style )
+        #print( "network_style :\n", network_style )
 
         # スタイル画像の行列を正規化
         style_minus_mean_matrix = self._image_style - self._norm_mean_matrix
         style_norm_matrix = np.array( [style_minus_mean_matrix] )
 
-        print( "style_minus_mean_matrix :\n", style_minus_mean_matrix.shape )
-        print( "style_norm_matrix.shape :\n", style_norm_matrix.shape )
+        #print( "style_minus_mean_matrix :\n", style_minus_mean_matrix.shape )
+        #print( "style_norm_matrix.shape :\n", style_norm_matrix.shape )
 
         # 構築した スタイル画像層のモデルを session.run(...) し、
         # 学習済み CNN モデルから、内容層の特徴量（画像の内容、形状）を抽出する。
@@ -549,10 +555,10 @@ class CNNStyleNet( object ):
         # ここで構築したモデル（Variable）が、StyleNet のトレーニング対象となる
         # この処理は、ランダムノイズを適用した Variable に対する vgg_net
         #--------------------------------------------------------------------
-        self._noize_image_var = tf.Variable(
+        self._image_var = tf.Variable(
                             tf.random_normal( shape = (1,) + self._image_content.shape ) * 0.256
                         )
-        noize_image_tsr = self._noize_image_var
+        noize_image_tsr = self._image_var
 
         # _vgg_layers を構成する layer から layer を取り出し、
         # 種類に応じて、モデルを具体的に構築していく。
@@ -597,9 +603,9 @@ class CNNStyleNet( object ):
 
             
             self._vgg_network[ layer ] = noize_image_tsr
-            print( "noize_image_tsr :\n", noize_image_tsr )
+            #print( "noize_image_tsr :\n", noize_image_tsr )
         #
-        print( "_vgg_network :\n", self._vgg_network )
+        #print( "_vgg_network :\n", self._vgg_network )
         #self._y_out_op = self._vgg_network
 
         return self._y_out_op
@@ -656,23 +662,23 @@ class CNNStyleNet( object ):
         # ?
         # tf.reduce_prod(...) : 積の操作で縮約
         total_var_x = self._session.run( 
-            tf.reduce_prod( self._noize_image_var[ :, 1:, :, : ].get_shape() )   #  
+            tf.reduce_prod( self._image_var[ :, 1:, :, : ].get_shape() )   #  
         )
         total_var_y = self._session.run(
-            tf.reduce_prod( self._noize_image_var[ :, :, 1:, : ].get_shape() )
+            tf.reduce_prod( self._image_var[ :, :, 1:, : ].get_shape() )
         )
 
         # ?
         first_term = self._weight_regularization  * 2
         second_term_numerator = tf.nn.l2_loss(
-                                    self._noize_image_var[ :, 1:, :, : ] 
-                                    - self._noize_image_var[ :, :( (1,) + self._image_content.shape )[1] - 1, :, : ]
+                                    self._image_var[ :, 1:, :, : ] 
+                                    - self._image_var[ :, :( (1,) + self._image_content.shape )[1] - 1, :, : ]
                                 )
         second_term = second_term_numerator / total_var_y
         third_term = ( 
                          tf.nn.l2_loss( 
-                             self._noize_image_var[ :, :, 1:, : ] 
-                             - self._noize_image_var[ :, :, :( (1,) + self._image_content.shape )[2] - 1, : ] 
+                             self._image_var[ :, :, 1:, : ] 
+                             - self._image_var[ :, :, :( (1,) + self._image_content.shape )[2] - 1, : ] 
                          ) / total_var_x 
                      )
         self._loss_total_var_op = first_term * ( second_term + third_term )
@@ -742,14 +748,14 @@ class CNNStyleNet( object ):
                       ( epoch + 1, loss, loss_content, loss_style, loss_total_var ) )
                 
                 # 途中生成画像の保存
-                image_eval = self._session.run( self._noize_image_var )
+                image_eval = self._session.run( self._image_var )
                 image_eval = image_eval.reshape( self._image_content.shape ) + self._norm_mean_matrix
 
                 output_file = "output_image/temp_output_image{}.jpg".format( epoch + 1 )
                 scipy.misc.imsave( output_file, image_eval )
 
         # 最終生成画像の保存
-        image_eval = self._session.run( self._noize_image_var )
+        image_eval = self._session.run( self._image_var )
         image_eval = image_eval.reshape( self._image_content.shape ) + self._norm_mean_matrix
 
         output_file = "output_image/output_image.jpg"

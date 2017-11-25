@@ -53,7 +53,8 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 
 - 学習済み CNN モデルのデータ : MATLAB オブジェクトファイル
     - [imagenet-vgg-verydee-19.mat]( http://www.vlfeat.org/matconvnet/models/beta16/imagenet-vgg-verydeep-19.mat)
-
+    - https://jp.mathworks.com/help/nnet/ref/vgg19.html
+    - https://qiita.com/TokyoMickey/items/a6bbf62571dd79730052
 > 
 
 <a id="ID_3"></a>
@@ -118,13 +119,14 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 
 ### コードの実行結果
 
-- 内容画像<br>
+- 内容（コンテンツ）画像<br>
 ![neko-sensei](https://user-images.githubusercontent.com/25688193/33228168-0bc7598e-d1f8-11e7-8a0e-788ea073154a.jpg)
 
 - スタイル画像<br>
 ![starry_night](https://user-images.githubusercontent.com/25688193/33214900-064aa77c-d171-11e7-9f4a-00220ac4d9a2.jpg)
 
 - 生成画像<br>
+![stylenet_50 1000](https://user-images.githubusercontent.com/25688193/33228657-7e4f2558-d203-11e7-8f13-fdbfabfc5699.gif)
 
 |パラメータ|引数名|値|
 |---|---|---|
@@ -139,6 +141,7 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 |プーリング処理のウィンドウサイズ|`n_pool_wndsize`|2|
 |プーリング処理のストライド値|`n_pool_strides`|2|
 
+
 - エポック数：50 での生成画像<br>
 ![temp_output_add_mean_image50](https://user-images.githubusercontent.com/25688193/33228156-d6181eea-d1f7-11e7-9aba-9e213f799dcc.jpg)
 
@@ -152,9 +155,12 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 ![temp_output_add_mean_image500](https://user-images.githubusercontent.com/25688193/33228165-f0f04f3a-d1f7-11e7-84e2-5babcaeb6268.jpg)
 
 - エポック数：1000 での生成画像<br>
-> 処理中...
+![temp_output_add_mean_image1000](https://user-images.githubusercontent.com/25688193/33228650-4fd46ca6-d203-11e7-9280-a90279d9d68b.jpg)
 
-![stylenet_1](https://user-images.githubusercontent.com/25688193/33228206-c67ba3b6-d1f8-11e7-86e4-571aee469081.gif)
+<br>
+
+#### 損失関数のグラフ
+> 処理中...
 
 <br>
 
