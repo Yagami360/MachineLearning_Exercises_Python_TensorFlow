@@ -51,11 +51,11 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 
 ### 使用するデータセット
 
-- 学習済み CNN モデルのデータ : MATLAB オブジェクトファイル
+- 学習済み CNN モデルのデータ : VGG-19
     - [imagenet-vgg-verydee-19.mat]( http://www.vlfeat.org/matconvnet/models/beta16/imagenet-vgg-verydeep-19.mat)
     - https://jp.mathworks.com/help/nnet/ref/vgg19.html
-    - https://qiita.com/TokyoMickey/items/a6bbf62571dd79730052
-> 
+    - https://qiita.com/TokyoMickey/items/a6bbf62571dd79730052<br>
+> 合計 19 層からなる CNN モデルの学習済みデータ。MATLAB 形式の mat ファイル。
 
 <a id="ID_3"></a>
 
@@ -64,6 +64,11 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 <a id="ID_3-1"></a>
 
 ## CNN-StyleNet / NeuralStyle（ニューラルスタイル）による画像生成処理 : `main1.py`
+
+学習済み CNN モデル（VGG-19）を用いた、StyleNet による内容画像とスタイル画像の自動合成画像処理。<br>
+コンテンツ画像層には、VGG-19 の１つの conv → relu 出力の層を割り当て、
+スタイル層には、複数の conv → Relu 出力の層を割り当てることで、それぞれ内容とスタイルの（特徴的、抽象的な）特徴量を抽出している。
+
 
 - まずは、学習済みの CNN モデルのデータ `imagenet-vgg-verydee-19.mat` を読み込む。
     - 学習済み CNN モデルの重み＋バイアス項を含んだ `network_weights` と
@@ -141,6 +146,13 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 |プーリング処理のウィンドウサイズ|`n_pool_wndsize`|2|
 |プーリング処理のストライド値|`n_pool_strides`|2|
 
+- エポック数：1 での生成画像<br>
+![temp_output_image1](https://user-images.githubusercontent.com/25688193/33231341-3fc4ea8c-d237-11e7-8dcf-ae7e6753c72e.jpg)
+
+- エポック数：2 での生成画像<br>
+![temp_output_image2](https://user-images.githubusercontent.com/25688193/33231342-3feb5744-d237-11e7-9d0a-ced02b3777ed.jpg)
+- エポック数：3 での生成画像<br>
+![temp_output_image3](https://user-images.githubusercontent.com/25688193/33231343-40134bfa-d237-11e7-8982-2de4a3b3f4d6.jpg)
 
 - エポック数：50 での生成画像<br>
 ![temp_output_add_mean_image50](https://user-images.githubusercontent.com/25688193/33228156-d6181eea-d1f7-11e7-9aba-9e213f799dcc.jpg)
@@ -160,7 +172,11 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 <br>
 
 #### 損失関数のグラフ
-> 処理中...
+![figure_1](https://user-images.githubusercontent.com/25688193/33236202-e11001d6-d28e-11e7-8eb6-9e22ea11ee69.png)
+> 黒線が、モデル全体の損失関数の値。エポック数：300 付近で収束している。<br>
+> 赤線が、コンテンツ画像層のモデルの損失関数の値。エポック数：300 付近で収束している。。
+> 青線が、スタイル画像層のモデルの損失関数の値。エポック数：300 付近で収束している。<br>
+> 緑線が、全変動損失関数の値。エポック数が増えるにつれ、単調増加している。<br>
 
 <br>
 
@@ -169,7 +185,7 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
 <a id="ID_4"></a>
 
 ## 背景理論
-
+> 記載中...
 
 ---
 ## デバッグメモ
