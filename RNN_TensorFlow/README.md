@@ -37,7 +37,10 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 ### 使用するライブラリ
 
 > TensorFlow ライブラリ <br>
->> 
+>> `tf.contrib.rnn.BasicRNNCell(...)` : <br>
+>> 時系列に沿った RNN 構造を提供するクラス `BasicRNNCell` の `cell` を返す。<br>
+>> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/BasicRNNCell<br>
 
 > その他ライブラリ
 >>
@@ -66,7 +69,7 @@ RNN による時系列モデルの取り扱いの簡単な例として、まず�
 
 - 以下のような、ノイズ付き sin 波形を生成する。<br>
     - 周期 `T = 100`, ノイズ幅 `noize_size = 0.05` 
-![rnn_1-1](https://user-images.githubusercontent.com/25688193/33363817-48d2f754-d525-11e7-84f4-218d2601667e.png)
+![rnn_1-1](https://user-images.githubusercontent.com/25688193/33367977-a1f6a1b0-d533-11e7-8daa-d6a51e5d9eb7.png)
     ```python
     [MLPreProcess.py]
     @staticmethod
