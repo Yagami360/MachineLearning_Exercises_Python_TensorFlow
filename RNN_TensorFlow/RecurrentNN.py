@@ -81,6 +81,9 @@ class RecurrentNN( NeuralNetworkBase ):
             出力層に教師データを供給するための placeholder
         _keep_prob_holder : placeholder
             ドロップアウトしない確率 (1-p) にデータを供給するための placeholder
+        _batch_size_holder : placeholder
+            バッチサイズ _batch_size にデータを供給するための placeholder
+            cell.zero_state(...) でバッチサイズを指定する必要があり、可変長に対応するために必要
 
     [protedted] protedted な使用法を想定 
 
@@ -96,7 +99,7 @@ class RecurrentNN( NeuralNetworkBase ):
             n_inputLayer = 1, n_hiddenLayer = 1, n_outputLayer = 1, 
             n_in_sequence = 25,
             epochs = 1000,
-            batch_size = 1,
+            batch_size = 10,
             eval_step = 1
         ):
         """
@@ -132,11 +135,12 @@ class RecurrentNN( NeuralNetworkBase ):
                          )
 
         self._t_holder = tf.placeholder( 
-                             tf.int32, 
+                             tf.float32, 
                              shape = [ None, self._n_outputLayer ]
                          )
 
         self._keep_prob_holder = tf.placeholder( tf.float32 )
+        self._batch_size_holder = tf.placeholder( tf.int32, shape=[] )
 
         return
 
@@ -167,7 +171,7 @@ class RecurrentNN( NeuralNetworkBase ):
         print( "_X_holder : ", self._X_holder )
         print( "_t_holder : ", self._t_holder )
         print( "_keep_prob_holder : ", self._keep_prob_holder )
-
+        print( "_batch_size_holder : ", self._batch_size_holder )
 
         print( "_weights : \n", self._weights )
         print( self._session.run( self._weights ) )
@@ -244,7 +248,7 @@ class RecurrentNN( NeuralNetworkBase ):
         #--------------------------------------------------------------
         # 入力層 ~ 隠れ層
         #--------------------------------------------------------------
-        # tf.contrib.rnn.BasicRNNCell(...) : 時系列に沿った RNN 構造を提供するクラス `BasicRNNCell` の cell を返す。
+        # tf.contrib.rnn.BasicRNNCell(...) : 時系列に沿った RNN 構造を提供するクラス `BasicRNNCell` のオブジェクト cell を返す。
         # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
         # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
         cell = tf.contrib.rnn.BasicRNNCell( 
@@ -252,17 +256,31 @@ class RecurrentNN( NeuralNetworkBase ):
                    #activation = "tanh"                  # Nonlinearity to use. Default: tanh
                )
 
-        initial_state = cell.zero_state( self._batch_size, tf.float32 )
+        print( "cell :", cell )
 
-        state = initial_state
-        outputs = []  # 過去の隠れ層の出力を保存
+        # 最初の時間 t0 では、過去の隠れ層がないので、
+        # cell.zero_state(...) でゼロの状態を初期設定する。
+        initial_state_tsr = cell.zero_state( self._batch_size_holder, tf.float32 )
+        print( "initial_state_tsr :", initial_state_tsr )
+
+        #-----------------------------------------------------------------
+        # 過去の隠れ層の再帰処理
+        #-----------------------------------------------------------------
+        state_tsr = initial_state_tsr
+        outputs = []                    # 過去の隠れ層の出力を保存
 
         with tf.variable_scope('RNN'):
             for t in range( self._n_in_sequence ):
                 if (t > 0):
+                    # tf.get_variable_scope() : 名前空間を設定した Variable にアクセス
+                    # reuse_variables() : reuse フラグを True にすることで、再利用できるようになる。
                     tf.get_variable_scope().reuse_variables()
 
-                (cell_output, state) = cell( self._X_holder[:, t, :], state )
+                # BasicRNNCellクラスの `__call__(...)` を順次呼び出し、
+                # 各時刻 t における出力 cell_output, 及び状態 state を算出
+                cell_output, state_tsr = cell( inputs = self._X_holder[:, t, :], state = state_tsr )
+
+                # 出力リストに追加
                 outputs.append( cell_output )
 
         # 最終的な隠れ層の出力
@@ -356,7 +374,8 @@ class RecurrentNN( NeuralNetworkBase ):
                 self._train_step,
                 feed_dict = {
                     self._X_holder: X_train_shuffled,
-                    self._t_holder: y_train_shuffled
+                    self._t_holder: y_train_shuffled,
+                    self._batch_size_holder: self._batch_size
                 }
             )
             
@@ -368,7 +387,8 @@ class RecurrentNN( NeuralNetworkBase ):
                        session = self._session,
                        feed_dict = {
                            self._X_holder: X_train_shuffled,
-                           self._t_holder: y_train_shuffled
+                           self._t_holder: y_train_shuffled,
+                           self._batch_size_holder: self._batch_size
                        }
                    )
 

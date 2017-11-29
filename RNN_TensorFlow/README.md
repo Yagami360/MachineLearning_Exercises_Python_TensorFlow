@@ -106,6 +106,23 @@ RNN による時系列モデルの取り扱いの簡単な例として、まず�
 時系列データを一定間隔に区切る。
     - 全時系列データの長さ : `len_sequences = len( X_features )`
     - １つの時系列データの長さ τ : `len_one_sequence = 25`
+- 時系列に沿った、過去の隠れ層のモデルを構築する。
+    - そのために、`tf.contrib.rnn.BasicRNNCell(...)` を用いて、時系列に沿った RNN 構造を提供するクラス `BasicRNNCell` の `cell` を取得する。
+    - この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+    ```python
+    [RecurrentNN.py]
+    def model():
+        ...
+        cell = tf.contrib.rnn.BasicRNNCell( num_units = self._n_hiddenLayer )
+    ```
+    - 尚、最初の時間 t0 では、過去の隠れ層がないので、`cell.zero_state(...)` でゼロの状態を初期設定する。
+    ```python
+    [RecurrentNN.py]
+    def model():
+        ...
+        initial_state = cell.zero_state( self._batch_size, tf.float32 )
+    ```
+
 
 <!--
 - 特徴行列 `X_features` は、特徴数 x 個 × サンプル数 x 個 :<br> `X_features = `

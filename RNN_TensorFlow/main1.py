@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-# Anaconda 4.3.0 環境 (TensorFlow インストール済み)
+# Anaconda 5.0.1 環境 (TensorFlow インストール済み)
 #     <Anaconda Prompt>
 #     conda create -n tensorflow python=3.5
 #     activate tensorflow
@@ -131,7 +131,7 @@ def main():
                n_outputLayer = len( y_labels[0] ),
                n_in_sequence = len_one_sequence,
                epochs = 500,
-               batch_size = 100,
+               batch_size = 10,
                eval_step = 1
            )
 
@@ -162,7 +162,7 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    rnn1.loss( SoftmaxCrossEntropy() )
+    rnn1.loss( L2Norm() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
@@ -194,6 +194,7 @@ def main():
     #---------------------------------------------------------
     # ノイズ付き sin 波形を plot
     #---------------------------------------------------------
+    """
     plt.clf()
 
     X_features_with_noize, y_labels_with_noize = MLPreProcess.generate_sin_with_noize( t = times, T = T1, noize_size = noize_size1, seed = 12 )
@@ -224,50 +225,34 @@ def main():
     plt.savefig("RNN_1-1.png", dpi = 300, bbox_inches = "tight" )
     #MLPlot.saveFigure( fileName = "RNN_1-1.png" )
     plt.show()
-
-
-    #-------------------------------------------------------------------
-    # トレーニング回数に対する loss 値の plot
-    #-------------------------------------------------------------------
     """
+
+    #---------------------------------------------------------
+    # 損失関数を plot
+    #---------------------------------------------------------
     plt.clf()
+
     plt.plot(
-        range( len(styleNet1._losses_train) ), styleNet1._losses_train,
-        label = "losses",
+        range( rnn1._epochs ), rnn1._losses_train,
+        label = 'train data : RNN1 = [%d, %d, %d], learning_rate = %0.3f' % ( rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
         linestyle = '-',
-        #linewidth = 2,
-        color = 'black'
-    )
-    plt.plot(
-        range( len(styleNet1._losses_content_train) ), styleNet1._losses_content_train,
-        label = "losses_content",
-        linestyle = '--',
         #linewidth = 2,
         color = 'red'
     )
-    plt.plot(
-        range( len(styleNet1._losses_style_train) ), styleNet1._losses_style_train,
-        label = "losses_style",
-        linestyle = '--',
-        #linewidth = 2,
-        color = 'blue'
-    )
-    plt.plot(
-        range( len(styleNet1._losses_total_var_train) ), styleNet1._losses_total_var_train,
-        label = "losses_total_var",
-        linestyle = '--',
-        #linewidth = 2,
-        color = 'green'
-    )
-    plt.title( "loss : AdamOptimizer" )
+
+    plt.title( "loss / L2 Norm (MSE)" )
     plt.legend( loc = 'best' )
     #plt.ylim( [0, 1.05] )
-    plt.xlabel( "Epocs %d / eval_step %d" % ( styleNet1._epochs, styleNet1._eval_step ) )
+    plt.xlabel( "Epocs" )
+    plt.grid()
     plt.tight_layout()
-   
-    plt.savefig("CNN_StyleNet_1-1.png", dpi = 300, bbox_inches = "tight" )
+    
+    plt.savefig("RNN_1-2.png", dpi = 300, bbox_inches = "tight" )
+    #MLPlot.saveFigure( fileName = "RNN_1-1.png" )
     plt.show()
-    """
+
+
+
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================
