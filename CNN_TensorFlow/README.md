@@ -379,6 +379,9 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
     cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
     cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
     ```
+- TensorBoard の計算グラフ 
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/33444037-7865f918-d63c-11e7-8e84-cf14aa651e9f.png)
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 #### コードの実行結果
 
@@ -629,6 +632,9 @@ https://qiita.com/antimon2/items/c7d2285d34728557e81d<br>
         cnn1.optimizer( Momentum( learning_rate = learning_rate1, momentum = 0.9 ) )
         cnn2.optimizer( Momentum( learning_rate = learning_rate2, momentum = 0.9 ) )
         ```
+- TensorBoard の計算グラフ 
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/33444121-be1bf002-d63c-11e7-90e1-92329f340235.png)
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 #### コードの実行結果
 

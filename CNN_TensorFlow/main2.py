@@ -73,7 +73,7 @@ def main():
     }
     
     # CIFAR-10 データが格納されているフォルダへのパス
-    cifar10_path = "D:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-bin"
+    cifar10_path = "C:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-bin"
 
     #X_train, y_train = MLPreProcess.load_cifar10_train( cifar10_path, fileName = "data_batch_1.bin" )
     X_train, y_train = MLPreProcess.load_cifar10_trains( cifar10_path )
@@ -167,7 +167,7 @@ def main():
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
     cnn1_epochs = 500
-    cnn2_epochs = 2000
+    cnn2_epochs = 10000
 
     # CNN クラスのオブジェクト生成
     cnn1 = ConvolutionalNN(
@@ -266,6 +266,9 @@ def main():
     #cnn1.optimizer( GradientDecentDecay( learning_rate = learning_rate1, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )
     #cnn2.optimizer( GradientDecentDecay( learning_rate = learning_rate2, n_generation = 500, n_gen_to_wait = 5, lr_recay = 0.1 ) )
 
+    # TensorBoard 用のファイル（フォルダ）を作成
+    cnn1.write_tensorboard_graph()
+
     # トレーニングデータで fitting 処理
     cnn1.fit( X_train, y_train_encoded )
     cnn2.fit( X_train, y_train_encoded )
@@ -297,7 +300,7 @@ def main():
     )
     plt.title( "loss" )
     plt.legend( loc = 'best' )
-    #plt.ylim( [0, 1.05] )
+    plt.ylim( [0, 3.05] )
     plt.xlabel( "Epocs" )
     plt.tight_layout()
    

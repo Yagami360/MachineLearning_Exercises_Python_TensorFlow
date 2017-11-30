@@ -58,7 +58,7 @@ def main():
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
     # MNIST データが格納されているフォルダへのパス
-    mnist_path = "D:\Data\MachineLearning_DataSet\MNIST"
+    mnist_path = "C:\Data\MachineLearning_DataSet\MNIST"
 
     X_train, y_train = MLPreProcess.load_mnist( mnist_path, "train" )
     X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )
@@ -196,6 +196,9 @@ def main():
     # モデルの最適化アルゴリズムを設定
     cnn1.optimizer( Momentum( learning_rate = 0.0001, momentum = 0.9 ) )
     cnn2.optimizer( Momentum( learning_rate = 0.0005, momentum = 0.9 ) )
+
+    # TensorBoard 用のファイル（フォルダ）を作成
+    cnn1.write_tensorboard_graph()
 
     # トレーニングデータで fitting 処理
     cnn1.fit( X_train, y_train_encoded )
