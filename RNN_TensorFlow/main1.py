@@ -214,6 +214,10 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
+    # TensorBoard 用のファイル（フォルダ）を作成
+    rnn1.write_tensorboard_graph()
+
+    # 時系列データの予想値を取得
     predicts1 = rnn1.predict( X_features )
     #predicts2 = rnn2.predict( X_features )
 

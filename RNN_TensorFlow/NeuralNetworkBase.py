@@ -6,6 +6,9 @@
     [17/10/14] : 新規作成
     [17/11/19] : scikit-learn ライブラリの推定器 estimator の基本クラス `BaseEstimator`, `ClassifierMixin` を継承しているように変更
                : 各種抽象メソッド追加
+    [17/12/01] :  TensorBoard に計算グラフを表示するためのファイルを書き込むための関数 write_tensorboard_graph(...) 追加
+    [xx/xx/xx] :
+
 """
 
 from abc import ABCMeta, abstractmethod             # 抽象クラスを作成するための ABC クラス
@@ -204,4 +207,18 @@ class NeuralNetworkBase( BaseEstimator, ClassifierMixin ):
         """
         指定したデータでのラベル毎の正解率 [acuuracy] を算出する。
         """
+        return
+
+
+    def write_tensorboard_graph( self, dir = "./TensorBoard" ):
+        """
+        TensorBoard に計算グラフを表示するためのファイルを書き込む。
+        [Input]
+            dir : str
+                TensorBoard 用のファイルを作成するディレクトリのパス
+        """
+        # TensorBoard 用のファイル（フォルダ）を作成
+        merged = tf.summary.merge_all() # Add summaries to tensorboard
+        summary_writer = tf.summary.FileWriter( dir, graph = self._session.graph )    # tensorboard --logdir=${PWD}
+        
         return

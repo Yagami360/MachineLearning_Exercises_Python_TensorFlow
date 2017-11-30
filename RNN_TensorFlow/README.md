@@ -299,6 +299,9 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     predicts1 = rnn1.predict( X_features )
     ```
 - 入力層：１ノード、出力層：１ノードで、隠れ層のノード数を変えたモデルでそれぞれ性能評価する。
+- TensorBoard での計算グラフ
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33439281-648d17f2-d630-11e7-9ace-31d3c78ec783.png)
+
 
 <br>
 
