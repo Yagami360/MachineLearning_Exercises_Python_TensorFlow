@@ -61,7 +61,8 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 
 ### 使用するデータセット
 
-> ノイズ付き sin 波形（時系列データ）
+> ノイズ付き sin 波形（時系列データとして利用）
+![rnn_1-1](https://user-images.githubusercontent.com/25688193/33367977-a1f6a1b0-d533-11e7-8daa-d6a51e5d9eb7.png)
 
 <br>
 
