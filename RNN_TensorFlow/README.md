@@ -13,7 +13,9 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
     1. [RNN によるノイズ付き sin 波形（時系列データ）からの波形の予想（生成）処理 : `main1.py`](#ID_3-1)
         1. [コードの内容説明](#ID_3-1-1)
         1. [コードの実行結果](#ID_3-1-2)
-    1. LSTM による sin 波形（時系列データ）の生成処理 : `main2.py`
+    1. [LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main2.py`](#ID_3-2)
+        1. [コードの内容説明](#ID_3-2-1)
+        1. [コードの実行結果](#ID_3-2-2)
     1. LSTM による Adding Problem : `main3.py`
     1. GNU による sin 波形（時系列データ）の生成処理 : `main4.py`
     1. 双方向 RNN による MNIST データセットの識別処理 : `main5.py`
@@ -43,6 +45,9 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 >> 時系列に沿った RNN 構造を提供するクラス `BasicRNNCell` の `cell` を返す。<br>
 >> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/BasicRNNCell<br>
+
+>> `tf.contrib.rnn.LSTMCell(...)` : Long short-term memory unit (LSTM) recurrent network cell.<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
 
 >> `tf.variable_scope(...)` : Variable に名前空間を与える。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/variable_scope<br>
@@ -74,7 +79,9 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 
 ## RNN によるノイズ付き sin 波形（時系列データ）からの波形の予想（生成）処理 : `main1.py`
 
-RNN による時系列モデルの取り扱いの簡単な例として、ノイズ付き sin 波形の予想（生成）を考える。
+<a id="ID_3-1-1"></a>
+
+RNN による時系列モデルの取り扱いの簡単な例として、ノイズ付き sin 波形（時系列データとみなす）の予想（生成）を考える。
 
 - まず、以下のような、ノイズ付き sin 波形を生成する。<br>
     - 周期 `T = 100`, ノイズ幅 `noize_size = 0.05` 
@@ -301,7 +308,7 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 - 入力層：１ノード、出力層：１ノードで、隠れ層のノード数を変えたモデルでそれぞれ性能評価する。
 - TensorBoard での計算グラフ
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33439281-648d17f2-d630-11e7-9ace-31d3c78ec783.png)
-
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 <br>
 
@@ -311,16 +318,16 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 ### 損失関数のグラフ
 
-- ｛入力層：１ノード、隠れ層：**20** ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル
 ![rnn_1-2-20](https://user-images.githubusercontent.com/25688193/33424393-151103c2-d5ff-11e7-9de3-4993be4767d8.png)
 
-- ｛入力層：１ノード、隠れ層：**30** ノード、出力層：１ノード｝、各シーケンス長 : 25 個のの RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**30**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個のの RNN モデル
 ![rnn_1-2-30](https://user-images.githubusercontent.com/25688193/33424585-9c44a07e-d5ff-11e7-9182-64c30b40a22c.png)
 
-- ｛入力層：１ノード、隠れ層：**50** ノード、出力層：１ノード｝、各シーケンス長 : 25 個のの RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個のの RNN モデル
 ![rnn_1-2-50](https://user-images.githubusercontent.com/25688193/33424608-a70bf372-d5ff-11e7-8472-46bf4c47ea1c.png)
 
-- ｛入力層：１ノード、隠れ層：**100** ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**100**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル
 ![rnn_1-2-100](https://user-images.githubusercontent.com/25688193/33424610-a85f0fc0-d5ff-11e7-96e1-35116462eb54.png)
 
 > 隠れ層のノード数を変えた各 RNN モデル（各シーケンス長 : 25 個）での損失関数のグラフ。<br>
@@ -330,16 +337,16 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 ### 予想出力値と元データの波形図（時系列データ）
 
-- ｛入力層：１ノード、隠れ層：**20** ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
 ![rnn_1-3-20](https://user-images.githubusercontent.com/25688193/33424647-c8b09c80-d5ff-11e7-8626-151369d31e83.png)
 
-- ｛入力層：１ノード、隠れ層：**30** ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**30**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
 ![rnn_1-3-30](https://user-images.githubusercontent.com/25688193/33424649-c8ddc8a4-d5ff-11e7-8d4c-c35bdb327eac.png)
 
-- ｛入力層：１ノード、隠れ層：**50** ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
 ![rnn_1-3-50](https://user-images.githubusercontent.com/25688193/33424650-c905ced0-d5ff-11e7-8c80-743fd0319046.png)
 
-- ｛入力層：１ノード、隠れ層：**100** ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**100**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
 ![rnn_1-3-100](https://user-images.githubusercontent.com/25688193/33424651-c92f8036-d5ff-11e7-9d66-39ab0aef9d41.png)
 
 > 隠れ層のノード数を変えた各 RNN モデル（各シーケンス長 : 25 個）での時系列データの予想値のグラフ。<br>
@@ -352,7 +359,7 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 <br>
 
-- ｛入力層：１ノード、隠れ層：**51** ノード、出力層：１ノード｝、各シーケンス長 : **50** 個の RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**51**</span> ノード、出力層：１ノード｝、各シーケンス長 : <span style="color:red">**50**</span> 個の RNN モデル
 ![rnn_1-2-51-seq50](https://user-images.githubusercontent.com/25688193/33427984-87dd4c2a-d60a-11e7-8bd4-3d0892d58a86.png)
 ![rnn_1-3-51-seq50](https://user-images.githubusercontent.com/25688193/33427986-8bc8751c-d60a-11e7-8a48-13d6834d1a96.png)
 > 検証した条件の内、最もよく近似できている。（隠れ層のノード数＝各シーケンス長＋１）
@@ -364,10 +371,86 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 <a id="ID_3-2"></a>
 
-## LSTM による sin 波形（時系列データ）の生成処理 : `main2.py`
-> 実装中...
+## LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main2.py`
 
+<a id="ID_3-2-1"></a>
 
+LSTM モデルによる時系列データの取り扱いの簡単な例として、先と同じ、ノイズ付き sin 波形（時系列データとみなす）の予想（生成）を考える。
+
+- 先の通常の RNN モデルで、`tf.contrib.rnn.BasicRNNCell(...)` としていた箇所を、`tf.contrib.rnn.LSTMCell(...)` に変更する。
+    ```python
+    [RecurrentNNLSTM.py]
+    def model( self ):
+        ...
+        #--------------------------------------------------------------
+        # 入力層 ~ 隠れ層
+        #--------------------------------------------------------------
+        # tf.contrib.rnn.LSTMCell(...) : 時系列に沿った RNN 構造を提供するクラス `LSTMCell` のオブジェクト cell を返す。
+        # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
+        # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+        cell = tf.contrib.rnn.LSTMCell( 
+                   num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
+               )
+
+        # 最初の時間 t0 では、過去の隠れ層がないので、
+        # cell.zero_state(...) でゼロの状態を初期設定する。
+        initial_state_tsr = cell.zero_state( self._batch_size_holder, tf.float32 )
+
+        #-----------------------------------------------------------------
+        # 過去の隠れ層の再帰処理
+        #-----------------------------------------------------------------
+        self._rnn_states.append( initial_state_tsr )
+
+        with tf.variable_scope('RNN-LSTM'):
+            for t in range( self._n_in_sequence ):
+                if (t > 0):
+                    # tf.get_variable_scope() : 名前空間を設定した Variable にアクセス
+                    # reuse_variables() : reuse フラグを True にすることで、再利用できるようになる。
+                    tf.get_variable_scope().reuse_variables()
+
+                # LSTMCellクラスの `__call__(...)` を順次呼び出し、
+                # 各時刻 t における出力 cell_output, 及び状態 state を算出
+                cell_output, state_tsr = cell( inputs = self._X_holder[:, t, :], state = self._rnn_states[-1] )
+
+                # 過去の隠れ層の出力をリストに追加
+                self._rnn_cells.append( cell_output )
+                self._rnn_states.append( state_tsr )
+
+        # 最終的な隠れ層の出力
+        output = self._rnn_cells[-1]
+
+        # 隠れ層 ~ 出力層
+        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
+        self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
+    ```
+- その他の処理は、先の通常の RNN モデルと同様になる。
+- TensorBoard で表示される計算グラフ
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run lstm](https://user-images.githubusercontent.com/25688193/33447507-e63608de-d646-11e7-93e4-4bf43ee891b4.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 2](https://user-images.githubusercontent.com/25688193/33447555-07d8a8ac-d647-11e7-8562-9942a7f7fe28.png)
+
+<br>
+
+<a id="ID_3-2-2"></a>
+
+### コードの実行結果
+
+### 損失関数のグラフ
+
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+![rnn_2-1-20](https://user-images.githubusercontent.com/25688193/33446785-886412c0-d644-11e7-8b61-63a068403f02.png)
+
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+![rnn_2-1-50](https://user-images.githubusercontent.com/25688193/33447976-1d99f1e0-d648-11e7-9688-f6dec4b3219f.png)
+
+### 予想出力値と元データの波形図（時系列データ）
+
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+![rnn_2-2-20](https://user-images.githubusercontent.com/25688193/33446787-89d01aaa-d644-11e7-9288-fe6998441568.png)
+
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+![rnn_2-2-50](https://user-images.githubusercontent.com/25688193/33447978-1eef3690-d648-11e7-82e1-29166b519557.png)
+
+> 先の通常の RNN モデルより、長期の予想が改善していることが分かる。
 
 
 <br>
