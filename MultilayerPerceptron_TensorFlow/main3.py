@@ -53,7 +53,7 @@ def main():
     # Import or generate data.
     #======================================================================
     # MNSIT データが格納されているフォルダへのパス
-    mnist_path = "D:\Data\MachineLearning_DataSet\MNIST"
+    mnist_path = "C:\Data\MachineLearning_DataSet\MNIST"
 
     X_train, y_train = MLPreProcess.load_mist( mnist_path, "train" )
     X_test, y_test = MLPreProcess.load_mist( mnist_path, "t10k" )
@@ -193,6 +193,9 @@ def main():
     #======================================================================
     # モデルの最適化アルゴリズムを設定
     mlp1.optimizer( GradientDecent( learning_rate = 0.0001 ) )
+
+    # TensorBoard 用のファイル（フォルダ）を作成
+    mlp1.write_tensorboard_graph()
 
     # トレーニングデータで fitting 処理
     mlp1.fit( X_train, y_train_encoded )

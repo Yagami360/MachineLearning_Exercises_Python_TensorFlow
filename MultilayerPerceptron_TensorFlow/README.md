@@ -263,6 +263,9 @@ def main():
     mlp1.optimizer( GradientDecent( learning_rate = 0.05 ) )
     mlp2.optimizer( GradientDecent( learning_rate = 0.05 ) )
     ```
+- TensorBoard の計算グラフ
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/33442302-2fba1b26-d638-11e7-92ba-52658d3e4c94.png)
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 <br>
 
@@ -341,8 +344,9 @@ def main():
     y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
     ```
     - この際の、One-hot encoding の depth は、MLP の出力層のノード数に対応する。
-- 
-
+- TensorBoard の計算グラフ
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 2](https://user-images.githubusercontent.com/25688193/33442303-2fe4a8a0-d638-11e7-897e-137780dbeee4.png)
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 #### トレーニング回数（エポック）に対する、損失関数（クロス・エントロピー）の値のグラフ
 ![multilayerperceptron_2-1-1](https://user-images.githubusercontent.com/25688193/32129359-42249d9a-bbc1-11e7-96a4-2c43a379ede3.png)
@@ -367,6 +371,10 @@ def main():
 <a id="ID_3-3"></a>
 
 ## 多層パーセプトロンによる MNIST データの識別 : `main3.py`
+
+- TensorBoard の計算グラフ
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33443053-f648ad56-d639-11e7-8b2d-16e781dc6df7.png)
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 ### トレーニング毎の損失関数の値のグラフ
 ![multilayerperceptron_3-3](https://user-images.githubusercontent.com/25688193/32177674-3c6ee00e-bdce-11e7-93a8-d06cb47a31c8.png)

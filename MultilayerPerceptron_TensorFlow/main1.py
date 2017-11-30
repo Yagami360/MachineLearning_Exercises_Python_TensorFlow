@@ -158,6 +158,10 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
+    # TensorBoard 用のファイル（フォルダ）を作成
+    mlp1.write_tensorboard_graph()
+
+    # 予想値を取得
     predict1 = mlp1.predict( X_test )
     print( "predict1 :\n", predict1 )
 
