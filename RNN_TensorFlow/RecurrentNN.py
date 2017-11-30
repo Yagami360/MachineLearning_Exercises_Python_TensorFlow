@@ -60,6 +60,13 @@ class RecurrentNN( NeuralNetworkBase ):
         _n_in_sequence : int
             時系列データを区切った各シークエンスの長さ（サイズ）
 
+        _rnn_cells : list<BasicRNNCell クラスのオブジェクト> <tensorflow.python.ops.rnn_cell_impl.BasicRNNCell>
+            RNN 構造を提供する cell のリスト
+            この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
+            これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+        _rnn_states : list<Tensor>
+            cell の状態
+            
         _weights : list <Variable>
             モデルの各層の重みの Variable からなる list
         _biases : list <Variable>
@@ -92,7 +99,6 @@ class RecurrentNN( NeuralNetworkBase ):
 
 
     """
-
     def __init__( 
             self,
             session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
@@ -115,6 +121,9 @@ class RecurrentNN( NeuralNetworkBase ):
         self._n_outputLayer = n_outputLayer
 
         self._n_in_sequence = n_in_sequence
+
+        self._rnn_cells = []
+        self._rnn_states = []
 
         self._weights = []
         self._biases = []
@@ -173,13 +182,19 @@ class RecurrentNN( NeuralNetworkBase ):
         print( "_keep_prob_holder : ", self._keep_prob_holder )
         print( "_batch_size_holder : ", self._batch_size_holder )
 
+        print( "_rnn_cells : \n", self._rnn_cells )
+        #if( (self._session != None) and (self._init_var_op != None) ):
+            #print( self._session.run( self._rnn_cells ) )
+
+        print( "_rnn_states : \n", self._rnn_states )
+        #if( (self._session != None) and (self._init_var_op != None) ):
+            #print( self._session.run( self._rnn_states ) )
+
         print( "_weights : \n", self._weights )
-        print( self._session.run( self._weights ) )
         if( (self._session != None) and (self._init_var_op != None) ):
             print( self._session.run( self._weights ) )
 
         print( "_biases : \n", self._biases )
-        print( self._session.run( self._biases ) )
         if( (self._session != None) and (self._init_var_op != None) ):
             print( self._session.run( self._biases ) )
 
@@ -255,19 +270,17 @@ class RecurrentNN( NeuralNetworkBase ):
                    num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
                    #activation = "tanh"                  # Nonlinearity to use. Default: tanh
                )
-
-        print( "cell :", cell )
+        #print( "cell :", cell )
 
         # 最初の時間 t0 では、過去の隠れ層がないので、
         # cell.zero_state(...) でゼロの状態を初期設定する。
         initial_state_tsr = cell.zero_state( self._batch_size_holder, tf.float32 )
-        print( "initial_state_tsr :", initial_state_tsr )
+        #print( "initial_state_tsr :", initial_state_tsr )
 
         #-----------------------------------------------------------------
         # 過去の隠れ層の再帰処理
         #-----------------------------------------------------------------
-        state_tsr = initial_state_tsr
-        outputs = []                    # 過去の隠れ層の出力を保存
+        self._rnn_states.append( initial_state_tsr )
 
         with tf.variable_scope('RNN'):
             for t in range( self._n_in_sequence ):
@@ -278,13 +291,14 @@ class RecurrentNN( NeuralNetworkBase ):
 
                 # BasicRNNCellクラスの `__call__(...)` を順次呼び出し、
                 # 各時刻 t における出力 cell_output, 及び状態 state を算出
-                cell_output, state_tsr = cell( inputs = self._X_holder[:, t, :], state = state_tsr )
+                cell_output, state_tsr = cell( inputs = self._X_holder[:, t, :], state = self._rnn_states[-1] )
 
-                # 出力リストに追加
-                outputs.append( cell_output )
+                # 過去の隠れ層の出力をリストに追加
+                self._rnn_cells.append( cell_output )
+                self._rnn_states.append( state_tsr )
 
         # 最終的な隠れ層の出力
-        output = outputs[-1]
+        output = self._rnn_cells[-1]
 
         # 隠れ層 ~ 出力層
         self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
@@ -369,6 +383,10 @@ class RecurrentNN( NeuralNetworkBase ):
             X_train_shuffled = X_train[ idx_shuffled ]
             y_train_shuffled = y_train[ idx_shuffled ]
 
+            #print( "X_train_shuffled.shape", X_train_shuffled.shape )
+            #print( "y_train_shuffled.shape", y_train_shuffled.shape )
+            #print( "X_train_shuffled.shape", X_train_shuffled.shape )
+
             # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
             self._session.run(
                 self._train_step,
@@ -400,35 +418,73 @@ class RecurrentNN( NeuralNetworkBase ):
 
     def predict( self, X_test ):
         """
-        fitting 処理したモデルで、推定を行い、予想クラスラベル値を返す。
+        fitting 処理したモデルで、推定を行い、時系列データの予想値を返す。
 
         [Input]
-            X_test : numpy.ndarry ( shape = [n_samples, n_features] )
-                予想したい特徴行列
+            X_test : numpy.ndarry ( shape = [n_samples, n_features(=n_in_sequence), dim] )
+                予想したい特徴行列（時系列データの行列）
+                n_samples : シーケンスに分割した時系列データのサンプル数
+                n_features(=n_in_sequence) : １つのシーケンスのサイズ
+                dim : 各シーケンスの要素の次元数
 
         [Output]
-            results : numpy.ndarry ( shape = [n_samples] )
+            predicts : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
-        # 入力データの shape にチェンネルデータがない場合
-        # shape = [image_height, image_width]
-        if( X_test.ndim == 3 ):
-            # shape を [image_height, image_width] → [image_height, image_width, n_channel=1] に reshape
-            X_test = numpy.expand_dims( X_test, axis = 3 )
+        # 元データの最初の一部 τ 文だけを切り出し、
+        # 後に、τ+1 を予想 → τ+2 を予想 ...
+        X_t = X_test[:1]    # X(t=1) ~ X(t=τ)
 
-        prob = self._session.run(
-                   self._y_out_op,
-                   feed_dict = { self._X_holder: X_test }
-               )
+        # 予想値のリスト（時系列データ）
+        # t=1～τ までの予想値はないので None とする。
+        predicts = [ None for i in range(self._n_in_sequence) ]
         
-        #print( "predicts :", predicts )
+        # 指定した時系列データの総数(t)
+        if ( X_test.ndim >= 2):
+            n_sequences = len( X_test[:,1] ) + len( X_test[1,:] ) - 1
+        else:
+            n_sequences = len( X_test ) - 1
 
-        # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
-        # axis : 最大値を読み取る軸の方向 (1 : 行方向)
-        predict = numpy.argmax( prob, axis = 1 )
-        #print( "predict :", predict )
+        print( "n_sequences :", n_sequences )
 
-        return predict
+        # サイズが τ で、
+        # { f(t=1), f(t=2), ... , f(t=τ) }, { f(t=2), f(t=3), ... , f(t=τ+1) }, ... , { f(t-τ), f(t-τ+1), ... , f(t) }
+        #  の合計 t - τ + 1 個のデータセットに対応したループ処理
+        # n_sequences - self._n_in_sequence + 1 : 時系列データの総数(t) - シーケンス内のデータ数(τ) + 1 
+        for i in range( n_sequences - self._n_in_sequence + 1):
+            # 最後の時系列データを抽出
+            # ２回目以降のループでは、new_sequence
+            X_t_last = X_t[-1:]
+
+            # 最後の時系列データ X_t_last から未来 prob を予測
+            prob = self._session.run(
+                       self._y_out_op,
+                       feed_dict = { 
+                           self._X_holder: X_t_last,
+                           self._batch_size_holder: 1
+                       }
+                   )
+            #print( "prob :", prob )
+
+            # 予測結果 prob を用いて新しい時系列データ new_sequence を生成
+            # numpy.concatenate(...) : ２個以上の配列を軸指定して結合
+            # x_last + prob
+            # X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:] : 
+            # shape = [25,1] に reshape し、[1:] で2番目~最後のシーケンス（各々サイズ _n_in_sequence のベクトル）指定
+            new_sequence = numpy.concatenate(
+                               ( X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:], prob ), axis = 0
+                           ).reshape( 1, self._n_in_sequence, self._n_inputLayer )
+            #print( "new_sequence.shape :", new_sequence.shape )
+            #print( "new_sequence :", new_sequence )
+
+            # new_sequence を append した新たな X_t とする。
+            X_t = numpy.append( X_t, new_sequence, axis = 0 )
+            
+            # prob[0][0] : prob = [[xxx]] を shape=1 に reshape し
+            # array(xxx, dtype=float32) の値 xxx を格納
+            predicts.append( prob[0][0] )
+        
+        return predicts
 
 
     def predict_proba( self, X_test ):
@@ -440,12 +496,6 @@ class RecurrentNN( NeuralNetworkBase ):
             X_test : numpy.ndarry ( shape = [n_samples, n_features] )
                 予想したい特徴行列
         """
-        # 入力データの shape にチェンネルデータがない場合
-        # shape = [image_height, image_width]
-        if( X_test.ndim == 3 ):
-            # shape を [image_height, image_width] → [image_height, image_width, n_channel=1] に reshape
-            X_test = numpy.expand_dims( X_test, axis = 3 )
-
         prob = self._y_out_op.eval(
                    session = self._session,
                    feed_dict = {
