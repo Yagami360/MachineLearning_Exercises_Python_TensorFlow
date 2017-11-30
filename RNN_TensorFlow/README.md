@@ -113,6 +113,7 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     ```
 - 通時的誤差逆伝搬法 [BPTT : back-propagation through time] での計算負荷の関係上、
 時系列データを一定間隔 τ でシーケンス状に区切る。
+![image](https://user-images.githubusercontent.com/25688193/33429345-cf0e245c-d60f-11e7-9b6c-1b2ebc6cee12.png)
     - 具体的には、サイズが τ で<br>
      `{ f(t=1), f(t=2), ... , f(t=τ) }` , <br>
      `{ f(t=2), f(t=3), ... , f(t=τ+1) }` , <br>
