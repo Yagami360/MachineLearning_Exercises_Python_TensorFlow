@@ -4,6 +4,7 @@
 """
     更新情報
     [17/11/21] : 新規作成
+    [17/12/01] : TensorBoard に計算グラフを表示するためのファイルを書き込むための関数 write_tensorboard_graph(...) 追加
     [17/xx/xx] : 
                : 
 """
@@ -788,5 +789,19 @@ class CNNStyleNet( object ):
         """
         合成出力した画像を生成過程を含めて保存する。
         """
+        
+        return
+
+
+    def write_tensorboard_graph( self, dir = "./TensorBoard" ):
+        """
+        TensorBoard に計算グラフを表示するためのファイルを書き込む。
+        [Input]
+            dir : str
+                TensorBoard 用のファイルを作成するディレクトリのパス
+        """
+        # TensorBoard 用のファイル（フォルダ）を作成
+        merged = tf.summary.merge_all() # Add summaries to tensorboard
+        summary_writer = tf.summary.FileWriter( dir, graph = self._session.graph )    # tensorboard --logdir=${PWD}
         
         return

@@ -80,7 +80,7 @@ def main():
     #======================================================================
     image_content_path1 = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_content\\neko-sensei.jpg"
     image_style_path1 = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\image_style\starry_night.jpg"
-    learning_rate1 = 0.5
+    learning_rate1 = 0.01
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
@@ -101,7 +101,7 @@ def main():
                     image_style_path = image_style_path1,
                     vgg_mat_file = "C:\Data\MachineLearning_DataSet\CNN-StyleNet\imagenet-vgg-verydeep-19.mat",
                     session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-                    epochs = 1000,
+                    epochs = 10000,
                     eval_step = 50,
                     weight_image_content = 200.0,
                     weight_image_style = 200.0,
@@ -134,6 +134,9 @@ def main():
     styleNet1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
     #styleNet1._session.run( tf.global_variables_initializer() )
     #styleNet1.optimizer( GradientDecent( learning_rate = learning_rate1 ) )
+
+    # TensorBoard 用のファイル（フォルダ）を作成
+    styleNet1.write_tensorboard_graph()
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）

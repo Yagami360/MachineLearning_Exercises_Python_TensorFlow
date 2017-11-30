@@ -316,6 +316,9 @@ StyleNet / NeuralStyle（ニューラルスタイル）は、１つ目の画像�
             output_file = "output_image/temp_output_image{}.jpg".format( epoch + 1 )
             scipy.misc.imsave( output_file, image_eval )
     ```
+- TensorBoard の計算グラフ 
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33444537-eba7a164-d63d-11e7-9a4a-b23c01001e62.png)
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 <br>
 
