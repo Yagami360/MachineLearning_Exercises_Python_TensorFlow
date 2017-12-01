@@ -10,12 +10,19 @@
     [17/11/17] : CIFAR-10 データの読み込み関数 load_cifar10(...) を追加
                : CIFAR-10 データのランダムに加工した読み込み関数 load_cifar10_with_trasform(...) を追加
     [17/11/29] : ノイズ付き sin 波形の生成関数 generate_sin_noize(...) 追加
+    [17/12/01] : スパム文判定用テキストデータである SMS Spam Collection データセットの読み込み関数 load_SMS_Spam_Collection(...) 追加
+    [xx/xx/xx] :
+
 """
 
-import os
-import sys
+import os           #
+import sys          #
 
-import struct
+import requests     #  
+import struct       #
+import codecs       # 文字コード
+import re           # 正規表現での replace 置換処理群モジュール
+
 import numpy
 
 # Data Frame & IO 関連
@@ -206,10 +213,10 @@ class MLPreProcess( object ):
         #print( "noize :", noize )
         sin = numpy.sin( 2.0 * numpy.pi * (t / T) )
 
-        X_features = t
-        y_labels = sin + noize
+        x_dat = t
+        y_dat = sin + noize
 
-        return X_features, y_labels
+        return x_dat, y_dat
 
 
     #---------------------------------------------------------
@@ -686,6 +693,92 @@ class MLPreProcess( object ):
             labels = session.run( labels )
 
         return image, labels
+
+
+    def load_sms_spam_collection( path, bCleaning = True ):
+        """
+        スパム文判定用テキストデータである SMS Spam Collection データセットの読み込み関数
+        [Input]
+            path : str
+                SMS Spam Collection データセットへのパス（ファイル名含む）
+
+            bCleaning : Bool
+                クリーニング処理を行うか否かのフラグ
+                クリーニング処理は、文字量を減らすために、特殊文字と余分なホワイトスペースを取り除く
+
+        [Output]
+            text_data_features : list <str>
+                SMS Spam Collection データセットの本文の文字列から成るリスト
+
+            text_data_labels : list <str>
+                SMS Spam Collection データセットのスパム文章か否かを表すラベル "ham" or "spam" から成るリスト（教師データ）
+        """
+        text_data = []
+
+        #----------------------------------------------------
+        # codecs.open() 関数と with 構文で画像データの読み込む
+        # "r" : 文字のまま読み込み
+        #----------------------------------------------------
+        with codecs.open( path, "r", "utf-8" ) as file:
+           # txt ファイルの各行に関してのループ処理
+           for row in file:
+               # 各行の文字列全体（特殊文字、空白込 : \t　\n）を格納
+               text_data.append( row )
+        
+        #print( "text_data :", text_data )
+         
+        # ? 最後の行の除去処理
+        # text_data[:-1] : 最初の行の文字列 ~ 最後の行 -1 の文字列の配列
+        # ['ham\tGo until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...\n', 
+        # 'ham\tOk lar... Joking wif u oni...\n', ... 
+        # "ham\tThe guy did some bitching but I acted like i'd be interested in buying something else next week and he gave it to us for free\n" ]
+        text_data = text_data[:-1]
+        #print( "text_data :", text_data )
+
+        # \t 部分で別の配列に分割
+        # split(...) : 文字列の分割
+        # [ ['ham', 'Go until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...\n'], 
+        #   ['ham', 'Ok lar... Joki ..\n'], ...
+        #   ['ham', "The guy did some bitching but I acted like i'd be interested in buying something else next week and he gave it to us for free\n"]
+        # ]
+        text_data = [ str.split( "\t" ) for str in text_data if len(str) >= 1 ]
+        #print( "text_data :", text_data )
+
+        # "ham", "spam" の文字列の部分を教師データに切り分け
+        # list(...) : リストの内包表記と合わせて text_data_labels と test_data_feature のリストの生成
+        # zip(*text_data) → zip(*list) : 関数の前のアスタリスクは展開されて解釈されるので、
+        # text_data の内容が "ham" or "spam" , と "本文" 部分に unpack（展開）解釈される。
+        text_data_labels, text_data_features = [ list(str) for str in zip(*text_data) ]
+        #print( "text_data_labels :", text_data_labels )
+        #print( "text_data_features :", text_data_features )
+
+        #----------------------------------------------------------------
+        # クリーニング処理
+        # 文字量を減らすために、特殊文字と余分なホワイトスペースを取り除く
+        #----------------------------------------------------------------
+        if ( bCleaning == True ):
+            def clean_text( str ):
+                # re.sub() : 正規表現で文字列を別の文字列で置換
+                str = re.sub( 
+                          pattern = r"([^\s\w]|_|[0-9])+",  # 正規表現 : []集合, |和集合（または）()グループ化
+                          repl = "",                        # 置換する文字列 : "" なので文字なしに置換
+                          string = str                      # 置換される文字列
+                      )
+                #print( "re.sub(...) :", str )
+
+                # sep.join(seq) : sepを区切り文字として、seqを連結してひとつの文字列にする。
+                # 空白文字 " " を区切りにして分割処理
+                str = " ".join( str.split() )
+                #print( "sep.join( str.split() ) :", str )
+
+                # リスト中の大文字→小文字に変換
+                str = str.lower()
+
+                return str
+
+            text_data_features = [ clean_text(str) for str in text_data_features ]
+
+        return text_data_features, text_data_labels
 
 
     #---------------------------------------------------------
