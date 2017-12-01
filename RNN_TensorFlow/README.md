@@ -58,6 +58,8 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 >> 変数名の識別子（新規か？重複がないか？）を管理しながら変数の名前空間の定義を行い、必ず `tf.variable_scope()` とセットで使う。<br>
 >>> https://qiita.com/TomokIshii/items/ffe999b3e1a506c396c8
 
+>> `tf.contrib.learn.preprocessing.VocabularyProcessor(...)` : テキストをインデックスのリストに変換する。<br>
+>>> https://orajavasolutions.wordpress.com/2016/11/22/how-to-extract-vocabulary-from-tensorflow-vocabularyprocessor-object/<br>
 
 > その他ライブラリ
 >>
@@ -395,30 +397,15 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 予測に使用する RNN モデルは、埋め込みテキストから入力用シーケンスを RNN モデルへの入力といて扱い、RNNモデルの最後の出力をスパムか否かを判定する予想値 0 or 1 ( "ham" or "spam" ) に対応させる。
 
 - まずは、SMS Spam Collection データセットからテキストデータを読み込み、取得する。
+    - Unicode 形式で、各行の文字全体を読み込み、リストに append していく
     ```python
     [MLPreProcess.py]
-    def load_sms_spam_collection( path, bCleaning = True ):
-        """
-        スパム文判定用テキストデータである SMS Spam Collection データセットの読み込み関数
-        [Input]
-            path : str
-                SMS Spam Collection データセットへのパス（ファイル名含む）
-
-            bCleaning : Bool
-                クリーニング処理を行うか否かのフラグ
-                クリーニング処理は、文字量を減らすために、特殊文字と余分なホワイトスペースを取り除く
-
-        [Output]
-            text_data_features : list <str>
-                SMS Spam Collection データセットの本文の文字列から成るリスト
-
-            text_data_labels : list <str>
-                SMS Spam Collection データセットのスパム文章か否かを表すラベル "ham" or "spam" から成るリスト（教師データ）
-        """
+    def load_sms_spam_collection( ... ):
+        ...
         text_data = []
 
         #----------------------------------------------------
-        # codecs.open() 関数と with 構文で画像データの読み込む
+        # codecs.open() 関数と with 構文で文字データの読み込む
         # "r" : 文字のまま読み込み
         #----------------------------------------------------
         with codecs.open( path, "r", "utf-8" ) as file:
@@ -426,32 +413,48 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
            for row in file:
                # 各行の文字列全体（特殊文字、空白込 : \t　\n）を格納
                text_data.append( row )
-         
+
         # 最後の行の除去処理
         # text_data[:-1] : 最初の行の文字列 ~ 最後の行 -1 の文字列の配列
         # ['ham\tGo until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...\n', 
         # 'ham\tOk lar... Joking wif u oni...\n', ... 
         # "ham\tThe guy did some bitching but I acted like i'd be interested in buying something else next week and he gave it to us for free\n" ]
-        text_data = text_data[:-1]
-
-        # \t 部分で別の配列に分割
+        text_data = text_data[:-1]            
+    ```
+    - 水平タブを表すエスケープシーケンス `\t` 部分で別の配列に分割する。
+        - 文字の分割には `split(...)` 関数を使用する。
+    ```python
+    [MLPreProcess.py]
+    def load_sms_spam_collection( ... ):
+        ...
+        # 水平タブを表すエスケープシーケンス `\t` 部分で別の配列に分割する。
         # split(...) : 文字列の分割
         # [ ['ham', 'Go until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...\n'], 
         #   ['ham', 'Ok lar... Joki ..\n'], ...
         #   ['ham', "The guy did some bitching but I acted like i'd be interested in buying something else next week and he gave it to us for free\n"]
         # ]
         text_data = [ str.split( "\t" ) for str in text_data if len(str) >= 1 ]
-
+    ```
+    - `"ham"`, `"spam"` の文字列の部分を教師データ `text_data_labels` と本文データ `test_data_feature` に切り分ける。
+        - この処理は、以下のコードのように、リストの内包表記と `list(...)` 合わせて行い、`zip(*list)` で `text_data` の内容が "ham" or "spam" , と "本文" 部分に unpack（展開）解釈されることにより実現する。
+    ```python
+    [MLPreProcess.py]
+    def load_sms_spam_collection( ... ):
+        ...
         # "ham", "spam" の文字列の部分を教師データに切り分け
         # list(...) : リストの内包表記と合わせて text_data_labels と test_data_feature のリストの生成
         # zip(*text_data) → zip(*list) : 関数の前のアスタリスクは展開されて解釈されるので、
         # text_data の内容が "ham" or "spam" , と "本文" 部分に unpack（展開）解釈される。
         text_data_labels, text_data_features = [ list(str) for str in zip(*text_data) ]
-
-        #----------------------------------------------------------------
-        # クリーニング処理
-        # 文字量を減らすために、特殊文字と余分なホワイトスペースを取り除く
-        #----------------------------------------------------------------
+    ```
+    - クリーニング処理を行う。具体的には、文字量を減らすために、特殊文字と余分なホワイトスペースを取り除く。
+        - まず、`re.sub(...)` を使用して、正規表現で文字列を別の文字列（文字なし）に置換する。
+        - `join(...)` を使用して、空白文字 `" "` を区切り文字として、分割→結合する。
+        - 最後に、`lower()` を使用して、大文字を小文字に変換する。
+    ```python
+    [MLPreProcess.py]
+    def load_sms_spam_collection( ... ):
+        ...
         if ( bCleaning == True ):
             def clean_text( str ):
                 # re.sub() : 正規表現で文字列を別の文字列で置換
@@ -460,10 +463,12 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
                           repl = "",                        # 置換する文字列 : "" なので文字なしに置換
                           string = str                      # 置換される文字列
                       )
+                #print( "re.sub(...) :", str )
 
                 # sep.join(seq) : sepを区切り文字として、seqを連結してひとつの文字列にする。
                 # 空白文字 " " を区切りにして分割処理
                 str = " ".join( str.split() )
+                #print( "sep.join( str.split() ) :", str )
 
                 # リスト中の大文字→小文字に変換
                 str = str.lower()
@@ -471,8 +476,16 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
                 return str
 
             text_data_features = [ clean_text(str) for str in text_data_features ]
+    ```
+    - TensorFlow の組み込み関数を用いて、テキストをインデックスのリストに変換する。
+        - この際、テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、これよりも長いテキスト（シーケンス）は、この長さで打ち切り、それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
+        - 又、語彙に `min_word_freq` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size` のトレーニング可能なベクトルに埋め込む。
+        - そして、これらの処理には、`tf.contrib.learn.preprocessing.VocabularyProcessor(...)` を使用する。
+    ```python
+    [MLPreProcess.py]
+    def def text_vocabulary_processing( ... ):
+        ...
 
-        return text_data_features, text_data_labels
     ```
 - xxx
 
