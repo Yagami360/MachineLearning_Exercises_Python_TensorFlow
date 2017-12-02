@@ -42,7 +42,7 @@ from NNOptimizer import Adadelta
 from NNOptimizer import Adam
 
 from NeuralNetworkBase import NeuralNetworkBase
-from RecurrentNN import RecurrentNN
+from RecurrectNNLanguageModel import RecurrectNNLanguageModel
 
 
 def main():
@@ -75,11 +75,12 @@ def main():
     # ex) data = tf.nn.batch_norm_with_global_normalization(...)
     #======================================================================
     # テキスト情報を数値インデックスのリストに変換する。
-    X_features = MLPreProcess.text_vocabulary_processing( text_data = text_data_features, n_max_in_sequence = 25, min_word_freq = 10 )
+    X_features, n_vocab = MLPreProcess.text_vocabulary_processing( text_data = text_data_features, n_max_in_sequence = 25, min_word_freq = 10 )
     y_labels = numpy.array( [1 if label_str=='ham' else 0 for label_str in text_data_labels] )
 
     print( "X_features.shape :", X_features.shape )     # X_features.shape : (5573, 25)
     print( "y_labels.shape :", y_labels.shape )         # y_labels.shape : (5573,)
+    print( "n_vocab", n_vocab )                         # n_vocab 934
 
     # データをシャッフルする。
     shuffled_idx = numpy.random.permutation( numpy.arange( len(y_labels) ) )
@@ -110,23 +111,27 @@ def main():
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
-    rnn1 = RecurrentNN(
+    rnn1 = RecurrectNNLanguageModel(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                n_inputLayer = 1,
-               n_hiddenLayer = 50,
+               n_hiddenLayer = 10,
                n_outputLayer = 1,
                n_in_sequence = 25,
+               n_vocab = n_vocab,           # 934
+               n_in_embedding_vec = 50,
                epochs = 500,
                batch_size = 10,
                eval_step = 1
            )
 
-    rnn2 = RecurrentNN(
+    rnn2 = RecurrectNNLanguageModel(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                n_inputLayer = 1,
                n_hiddenLayer = 30,
                n_outputLayer = 1,
                n_in_sequence = 25,
+               n_vocab = n_vocab,           # 934
+               n_in_embedding_vec = 50,
                epochs = 500,
                batch_size = 10,
                eval_step = 1
@@ -160,8 +165,8 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    rnn1.loss( L2Norm() )
-    #rnn2.loss( L2Norm() )
+    rnn1.loss( SparseSoftmaxCrossEntropy() )
+    #rnn2.loss( SparseSoftmaxCrossEntropy() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。

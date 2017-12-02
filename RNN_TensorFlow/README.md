@@ -13,15 +13,15 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
     1. [RNN によるノイズ付き sin 波形（時系列データ）からの波形の予想（生成）処理 : `main1.py`](#ID_3-1)
         1. [コードの内容説明](#ID_3-1-1)
         1. [コードの実行結果](#ID_3-1-2)
-    1. [RNN によるテキストデータからのスパム文章の確率予想処理 : `main2.py`](#ID_3-2)
+    1. [RNNLM によるテキストデータからのスパム文章の確率予想処理 : `main2.py`](#ID_3-2)
         1. [コードの内容説明](#ID_3-2-1)
         1. [コードの実行結果](#ID_3-2-2)
     1. [LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main3.py`](#ID_3-3)
         1. [コードの内容説明](#ID_3-3-1)
         1. [コードの実行結果](#ID_3-3-2)
-    1. GNU による sin 波形（時系列データ）の生成処理 : `main4.py`
-    1. 双方向 RNN による MNIST データセットの識別処理 : `main5.py`
-    1. RNN Encoder-Decoder による自然言語処理（足し算の応答） : `main6.py` 
+    1. GNU による sin 波形（時系列データ）の生成処理
+    1. 双方向 RNN による MNIST データセットの識別処理
+    1. RNN Encoder-Decoder による自然言語処理（足し算の応答）
 1. [背景理論](#ID_4)
     1. [リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞](#ID_5)
         1. [リカレントニューラルネットワークのアーキテクチャの種類](#ID_5-1)
@@ -60,6 +60,9 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 
 >> `tf.contrib.learn.preprocessing.VocabularyProcessor(...)` : テキスト情報を数値インデックスのリストに変換する。<br>
 >>> https://orajavasolutions.wordpress.com/2016/11/22/how-to-extract-vocabulary-from-tensorflow-vocabularyprocessor-object/<br>
+
+>> `tf.nn.embedding_lookup(...)` : 埋め込み探索演算<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/nn/embedding_lookup<br>
 
 > その他ライブラリ
 >>
@@ -386,14 +389,14 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 <a id="ID_3-2"></a>
 
-## RNN によるテキストデータからのスパム文章の確率予想処理 : `main2.py`
+## RNNLM によるテキストデータからのスパム文章の確率予想処理 : `main2.py`
 > 実装中...
 
 <a id="ID_3-2-1"></a>
 
 ### コードの内容説明
 
-通常の RNN による自然言語処理の例として、テキストデータからのスパム文章の確率予想処理を行う。<br>
+RNNLM [Recurrent Neural Network Language Model] による自然言語処理の例として、テキストデータからのスパム文章の確率予想処理を行う。<br>
 この例で使用するデータは、スパム文章か否かの正解ラベル付き ("ham" or "spam") の SMS Spam Collection データセットである。
 
 ![image](https://user-images.githubusercontent.com/25688193/33476677-2881be66-d6c6-11e7-82c9-1c5a3e502270.png)
@@ -480,7 +483,6 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     ```python
     [MLPreProcess.py]
     def def text_vocabulary_processing( ... ):
-        ...
         vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
                               max_document_length = n_max_in_sequence, 
                               min_frequency = min_word_freq
@@ -489,10 +491,15 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
         # Transform the text using the vocabulary.
         # VocabularyProcessor.fit_transform(...) : <generator object VocabularyProcessor.transform at 0x000001FAF79EF4C0>
         numpy.array( list( vocab_processor.fit_transform( text_data ) ) )
+
+        # vocabulary のサイズ（埋め込み行列の行数）
+        n_vocab = len( vocab_processor.vocabulary_ )
+
+        return text_processed, n_vocab
     ```
     ```python
-    [main1.py]
-    X_features = MLPreProcess.text_vocabulary_processing( text_data = text_data_features, n_max_in_sequence = 25, min_word_freq = 10 )
+    [main2.py]
+    X_features, n_vocab = MLPreProcess.text_vocabulary_processing( text_data = text_data_features, n_max_in_sequence = 25, min_word_freq = 10 )
     ```
     - テキストデータ状の教師データ `text_data_labels` の方は、単純に `"ham"` → `1`, `"spam"` → `0` に変換する。
     ```python
@@ -513,10 +520,67 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     X_train, X_test, y_train, y_test \
     = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )
     ```
-- RNN モデルの各種パラメーターの設定を行う。
+- RNNLM モデルの各種パラメーターの設定を行う。
+    - この設定は、`RecurrectNNLanguageModel` クラスのインスタンス作成時の引数にて行う。
+        - 入力層のノード数 `n_inputLayer` は 1 個、隠れ層のノード数 `n_hiddenLayer` 10 個、出力層のノード数 `n_outputLayer` は 1 個
+        - １つのシーケンスの長さ `n_in_sequence` は 25 個、ボキャブラリーの数（埋め込み行列の行数） `n_vocab` は 934 個、単語ベクトルのサイズ（埋め込み行列の列数）`n_in_embedding_vec` は 50 個
+        - エポック数 `epochs` 1000, ミニバッチサイズ `batch_size` 250
+    ```python
+    [main2.py]
+    rnn1 = RecurrectNNLanguageModel(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               n_inputLayer = 1,
+               n_hiddenLayer = 10,
+               n_outputLayer = 1,
+               n_in_sequence = 25,
+               n_vocab = n_vocab,           # 934
+               n_in_embedding_vec = 50,
+               epochs = 1000,
+               batch_size = 250,
+               eval_step = 1
+           )
+    ```
+- RNNLM モデルの構造を定義する。
+    - 埋め込み行列（単語ベクトルの集合）の Variable `embedding_matrix_var` と
+    埋め込み探索演算の Operator  `embedding_lookup_op` を作成し、これを RNN の Cell `tf.contrib.rnn.Basic(...)` への入力とする。
+    ![image](https://user-images.githubusercontent.com/25688193/33514990-f62b9c04-d79f-11e7-8393-2601630b3b72.png)
+    ```python
+    [RecurrectNNLanguageModel.py]
+    def model():
+        ...
+        self._embedding_matrix_var = tf.Variable( 
+                                         tf.random_uniform( [self._n_vocab, self._n_in_embedding_vec], -1.0, 1.0 ) 
+                                     )
+
+        self._embedding_lookup_op = tf.nn.embedding_lookup( self._embedding_matrix_var, self._X_holder )
+    ```
     - xxx
-- RNN モデルの構造を定義する。
+    ```python
+    [RecurrectNNLanguageModel.py]
+    def model():
+        ...
+    ```
+- 損失関数として、疎なソフトマックス・エントロピー関数を使用する。
+    ```python
+    [main2.py]
+    rnn1.loss( SparseSoftmaxCrossEntropy() )
+    ```
+- 最適化アルゴリズム Optimizer として、`tf.train.RMSPropOptimizer(...)` を使用する。
+    ```python
+    [main2.py]
+
+    ```
+- トレーニング用データ `X_train`, `y_train` に対し、fitting 処理を行う。
+    ```python
+    [main2.py]
+    rnn1.fit( X_train, y_train )
+    ```
+- fitting 処理 `fit(...)` 後のモデルで、スパム文章か否かの予想を行う。
     - xxx
+- このモデルの TensorBorad で描写した計算グラフは以下のようになる。
+> 実装中...
+
+
 
 #### 補足（参考URL）
 - 文字列操作
@@ -526,7 +590,9 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     - https://qiita.com/7of9/items/e23bdd6e8d4d7997104a
 - 正規表現について
     - http://uxmilk.jp/41416
-
+- Recurrent Neural Network Language Model (RNNLM)、埋め込み行列
+    - http://deeplearning.hatenablog.com/entry/neural_machine_translation_theory
+    - https://www.slideshare.net/yukinoguchi999/ss-59238906
 
 <br>
 
@@ -549,9 +615,9 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 <a id="ID_3-3-1"></a>
 
-LSTM モデルによる時系列データの取り扱いの簡単な例として、先と同じ、ノイズ付き sin 波形（時系列データとみなす）の予想（生成）を考える。
+LSTM モデルによる時系列データの取り扱いの簡単な例として、先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で行った処理と同じ、ノイズ付き sin 波形（時系列データとみなす）の予想（生成）を考える。
 
-- 先の通常の RNN モデルで、`tf.contrib.rnn.BasicRNNCell(...)` としていた箇所を、`tf.contrib.rnn.LSTMCell(...)` に変更する。
+- 先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で使用した通常の RNN モデルで、`tf.contrib.rnn.BasicRNNCell(...)` としていた箇所を、`tf.contrib.rnn.LSTMCell(...)` に変更する。
     ```python
     [RecurrentNNLSTM.py]
     def model( self ):
@@ -597,7 +663,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
         self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
         self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
     ```
-- その他の処理は、先の通常の RNN モデルと同様になる。
+- その他の処理は、 先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で使用した通常の RNN モデルと同様になる。
 - TensorBoard で表示される計算グラフ
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run lstm](https://user-images.githubusercontent.com/25688193/33447507-e63608de-d646-11e7-93e4-4bf43ee891b4.png)
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 2](https://user-images.githubusercontent.com/25688193/33447555-07d8a8ac-d647-11e7-8562-9942a7f7fe28.png)
@@ -629,8 +695,8 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 
 <br>
 
----
 
+---
 <a id="ID_4"></a>
 
 ## 背景理論

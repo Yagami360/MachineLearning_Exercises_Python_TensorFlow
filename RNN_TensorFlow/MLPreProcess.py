@@ -803,8 +803,10 @@ class MLPreProcess( object ):
                 １つのシーケンスのテキストの最大の長さ
 
         [Output]
-            text_processed : 
-
+            text_processed : array<int>
+                テキスト情報を表す数値インデックスのリスト
+            n_vocaburary : int
+                vocabulary のサイズ（埋め込み行列の行数）
         """
         # テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、
         # これよりも長いテキスト（シーケンス）は、この長さで打ち切り、
@@ -822,8 +824,11 @@ class MLPreProcess( object ):
         #print( "VocabularyProcessor.fit_transform(...) :", vocab_processor.fit_transform( text_data ) )
         #print( "list( VocabularyProcessor.fit_transform(...) ) :", list( vocab_processor.fit_transform( text_data ) ) )
         #print( "numpy.array( list( vocab_processor.fit_transform( text_data ) ) ) :", text_processed )
+        
+        # vocabulary のサイズ（埋め込み行列の行数）
+        n_vocab = len( vocab_processor.vocabulary_ )
 
-        return text_processed 
+        return text_processed, n_vocab
 
     #---------------------------------------------------------
     # 欠損値の処理を行う関数群
