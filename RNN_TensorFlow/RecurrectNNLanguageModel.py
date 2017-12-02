@@ -97,10 +97,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
             出力層に教師データを供給するための placeholder
         _keep_prob_holder : placeholder
             ドロップアウトしない確率 (1-p) にデータを供給するための placeholder
-        _batch_size_holder : placeholder
-            バッチサイズ _batch_size にデータを供給するための placeholder
-            cell.zero_state(...) でバッチサイズを指定する必要があり、可変長に対応するために必要
-
+        
     [protedted] protedted な使用法を想定 
 
 
@@ -165,7 +162,6 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
                          )
 
         self._keep_prob_holder = tf.placeholder( tf.float32 )
-        self._batch_size_holder = tf.placeholder( tf.int32, shape=[] )
 
         return
 
@@ -198,7 +194,6 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         print( "_X_holder : ", self._X_holder )
         print( "_t_holder : ", self._t_holder )
         print( "_keep_prob_holder : ", self._keep_prob_holder )
-        print( "_batch_size_holder : ", self._batch_size_holder )
 
         print( "_rnn_cells : \n", self._rnn_cells )
         #if( (self._session != None) and (self._init_var_op != None) ):
@@ -307,57 +302,37 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         #-----------------------------------------------------------------
         # 過去の隠れ層の再帰処理
         #-----------------------------------------------------------------
-        #with tf.variable_scope('RNNLM'):
-        # 最初の時間 t0 では、過去の隠れ層がないので、
-        # cell.zero_state(...) でゼロの状態を初期設定する。
-        #initial_state_tsr = cell.zero_state( self._batch_size_holder, tf.float32 )
-        #self._rnn_states.append( initial_state_tsr )
+        with tf.variable_scope('RNNLM'):
+            # 最初の時間 t0 では、過去の隠れ層がないので、
+            # cell.zero_state(...) でゼロの状態を初期設定する。
+            #initial_state_tsr = cell.zero_state( self._batch_size_holder, tf.float32 )
+            #self._rnn_states.append( initial_state_tsr )
 
-        # 動的に動作する RNN シーケンス を作成
-        # outputs_tsr: The RNN output Tensor
-        # state_tsr : The final state
-        outputs_tsr, state_tsr = tf.nn.dynamic_rnn(  
+            # 動的に動作する RNN シーケンス を作成
+            # outputs_tsr: The RNN output Tensor
+            # state_tsr : The final state
+            outputs_tsr, state_tsr = tf.nn.dynamic_rnn(  
                                     cell, 
                                     self._embedding_lookup_op, 
                                     dtype=tf.float32 
                                 )
         
-        self._rnn_states.append( state_tsr )
-        print( "outputs_tsr :", outputs_tsr )   # outputs_tsr : Tensor("rnn/transpose:0", shape=(?, 25, 10), dtype=float32)
-        print( "state_tsr :", state_tsr )       # state_tsr : Tensor("rnn/while/Exit_2:0", shape=(?, 10), dtype=float32)
+            self._rnn_states.append( state_tsr )
+            print( "outputs_tsr :", outputs_tsr )   # outputs_tsr : Tensor("rnn/transpose:0", shape=(?, 25, 10), dtype=float32)
+            print( "state_tsr :", state_tsr )       # state_tsr : Tensor("rnn/while/Exit_2:0", shape=(?, 10), dtype=float32)
         
-        # ドロップアウト処理を施す
-        output = tf.nn.dropout( outputs_tsr, self._keep_prob_holder )
-        print( "output :", output )             # output : Tensor("dropout/mul:0", shape=(?, 25, 10), dtype=float32)
+            # ドロップアウト処理を施す
+            output = tf.nn.dropout( outputs_tsr, self._keep_prob_holder )
+            print( "output :", output )             # output : Tensor("dropout/mul:0", shape=(?, 25, 10), dtype=float32)
 
-        # 予想値を取得するため、RNN を並び替えて、最後の出力を取り出す
-        output = tf.transpose( output, [1, 0, 2] )
-        print( "output :", output )             # output : Tensor("transpose_1:0", shape=(25, ?, 10), dtype=float32)
+            # 予想値を取得するため、RNN を並び替えて、最後の出力を取り出す
+            output = tf.transpose( output, [1, 0, 2] )
+            print( "output :", output )             # output : Tensor("transpose_1:0", shape=(25, ?, 10), dtype=float32)
 
-        # 最終的な隠れ層の出力
-        # tf.gather(...) : axis で指定した階でスライスして，indeices で指定したインデックスのテンソルだけ取り出す。
-        h_out_op = tf.gather( output, int(output.get_shape()[0]) - 1 )
-        print( "h_out_op :", h_out_op )         # h_out_op : Tensor("Gather:0", shape=(?, 10), dtype=float32)
-
-        """
-        with tf.variable_scope('RNN'):
-            for t in range( self._n_in_sequence ):
-                if (t > 0):
-                    # tf.get_variable_scope() : 名前空間を設定した Variable にアクセス
-                    # reuse_variables() : reuse フラグを True にすることで、再利用できるようになる。
-                    tf.get_variable_scope().reuse_variables()
-
-                # BasicRNNCellクラスの `__call__(...)` を順次呼び出し、
-                # 各時刻 t における出力 cell_output, 及び状態 state を算出
-                cell_output, state_tsr = cell( inputs = self._X_holder[:, t], state = self._rnn_states[-1] )
-
-                # 過去の隠れ層の出力をリストに追加
-                self._rnn_cells.append( cell_output )
-                self._rnn_states.append( state_tsr )
-
-        # 最終的な隠れ層の出力
-        output = self._rnn_cells[-1]
-        """
+            # 最終的な隠れ層の出力
+            # tf.gather(...) : axis で指定した階でスライスして，indeices で指定したインデックスのテンソルだけ取り出す。
+            h_out_op = tf.gather( output, int(output.get_shape()[0]) - 1 )
+            print( "h_out_op :", h_out_op )         # h_out_op : Tensor("Gather:0", shape=(?, 10), dtype=float32)
 
         # 隠れ層 ~ 出力層
         self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
@@ -452,7 +427,6 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
                 feed_dict = {
                     self._X_holder: X_train_shuffled,
                     self._t_holder: y_train_shuffled,
-#                    self._batch_size_holder: self._batch_size
                     self._keep_prob_holder: 0.5
                 }
             )
@@ -466,8 +440,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
                        feed_dict = {
                            self._X_holder: X_train_shuffled,
                            self._t_holder: y_train_shuffled,
-                           #self._batch_size_holder: self._batch_size
-                           self._keep_prob_holder: 0.5
+                           self._keep_prob_holder: 1.0
                        }
                    )
 

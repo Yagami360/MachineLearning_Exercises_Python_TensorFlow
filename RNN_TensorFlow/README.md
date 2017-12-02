@@ -665,9 +665,9 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
         print( "label %d : %.3f" % ( i, accuracys1[i] ) )
     ```
 - 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
-![tensorboard_graph_rnnlm_3_171203](https://user-images.githubusercontent.com/25688193/33519734-6fbc40dc-d7f0-11e7-99fa-8b03c4cb09c7.png)
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/33519733-6f92b8de-d7f0-11e7-84a4-51f8fd8fd0f5.png)
-> わかりやすくなるように、モデルのスコープ・変数名修正中...
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 4](https://user-images.githubusercontent.com/25688193/33519829-422a4e5a-d7f2-11e7-886b-1a40e44d37b1.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 5](https://user-images.githubusercontent.com/25688193/33519831-427d24ea-d7f2-11e7-9056-dfacd84b15bd.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 6](https://user-images.githubusercontent.com/25688193/33519830-42534e9a-d7f2-11e7-94d5-870309d88981.png)
 
 
 #### 補足（参考URL）
