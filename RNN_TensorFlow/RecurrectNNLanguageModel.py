@@ -492,59 +492,18 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
             predicts : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
-        # 元データの最初の一部 τ 文だけを切り出し、
-        # 後に、τ+1 を予想 → τ+2 を予想 ...
-        X_t = X_test[:1]    # X(t=1) ~ X(t=τ)
-
-        # 予想値のリスト（時系列データ）
-        # t=1～τ までの予想値はないので None とする。
-        predicts = [ None for i in range(self._n_in_sequence) ]
+        prob = self._session.run(
+                   self._y_out_op,
+                   feed_dict = { 
+                       self._X_holder: X_test,
+                       self._keep_prob_holder: 1.0  # ドロップアウトなし
+                   }
+               )
         
-        # 指定した時系列データの総数(t)
-        if ( X_test.ndim >= 2):
-            n_sequences = len( X_test[:,1] ) + len( X_test[1,:] ) - 1
-        else:
-            n_sequences = len( X_test ) - 1
+        # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
+        # axis : 最大値を読み取る軸の方向 (1 : 行方向)
+        predicts = numpy.argmax( prob, axis = 1 )
 
-        print( "n_sequences :", n_sequences )
-
-        # サイズが τ で、
-        # { f(t=1), f(t=2), ... , f(t=τ) }, { f(t=2), f(t=3), ... , f(t=τ+1) }, ... , { f(t-τ), f(t-τ+1), ... , f(t) }
-        #  の合計 t - τ + 1 個のデータセットに対応したループ処理
-        # n_sequences - self._n_in_sequence + 1 : 時系列データの総数(t) - シーケンス内のデータ数(τ) + 1 
-        for i in range( n_sequences - self._n_in_sequence + 1):
-            # 最後の時系列データを抽出
-            # ２回目以降のループでは、new_sequence
-            X_t_last = X_t[-1:]
-
-            # 最後の時系列データ X_t_last から未来 prob を予測
-            prob = self._session.run(
-                       self._y_out_op,
-                       feed_dict = { 
-                           self._X_holder: X_t_last,
-                           self._batch_size_holder: 1
-                       }
-                   )
-            #print( "prob :", prob )
-
-            # 予測結果 prob を用いて新しい時系列データ new_sequence を生成
-            # numpy.concatenate(...) : ２個以上の配列を軸指定して結合
-            # x_last + prob
-            # X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:] : 
-            # shape = [25,1] に reshape し、[1:] で2番目~最後のシーケンス（各々サイズ _n_in_sequence のベクトル）指定
-            new_sequence = numpy.concatenate(
-                               ( X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:], prob ), axis = 0
-                           ).reshape( 1, self._n_in_sequence, self._n_inputLayer )
-            #print( "new_sequence.shape :", new_sequence.shape )
-            #print( "new_sequence :", new_sequence )
-
-            # new_sequence を append した新たな X_t とする。
-            X_t = numpy.append( X_t, new_sequence, axis = 0 )
-            
-            # prob[0][0] : prob = [[xxx]] を shape=1 に reshape し
-            # array(xxx, dtype=float32) の値 xxx を格納
-            predicts.append( prob[0][0] )
-        
         return predicts
 
 
@@ -560,7 +519,8 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         prob = self._y_out_op.eval(
                    session = self._session,
                    feed_dict = {
-                       self._X_holder: X_test 
+                       self._X_holder: X_test,
+                       self._keep_prob_holder: 1.0  # ドロップアウトなし
                    }
                )
         
@@ -572,10 +532,10 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         指定したデータでの正解率 [accuracy] を計算する。
         """
         # 予想ラベルを算出する。
-        predict = self.predict( X_test )
+        predicts = self.predict( X_test )
 
         # 正解数
-        n_correct = numpy.sum( numpy.equal( predict, y_test ) )
+        n_correct = numpy.sum( numpy.equal( predicts, y_test ) )
         #print( "numpy.equal( predict, y_test ) :", numpy.equal( predict, y_test ) )
         #print( "n_correct :", n_correct )
 
@@ -589,7 +549,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         指定したデータでのラベル毎の正解率 [acuuracy] を算出する。
         """
         # 予想ラベルを算出する。
-        predict = self.predict( X_test )
+        predicts = self.predict( X_test )
 
         # ラベル毎の正解率のリスト
         n_labels = len( numpy.unique( y_test ) )    # ユニークな要素数
@@ -598,7 +558,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         for label in range(n_labels):
             # label 値に対応する正解数
             # where(...) : 条件を満たす要素番号を抽出
-            n_correct = len( numpy.where( predict == label )[0] )
+            n_correct = len( numpy.where( predicts == label )[0] )
             """
             n_correct = numpy.sum( 
                             numpy.equal( 

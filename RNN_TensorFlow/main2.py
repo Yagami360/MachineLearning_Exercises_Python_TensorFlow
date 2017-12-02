@@ -200,49 +200,58 @@ def main():
     # (Optional) Evaluate the model.
     #======================================================================
     # TensorBoard 用のファイル（フォルダ）を作成
-    #rnn1.write_tensorboard_graph()
+    rnn1.write_tensorboard_graph()
 
     # 時系列データの予想値を取得
-    #predicts1 = rnn1.predict( X_features )
-    #predicts2 = rnn2.predict( X_features )
+    predicts1 = rnn1.predict( X_test )
+    #predicts2 = rnn2.predict( X_test )
 
-    #print( "predicts1 :\n", predicts1 )
+    print( "predicts1 :", predicts1 )
+    print( "len( predicts1 ) :", len( predicts1 ) )
+    #---------------------------------------------------------
+    # 正解率の算出
+    #---------------------------------------------------------
+    # テストデータでの正解率
+    accuracy1 = rnn1.accuracy( X_test, y_test )
+    #accuracy2 = cnn2.accuracy( X_test, y_test )
+    print( "accuracy1 [test data] : %0.3f" % accuracy1 )
+    #print( "accuracy2 [test data] : %0.3f" % accuracy2 )
+
+    print( "accuracy1 labels [test data]" )
+    accuracys1 = rnn1.accuracy_labels( X_test, y_test )
+    for i in range( len(accuracys1) ):
+        print( "label %d : %.3f" % ( i, accuracys1[i] ) )
 
     #---------------------------------------------------------
     # 損失関数を plot
     #---------------------------------------------------------
-    """
     plt.clf()
 
     plt.plot(
         range( rnn1._epochs ), rnn1._losses_train,
-        label = 'RNN1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
+        label = 'RNNLM1 = [%d - %d - %d], learning_rate = %0.4f' % ( rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
         linestyle = '-',
-        #linewidth = 2,
+        linewidth = 0.5,
         color = 'red'
     )
     """
-    """
     plt.plot(
         range( rnn2._epochs ), rnn2._losses_train,
-        label = 'RNN2 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate2 ) ,
+        label = 'RNN2 = [%d - %d - %d], learning_rate = %0.4f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate2 ) ,
         linestyle = '--',
-        #linewidth = 2,
+        linewidth = 0.5,
         color = 'glue'
     )
     """
-    """
-    plt.title( "loss / L2 Norm (MSE)" )
+    plt.title( "loss / sparse softmax cross-entropy" )
     plt.legend( loc = 'best' )
-    #plt.ylim( [0, 1.05] )
+    plt.ylim( [0, 1.05] )
     plt.xlabel( "Epocs" )
     plt.grid()
     plt.tight_layout()
     
-    plt.savefig("RNN_1-2.png", dpi = 300, bbox_inches = "tight" )
-    #MLPlot.saveFigure( fileName = "RNN_1-1.png" )
+    MLPlot.saveFigure( fileName = "RNNLM_2-1.png" )
     plt.show()
-    """
     
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)

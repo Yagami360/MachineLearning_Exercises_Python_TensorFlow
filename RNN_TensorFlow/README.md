@@ -395,7 +395,6 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 <a id="ID_3-2"></a>
 
 ## RNNLM によるテキストデータからのスパム文章の確率予想処理 : `main2.py`
-> 実装中...
 
 <a id="ID_3-2-1"></a>
 
@@ -638,11 +637,19 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 - fitting 処理 `fit(...)` 後のモデルで、スパム文章か否かの予想を行い、正解率を算出する。
     ```python
     [main2.py]
+    # テストデータでの正解率
+    accuracy1 = rnn1.accuracy( X_test, y_test )
+    print( "accuracy1 [test data] : %0.3f" % accuracy1 )
 
+    print( "accuracy1 labels [test data]" )
+    accuracys1 = rnn1.accuracy_labels( X_test, y_test )
+    for i in range( len(accuracys1) ):
+        print( "label %d : %.3f" % ( i, accuracys1[i] ) )
     ```
 - 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
-> 実装中...
-
+![tensorboard_graph_rnnlm_171203](https://user-images.githubusercontent.com/25688193/33518967-ef8d680a-d7e0-11e7-942b-2f0cc0f7ee52.png)
+![tensorboard_graph_rnnlm_1_171203](https://user-images.githubusercontent.com/25688193/33518968-f20e01ca-d7e0-11e7-9a90-76074b76f929.png)
+> わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 
 #### 補足（参考URL）
@@ -664,41 +671,30 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 
 <a id="ID_3-2-2"></a>
 
-### コードの実行結果
-> 実装中...
-
-
-
-
-
-<br>
-
----
-
-<a id="ID_3-3-2"></a>
-
-### コードの実行結果
+### コードの実行結果 `main2.py`
 
 ### 損失関数のグラフ
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
-![rnn_2-1-20](https://user-images.githubusercontent.com/25688193/33446785-886412c0-d644-11e7-8b61-63a068403f02.png)
-
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
-![rnn_2-1-50](https://user-images.githubusercontent.com/25688193/33447976-1d99f1e0-d648-11e7-9688-f6dec4b3219f.png)
-
-### 予想出力値と元データの波形図（時系列データ）
-
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
-![rnn_2-2-20](https://user-images.githubusercontent.com/25688193/33446787-89d01aaa-d644-11e7-9288-fe6998441568.png)
-
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
-![rnn_2-2-50](https://user-images.githubusercontent.com/25688193/33447978-1eef3690-d648-11e7-82e1-29166b519557.png)
-
-> 先の通常の RNN モデルより、長期の予想が改善していることが分かる。
+- 入力層 : 1, 隠れ層 : 10, 出力層 2
+    - テキストのシーケンス長 : 25、単語ベクトルのサイズ : 50
+    - 学習率 0.0001, 最適化アルゴリズム : RMSOptimizer
+    - トレーニング用データ : 80 %、テスト用データ : 20% に分割
+![rnnlm_2-1-h10-seq25-mat50-rmsprop](https://user-images.githubusercontent.com/25688193/33518826-fe677b74-d7de-11e7-9d93-27ad495b3753.png)
+> エポック数 1500 程度で損失関数が 0.3 付近に収束しており、うまく学習出来ていることが見て取れる。
 
 
-<br>
+### 学習済みモデルでのテスト用データでの正解率
+
+- 入力層 : 1, 隠れ層 : 10, 出力層 2
+    - テキストのシーケンス長 : 25、単語ベクトルのサイズ : 50
+    - 学習率 0.0001, 最適化アルゴリズム : RMSOptimizer
+    - トレーニング用データ : 80 %、テスト用データ : 20% に分割
+
+|ラベル|Acuraccy [test data]|サンプル数[test data]|サンプル数[total]|
+|---|---|---|---|
+|全ラベル|0.963|1115|5573|
+|0 : Spam|0.893|140|747 (13.4%)|
+|1 : Spam でない (ham)|1.000|975|4,827(86.6%)|
 
 
 ---
