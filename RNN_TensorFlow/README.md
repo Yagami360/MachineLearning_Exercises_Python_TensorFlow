@@ -248,6 +248,24 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
         return self._y_out_op
     ```
+- RNN モデルの各種パラメーターの設定を行う。
+    - この設定は、`RecurrectNN` クラスのインスタンス作成時の引数にて行う。
+        - 入力層のノード数 `n_inputLayer` は 1 個、隠れ層のノード数 `n_hiddenLayer` は可変な値（25,50 個等）で検証、出力層のノード数 `n_outputLayer` は 1 個（ 推定器 Estimiter なので）
+        - １つのシーケンスの長さ `n_in_sequence` は 25 個
+        - エポック数 `epochs` 500, ミニバッチサイズ `batch_size` 10
+    ```python
+    [main1.py]
+    rnn1 = RecurrentNN(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               n_inputLayer = len( X_features[0][0] ),
+               n_hiddenLayer = 50,
+               n_outputLayer = len( y_labels[0] ),
+               n_in_sequence = n_in_sequence,
+               epochs = 500,
+               batch_size = 10,
+               eval_step = 1
+           )
+    ```
 - 損失関数として、L2ノルムを使用する。
     ```python
     [main1.py]
@@ -624,10 +642,10 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
     [main2.py]
     rnn1.loss( SparseSoftmaxCrossEntropy() )
     ```
-- 最適化アルゴリズム Optimizer として、`tf.train.RMSPropOptimizer(...)` を使用する。
+- 最適化アルゴリズム Optimizer として、Adam アルゴリズム を使用する。
     ```python
     [main2.py]
-    rnn1.optimizer( RMSProp( learning_rate = learning_rate1 ) )
+    rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
     ```
 - トレーニング用データ `X_train`, `y_train` に対し、fitting 処理を行う。
     ```python
@@ -647,8 +665,8 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
         print( "label %d : %.3f" % ( i, accuracys1[i] ) )
     ```
 - 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
-![tensorboard_graph_rnnlm_171203](https://user-images.githubusercontent.com/25688193/33518967-ef8d680a-d7e0-11e7-942b-2f0cc0f7ee52.png)
-![tensorboard_graph_rnnlm_1_171203](https://user-images.githubusercontent.com/25688193/33518968-f20e01ca-d7e0-11e7-9a90-76074b76f929.png)
+![tensorboard_graph_rnnlm_3_171203](https://user-images.githubusercontent.com/25688193/33519734-6fbc40dc-d7f0-11e7-99fa-8b03c4cb09c7.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/33519733-6f92b8de-d7f0-11e7-84a4-51f8fd8fd0f5.png)
 > わかりやすくなるように、モデルのスコープ・変数名修正中...
 
 
@@ -677,9 +695,9 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 
 - 入力層 : 1, 隠れ層 : 10, 出力層 2
     - テキストのシーケンス長 : 25、単語ベクトルのサイズ : 50
-    - 学習率 0.0001, 最適化アルゴリズム : RMSOptimizer
+    - 学習率 0.0001, 最適化アルゴリズム : Adam
     - トレーニング用データ : 80 %、テスト用データ : 20% に分割
-![rnnlm_2-1-h10-seq25-mat50-rmsprop](https://user-images.githubusercontent.com/25688193/33518826-fe677b74-d7de-11e7-9d93-27ad495b3753.png)
+![rnnlm_2-1-h10-seq25-mat50-adam_1](https://user-images.githubusercontent.com/25688193/33519743-a45b8a0a-d7f0-11e7-8bb4-55b86dab0d0a.png)
 > エポック数 1500 程度で損失関数が 0.3 付近に収束しており、うまく学習出来ていることが見て取れる。
 
 
@@ -687,12 +705,12 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 
 - 入力層 : 1, 隠れ層 : 10, 出力層 2
     - テキストのシーケンス長 : 25、単語ベクトルのサイズ : 50
-    - 学習率 0.0001, 最適化アルゴリズム : RMSOptimizer
+    - 学習率 0.0001, 最適化アルゴリズム : Adam
     - トレーニング用データ : 80 %、テスト用データ : 20% に分割
 
 |ラベル|Acuraccy [test data]|サンプル数[test data]|サンプル数[total]|
 |---|---|---|---|
-|全ラベル|0.963|1115|5573|
+|全ラベル|0.972|1115|5573|
 |0 : Spam|0.893|140|747 (13.4%)|
 |1 : Spam でない (ham)|1.000|975|4,827(86.6%)|
 

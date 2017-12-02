@@ -108,7 +108,7 @@ def main():
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
     learning_rate1 = 0.0005
-    learning_rate2 = 0.0005
+    learning_rate2 = 0.0001
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
@@ -124,20 +124,6 @@ def main():
                batch_size = 250,
                eval_step = 1
            )
-
-    rnn2 = RecurrectNNLanguageModel(
-               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               n_inputLayer = 1,
-               n_hiddenLayer = 30,
-               n_outputLayer = 2,
-               n_in_sequence = 25,
-               n_vocab = n_vocab,           # 934
-               n_in_embedding_vec = 50,
-               epochs = 5000,
-               batch_size = 250,
-               eval_step = 1
-           )
-
     rnn1.print( "after __init__()" )
 
     #======================================================================
@@ -160,21 +146,19 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     rnn1.model()
-    #rnn2.model()
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
     rnn1.loss( SparseSoftmaxCrossEntropy() )
-    #rnn2.loss( SparseSoftmaxCrossEntropy() )
-
+    
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
-    rnn1.optimizer( RMSProp( learning_rate = learning_rate1 ) )
-    #rnn2.optimizer( RMSProp( learning_rate = learning_rate2 ) )
+    #rnn1.optimizer( RMSProp( learning_rate = learning_rate1 ) )
+    rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -191,9 +175,7 @@ def main():
     #     session.run(…)
     #======================================================================
     rnn1.fit( X_train, y_train )
-    #rnn2.fit( X_train, y_train )
-
-    #rnn1.print( "after fitting" )
+    rnn1.print( "after fitting" )
 
     #======================================================================
     # モデルの評価
@@ -204,19 +186,16 @@ def main():
 
     # 時系列データの予想値を取得
     predicts1 = rnn1.predict( X_test )
-    #predicts2 = rnn2.predict( X_test )
-
     print( "predicts1 :", predicts1 )
     print( "len( predicts1 ) :", len( predicts1 ) )
+    
     #---------------------------------------------------------
     # 正解率の算出
     #---------------------------------------------------------
     # テストデータでの正解率
     accuracy1 = rnn1.accuracy( X_test, y_test )
-    #accuracy2 = cnn2.accuracy( X_test, y_test )
     print( "accuracy1 [test data] : %0.3f" % accuracy1 )
-    #print( "accuracy2 [test data] : %0.3f" % accuracy2 )
-
+ 
     print( "accuracy1 labels [test data]" )
     accuracys1 = rnn1.accuracy_labels( X_test, y_test )
     for i in range( len(accuracys1) ):
@@ -234,15 +213,6 @@ def main():
         linewidth = 0.5,
         color = 'red'
     )
-    """
-    plt.plot(
-        range( rnn2._epochs ), rnn2._losses_train,
-        label = 'RNN2 = [%d - %d - %d], learning_rate = %0.4f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate2 ) ,
-        linestyle = '--',
-        linewidth = 0.5,
-        color = 'glue'
-    )
-    """
     plt.title( "loss / sparse softmax cross-entropy" )
     plt.legend( loc = 'best' )
     plt.ylim( [0, 1.05] )
