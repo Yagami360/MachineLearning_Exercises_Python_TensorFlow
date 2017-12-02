@@ -11,6 +11,7 @@
                : CIFAR-10 データのランダムに加工した読み込み関数 load_cifar10_with_trasform(...) を追加
     [17/11/29] : ノイズ付き sin 波形の生成関数 generate_sin_noize(...) 追加
     [17/12/01] : スパム文判定用テキストデータである SMS Spam Collection データセットの読み込み関数 load_SMS_Spam_Collection(...) 追加
+    [17/12/02] : TensorFlow の組み込み関数を用いて、テキストをインデックスのリストに変換する関数 text_vocabulary_processing(...) 追加
     [xx/xx/xx] :
 
 """
@@ -712,6 +713,17 @@ class MLPreProcess( object ):
 
             text_data_labels : list <str>
                 SMS Spam Collection データセットのスパム文章か否かを表すラベル "ham" or "spam" から成るリスト（教師データ）
+
+        [補足]
+            データの内容
+            The SMS Spam Collection v.1 (text file: smsspamcollection) has a total of 4,827 SMS legitimate messages (86.6%) and a total of 747 (13.4%) spam messages.
+            The files contain one message per line. Each line is composed by two columns: one with label (ham or spam) and other with the raw text.
+
+            ham	Go until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...
+            ham	Ok lar... Joking wif u oni...
+            spam	Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005. Text FA to 87121 to receive entry question(std txt rate)T&C's apply 08452810075over18's
+            ...
+            ham	Rofl. Its true to its name   
         """
         text_data = []
 
@@ -735,7 +747,7 @@ class MLPreProcess( object ):
         text_data = text_data[:-1]
         #print( "text_data :", text_data )
 
-        # \t 部分で別の配列に分割
+        # 水平タブを表すエスケープシーケンス `\t` 部分で別の配列に分割する。
         # split(...) : 文字列の分割
         # [ ['ham', 'Go until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...\n'], 
         #   ['ham', 'Ok lar... Joki ..\n'], ...
@@ -780,6 +792,38 @@ class MLPreProcess( object ):
 
         return text_data_features, text_data_labels
 
+
+    def text_vocabulary_processing( text_data, n_max_in_sequence = 25, min_word_freq = 10 ):
+        """
+        TensorFlow の組み込み関数を用いて、テキスト情報を数値インデックスのリストに変換する。
+        [Input]
+            text_data : list<str>
+                テキストデータのリスト
+            n_max_in_sequence : str
+                １つのシーケンスのテキストの最大の長さ
+
+        [Output]
+            text_processed : 
+
+        """
+        # テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、
+        # これよりも長いテキスト（シーケンス）は、この長さで打ち切り、
+        # それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
+        # 又、語彙に `min_word_freq` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size` のトレーニング可能なベクトルに埋め込む。
+        vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
+                              max_document_length = n_max_in_sequence, 
+                              min_frequency = min_word_freq
+                          )
+
+        # ? Transform the text using the vocabulary.
+        # VocabularyProcessor.fit_transform(...) : <generator object VocabularyProcessor.transform at 0x000001FAF79EF4C0>
+        # [ [ 44 456   0 ...,   0   0   0] [ 47 316   0 ...,   0   0   0] ..., [  5 494 109 ...,   1 199  12] ]
+        text_processed = numpy.array( list( vocab_processor.fit_transform( text_data ) ) )      # ?
+        #print( "VocabularyProcessor.fit_transform(...) :", vocab_processor.fit_transform( text_data ) )
+        #print( "list( VocabularyProcessor.fit_transform(...) ) :", list( vocab_processor.fit_transform( text_data ) ) )
+        #print( "numpy.array( list( vocab_processor.fit_transform( text_data ) ) ) :", text_processed )
+
+        return text_processed 
 
     #---------------------------------------------------------
     # 欠損値の処理を行う関数群

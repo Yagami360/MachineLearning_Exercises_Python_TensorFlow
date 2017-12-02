@@ -61,40 +61,52 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
+    # SMS Spam Collection データセットのファイルへのパス
     spam_datset_path = "C:\Data\MachineLearning_DataSet\SMS_Spam_Collection\smsspamcollection\SMSSpamCollection.txt"
 
+    # SMS Spam Collection データセットからテキストデータを読み込み、取得する。
     text_data_features, text_data_labels = MLPreProcess.load_sms_spam_collection( path = spam_datset_path, bCleaning = True )
+    print( "len( text_data_features ) :", len( text_data_features ) )   # len( text_data_features ) : 5573
+    print( "len( text_data_labels ) :", len( text_data_labels ) )       # len( text_data_labels ) : 5573
 
-    
     #======================================================================
     # データを変換、正規化
     # Transform and normalize data.
     # ex) data = tf.nn.batch_norm_with_global_normalization(...)
     #======================================================================
+    # テキスト情報を数値インデックスのリストに変換する。
+    X_features = MLPreProcess.text_vocabulary_processing( text_data = text_data_features, n_max_in_sequence = 25, min_word_freq = 10 )
+    y_labels = numpy.array( [1 if label_str=='ham' else 0 for label_str in text_data_labels] )
+
+    print( "X_features.shape :", X_features.shape )     # X_features.shape : (5573, 25)
+    print( "y_labels.shape :", y_labels.shape )         # y_labels.shape : (5573,)
+
+    # データをシャッフルする。
+    shuffled_idx = numpy.random.permutation( numpy.arange( len(y_labels) ) )
+    X_features_shuffled = X_features[ shuffled_idx ]
+    y_labels_shuffled = y_labels[ shuffled_idx ]
+    
+    print( "X_features_shuffled.shape :", X_features_shuffled.shape )   # X_features_shuffled.shape : (5573, 25)
+    print( "y_labels_shuffled.shape :", y_labels_shuffled.shape )       # y_labels_shuffled.shape : (5573,)
 
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
-    """
-    train_size = int( len(data) * 0.9 )
-    print( "train_size :", train_size )
-
-
     X_train, X_test, y_train, y_test \
-    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.1, input_random_state = 1 )
+    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )
 
-    print( "X_train.shape :", X_train.shape )
-    print( "y_train.shape :", y_train.shape )
-    print( "X_train :", X_train )
-    print( "y_train :", y_train )
-    """
+    print( "X_train.shape :", X_train.shape )   # X_train.shape : (4458, 25)
+    print( "y_train.shape :", y_train.shape )   # y_train.shape : (4458,)
+    print( "X_train :", X_train )               # [[ 12 324  43 ...,  49  11   0] [469 851 418 ...,   0   0   0] ... [ 11  93 440 ...,   0   0   0]]
+    print( "y_train :", y_train )               # [1 0 1 ..., 1 0 1]
+
     #======================================================================
     # アルゴリズム（モデル）のパラメータを設定
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    learning_rate1 = 0.001
-    learning_rate2 = 0.001
+    learning_rate1 = 0.0005
+    learning_rate2 = 0.0005
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 

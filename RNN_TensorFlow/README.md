@@ -58,7 +58,7 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 >> 変数名の識別子（新規か？重複がないか？）を管理しながら変数の名前空間の定義を行い、必ず `tf.variable_scope()` とセットで使う。<br>
 >>> https://qiita.com/TomokIshii/items/ffe999b3e1a506c396c8
 
->> `tf.contrib.learn.preprocessing.VocabularyProcessor(...)` : テキストをインデックスのリストに変換する。<br>
+>> `tf.contrib.learn.preprocessing.VocabularyProcessor(...)` : テキスト情報を数値インデックスのリストに変換する。<br>
 >>> https://orajavasolutions.wordpress.com/2016/11/22/how-to-extract-vocabulary-from-tensorflow-vocabularyprocessor-object/<br>
 
 > その他ライブラリ
@@ -389,6 +389,10 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 ## RNN によるテキストデータからのスパム文章の確率予想処理 : `main2.py`
 > 実装中...
 
+<a id="ID_3-2-1"></a>
+
+### コードの内容説明
+
 通常の RNN による自然言語処理の例として、テキストデータからのスパム文章の確率予想処理を行う。<br>
 この例で使用するデータは、スパム文章か否かの正解ラベル付き ("ham" or "spam") の SMS Spam Collection データセットである。
 
@@ -477,21 +481,56 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
             text_data_features = [ clean_text(str) for str in text_data_features ]
     ```
-    - TensorFlow の組み込み関数を用いて、テキストをインデックスのリストに変換する。
-        - この際、テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、これよりも長いテキスト（シーケンス）は、この長さで打ち切り、それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
-        - 又、語彙に `min_word_freq` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size` のトレーニング可能なベクトルに埋め込む。
-        - そして、これらの処理には、`tf.contrib.learn.preprocessing.VocabularyProcessor(...)` を使用する。
+- TensorFlow の組み込み関数を用いて、テキスト情報を数値インデックスのリストに変換する。
+    - この際、テキストの長さは最大で `n_max_in_sequence = 25` 個の単語数とし、これよりも長いテキスト（シーケンス）は、この長さで打ち切り、それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
+    - 又、語彙に `min_word_freq = 10` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size = 50` のトレーニング可能なベクトルに埋め込む。
+    - そして、これらの処理には、`tf.contrib.learn.preprocessing.VocabularyProcessor(...)` を使用する。
     ```python
     [MLPreProcess.py]
     def def text_vocabulary_processing( ... ):
         ...
-
+        # テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、
+        # これよりも長いテキスト（シーケンス）は、この長さで打ち切り、
+        # それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
+        # 又、語彙に `min_word_freq` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size` のトレーニング可能なベクトルに埋め込む。
+        vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
+                              max_document_length = n_max_in_sequence, 
+                              min_frequency = min_word_freq
+                          )
+        
+        # Transform the text using the vocabulary.
+        # VocabularyProcessor.fit_transform(...) : <generator object VocabularyProcessor.transform at 0x000001FAF79EF4C0>
+        numpy.array( list( vocab_processor.fit_transform( text_data ) ) )
     ```
-- xxx
+    ```python
+    [main1.py]
+    X_features = MLPreProcess.text_vocabulary_processing( text_data = text_data_features, n_max_in_sequence = 25, min_word_freq = 10 )
+    ```
+    - テキストデータ状の教師データ `text_data_labels` の方は、単純に `"ham"` → `1`, `"spam"` → `0` に変換する。
+    ```python
+    [main2.py]
+    y_labels = numpy.array( [1 if label_str=='ham' else 0 for label_str in text_data_labels] )
+    ```
+- データ `X_features`, `y_labels` をシャッフルする。
+    ```python
+    [main2.py]
+    shuffled_idx = numpy.random.permutation( numpy.arange( len(y_labels) ) )
+    X_features_shuffled = X_features[ shuffled_idx ]
+    y_labels_shuffled = y_labels[ shuffled_idx ]
+    ```
+- データをトレーニング用データ ( `X_train`, `y_train` ) とテスト用データ ( `X_test`, `y_test` ) に分割する。
+    - 分割割合は、トレーニング用 80 % 、テスト用 20 % とする。
+    ```python
+    [main2.py]
+    X_train, X_test, y_train, y_test \
+    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.2, input_random_state = 1 )
+    ```
+- RNN モデルの各種パラメーターの設定を行う。
+    - xxx
+- RNN モデルの構造を定義する。
+    - xxx
 
-<br>
-
-### 補足（参考URL）
+#### 補足（参考URL）
 - 文字列操作
     - https://python.civic-apps.com/string-split-join/
     - http://www.yukun.info/blog/2008/08/python-upper-lower-case-letters-converted.html
@@ -499,6 +538,17 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     - https://qiita.com/7of9/items/e23bdd6e8d4d7997104a
 - 正規表現について
     - http://uxmilk.jp/41416
+
+
+<br>
+
+<a id="ID_3-2-2"></a>
+
+### コードの実行結果
+> 実装中...
+
+
+
 
 
 <br>
