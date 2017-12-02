@@ -2,8 +2,8 @@
 
 TensorFlow を用いた、リカレントニューラルネットワーク（RNN）による時系列モデルの予想、画像識別、自然言語処理の練習用実装コード集。
 
-この README.md ファイルには、各コードの実行結果、概要、RNN の背景理論の説明を記載しています。
-分かりやすいように main.py ファイル毎に１つの完結した実行コードにしています。
+この `README.md` ファイルには、各コードの実行結果、概要、RNN の背景理論の説明を記載しています。
+分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
 
 ### 項目 [Contents]
 
@@ -16,9 +16,7 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
     1. [RNNLM によるテキストデータからのスパム文章の確率予想処理 : `main2.py`](#ID_3-2)
         1. [コードの内容説明](#ID_3-2-1)
         1. [コードの実行結果](#ID_3-2-2)
-    1. [LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main3.py`](#ID_3-3)
-        1. [コードの内容説明](#ID_3-3-1)
-        1. [コードの実行結果](#ID_3-3-2)
+    1. [LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow#lstm-によるノイズ付き-sin-波形時系列データからの長期の波形の予想生成処理--main1py)
     1. GNU による sin 波形（時系列データ）の生成処理
     1. 双方向 RNN による MNIST データセットの識別処理
     1. RNN Encoder-Decoder による自然言語処理（足し算の応答）
@@ -47,6 +45,12 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
 >> 時系列に沿った RNN 構造を提供するクラス `BasicRNNCell` の `cell` を返す。<br>
 >> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/BasicRNNCell<br>
+
+>> `tf.nn.dynamic_rnn(...)` : 動的に動作する RNN シーケンスを作成
+>>> https://www.tensorflow.org/api_docs/python/tf/nn/dynamic_rnn<br>
+
+>> `tf.gather(...)` : axis で指定した階でスライスして，indeices で指定したインデックスのテンソルだけ取り出す。
+>>> https://www.tensorflow.org/api_docs/python/tf/gather<br>
 
 >> `tf.contrib.rnn.LSTMCell(...)` : Long short-term memory unit (LSTM) recurrent network cell.<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
@@ -324,7 +328,7 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     predicts1 = rnn1.predict( X_features )
     ```
 - 入力層：１ノード、出力層：１ノードで、隠れ層のノード数を変えたモデルでそれぞれ性能評価する。
-- TensorBoard での計算グラフ
+- 尚、この RNN モデルを TensorBoard で描写した計算グラフは以下のようになる。
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33439281-648d17f2-d630-11e7-9ace-31d3c78ec783.png)
 > わかりやすくなるように、モデルのスコープ・変数名修正中...
 
@@ -401,7 +405,7 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 
 ![image](https://user-images.githubusercontent.com/25688193/33476677-2881be66-d6c6-11e7-82c9-1c5a3e502270.png)
 
-予測に使用する RNN モデルは、埋め込みテキストから入力用シーケンスを RNN モデルへの入力といて扱い、RNNモデルの最後の出力をスパムか否かを判定する予想値 0 or 1 ( "ham" or "spam" ) に対応させる。
+予測に使用する RNN モデルは、埋め込みテキストから入力用シーケンスを RNN モデルへの入力といて扱い、RNNモデルの最後の出力をスパムか否かを判定する予想値 0 or 1 ( "spam" or "ham" ) に対応させる。
 
 - まずは、SMS Spam Collection データセットからテキストデータを読み込み、取得する。
     - Unicode 形式で、各行の文字全体を読み込み、リストに append していく
@@ -522,7 +526,7 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
     ```
 - RNNLM モデルの各種パラメーターの設定を行う。
     - この設定は、`RecurrectNNLanguageModel` クラスのインスタンス作成時の引数にて行う。
-        - 入力層のノード数 `n_inputLayer` は 1 個、隠れ層のノード数 `n_hiddenLayer` 10 個、出力層のノード数 `n_outputLayer` は 1 個
+        - 入力層のノード数 `n_inputLayer` は 1 個、隠れ層のノード数 `n_hiddenLayer` 10 個、出力層のノード数 `n_outputLayer` は 2 個（ "ham" or "spam" の識別なので）
         - １つのシーケンスの長さ `n_in_sequence` は 25 個、ボキャブラリーの数（埋め込み行列の行数） `n_vocab` は 934 個、単語ベクトルのサイズ（埋め込み行列の列数）`n_in_embedding_vec` は 50 個
         - エポック数 `epochs` 1000, ミニバッチサイズ `batch_size` 250
     ```python
@@ -531,7 +535,7 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                n_inputLayer = 1,
                n_hiddenLayer = 10,
-               n_outputLayer = 1,
+               n_outputLayer = 2,
                n_in_sequence = 25,
                n_vocab = n_vocab,           # 934
                n_in_embedding_vec = 50,
@@ -552,13 +556,68 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
                                          tf.random_uniform( [self._n_vocab, self._n_in_embedding_vec], -1.0, 1.0 ) 
                                      )
 
+        # tf.nn.embedding_lookup(...) : バッチ内の各ソース単語について、ベクトルをルックアップ（検索）
         self._embedding_lookup_op = tf.nn.embedding_lookup( self._embedding_matrix_var, self._X_holder )
     ```
-    - xxx
+    - 時系列に沿った、過去の隠れ層のモデルを構築する。
+        - そのために、まず `tf.contrib.rnn.BasicRNNCell(...)` を用いて、時系列に沿った RNN 構造を提供するクラス `BasicRNNCell` の `cell` を取得する。
+        - この `cell` は、内部（プロパティ）で `state`（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+        - ここでは、`tf.nn.dynamic_rnn(...)` を用いて、動的な RNN シーケンスを作成することで、この隠れ層の再帰構造を実現する。
+        - そして、この出力（戻り値）にドロップアウト処理を施し、最後の出力のみを抽出して、これを隠れ層の出力とする。
     ```python
     [RecurrectNNLanguageModel.py]
     def model():
         ...
+        cell = tf.contrib.rnn.BasicRNNCell( 
+                   num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
+               )
+        self._rnn_cells.append( cell )
+
+        #-----------------------------------------------------------------
+        # 過去の隠れ層の再帰処理
+        #-----------------------------------------------------------------
+        # 動的に動作する RNN シーケンス を作成
+        # outputs_tsr: The RNN output Tensor
+        # state_tsr : The final state
+        outputs_tsr, state_tsr = tf.nn.dynamic_rnn(  
+                                    cell, 
+                                    self._embedding_lookup_op, 
+                                    dtype=tf.float32 
+                                )
+        self._rnn_states.append( state_tsr )
+        print( "outputs_tsr :", outputs_tsr )   # outputs_tsr : Tensor("rnn/transpose:0", shape=(?, 25, 10), dtype=float32)
+        print( "state_tsr :", state_tsr )       # state_tsr : Tensor("rnn/while/Exit_2:0", shape=(?, 10), dtype=float32)
+
+        # ドロップアウト処理を施す
+        output = tf.nn.dropout( outputs_tsr, self._keep_prob_holder )
+        print( "output :", output )             # output : Tensor("dropout/mul:0", shape=(?, 25, 10), dtype=float32)
+
+        # 予想値を取得するため、RNN を並び替えて、最後の出力を取り出す
+        output = tf.transpose( output, [1, 0, 2] )
+        print( "output :", output )             # output : Tensor("transpose_1:0", shape=(25, ?, 10), dtype=float32)
+
+        # 最終的な隠れ層の出力
+        # tf.gather(...) : axis で指定した階でスライスして，indeices で指定したインデックスのテンソルだけ取り出す。
+        h_out_op = tf.gather( output, int(output.get_shape()[0]) - 1 )
+        print( "h_out_op :", h_out_op )         # h_out_op : Tensor("Gather:0", shape=(?, 10), dtype=float32)    
+    ```
+    - 最終的なモデルの出力は、隠れ層から出力層への入力を softmax して出力する。
+    ```python
+    [RecurrectNNLanguageModel.py]
+    def model():
+        ...
+        #--------------------------------------------------------------
+        # 出力層への入力
+        #--------------------------------------------------------------
+        y_in_op = tf.matmul( h_out_op, self._weights[-1] ) + self._biases[-1]
+
+        #--------------------------------------------------------------
+        # モデルの出力
+        #--------------------------------------------------------------
+        # softmax
+        self._y_out_op = Softmax().activate( y_in_op )
+
+        return self._y_out_op
     ```
 - 損失関数として、疎なソフトマックス・エントロピー関数を使用する。
     ```python
@@ -568,16 +627,19 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 - 最適化アルゴリズム Optimizer として、`tf.train.RMSPropOptimizer(...)` を使用する。
     ```python
     [main2.py]
-
+    rnn1.optimizer( RMSProp( learning_rate = learning_rate1 ) )
     ```
 - トレーニング用データ `X_train`, `y_train` に対し、fitting 処理を行う。
     ```python
     [main2.py]
     rnn1.fit( X_train, y_train )
     ```
-- fitting 処理 `fit(...)` 後のモデルで、スパム文章か否かの予想を行う。
-    - xxx
-- このモデルの TensorBorad で描写した計算グラフは以下のようになる。
+- fitting 処理 `fit(...)` 後のモデルで、スパム文章か否かの予想を行い、正解率を算出する。
+    ```python
+    [main2.py]
+
+    ```
+- 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
 > 実装中...
 
 
@@ -593,6 +655,9 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 - Recurrent Neural Network Language Model (RNNLM)、埋め込み行列
     - http://deeplearning.hatenablog.com/entry/neural_machine_translation_theory
     - https://www.slideshare.net/yukinoguchi999/ss-59238906
+- word2vec
+    - https://www.tensorflow.org/versions/master/tutorials/word2vec
+    - https://qiita.com/KojiOhki/items/b0bf5f48ecdf513a7f5b
 
 <br>
 
@@ -608,67 +673,6 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 <br>
 
 ---
-
-<a id="ID_3-3"></a>
-
-## LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main3.py`
-
-<a id="ID_3-3-1"></a>
-
-LSTM モデルによる時系列データの取り扱いの簡単な例として、先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で行った処理と同じ、ノイズ付き sin 波形（時系列データとみなす）の予想（生成）を考える。
-
-- 先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で使用した通常の RNN モデルで、`tf.contrib.rnn.BasicRNNCell(...)` としていた箇所を、`tf.contrib.rnn.LSTMCell(...)` に変更する。
-    ```python
-    [RecurrentNNLSTM.py]
-    def model( self ):
-        ...
-        #--------------------------------------------------------------
-        # 入力層 ~ 隠れ層
-        #--------------------------------------------------------------
-        # tf.contrib.rnn.LSTMCell(...) : 時系列に沿った RNN 構造を提供するクラス `LSTMCell` のオブジェクト cell を返す。
-        # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
-        # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
-        cell = tf.contrib.rnn.LSTMCell( 
-                   num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
-               )
-
-        # 最初の時間 t0 では、過去の隠れ層がないので、
-        # cell.zero_state(...) でゼロの状態を初期設定する。
-        initial_state_tsr = cell.zero_state( self._batch_size_holder, tf.float32 )
-
-        #-----------------------------------------------------------------
-        # 過去の隠れ層の再帰処理
-        #-----------------------------------------------------------------
-        self._rnn_states.append( initial_state_tsr )
-
-        with tf.variable_scope('RNN-LSTM'):
-            for t in range( self._n_in_sequence ):
-                if (t > 0):
-                    # tf.get_variable_scope() : 名前空間を設定した Variable にアクセス
-                    # reuse_variables() : reuse フラグを True にすることで、再利用できるようになる。
-                    tf.get_variable_scope().reuse_variables()
-
-                # LSTMCellクラスの `__call__(...)` を順次呼び出し、
-                # 各時刻 t における出力 cell_output, 及び状態 state を算出
-                cell_output, state_tsr = cell( inputs = self._X_holder[:, t, :], state = self._rnn_states[-1] )
-
-                # 過去の隠れ層の出力をリストに追加
-                self._rnn_cells.append( cell_output )
-                self._rnn_states.append( state_tsr )
-
-        # 最終的な隠れ層の出力
-        output = self._rnn_cells[-1]
-
-        # 隠れ層 ~ 出力層
-        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
-        self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
-    ```
-- その他の処理は、 先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で使用した通常の RNN モデルと同様になる。
-- TensorBoard で表示される計算グラフ
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run lstm](https://user-images.githubusercontent.com/25688193/33447507-e63608de-d646-11e7-93e4-4bf43ee891b4.png)
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 2](https://user-images.githubusercontent.com/25688193/33447555-07d8a8ac-d647-11e7-8562-9942a7f7fe28.png)
-
-<br>
 
 <a id="ID_3-3-2"></a>
 

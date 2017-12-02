@@ -5,7 +5,8 @@
     更新情報
     [17/11/18] : 新規作成
     [17/11/20] : 最急降下法で学習率が幾何学的に減衰していく最適化アルゴリズム GradentDecentDecay 追加
-               : 
+    [17/12/03] : RMSProp アルゴリズムを追加
+    [xx/xx/xx]
 """
 
 import numpy
@@ -260,7 +261,7 @@ class Adam( NNOptimzer ):
     Adam アルゴリズムを表すクラス
     NNOptimizer クラスの子クラスとして定義
     """
-    def __init__( self, learning_rate = 0.001, beta1 = 0.9, beta2 = 0.99, node_name = "Momentum_Optimizer" ):
+    def __init__( self, learning_rate = 0.001, beta1 = 0.9, beta2 = 0.99, node_name = "Adam_Optimizer" ):
         self._learning_rate = learning_rate
         self._beta1 = beta1
         self._beta2 = beta2
@@ -283,3 +284,31 @@ class Adam( NNOptimzer ):
         self._train_step = self._optimizer.minimize( loss_op )
         return self._train_step
 
+
+class RMSProp( NNOptimzer ):
+    """
+    RMSProp アルゴリズムを表すクラス
+    NNOptimizer クラスの子クラスとして定義
+    """
+    def __init__( self, learning_rate = 0.001, decay = 0.9, momentum = 0.0, node_name = "RMSProp_Optimizer" ):
+        self._learning_rate = learning_rate
+        self._decay = decay
+        self._momentum = momentum
+        self._node_name = node_name
+        self._optimizer = self.optimizer()
+        self._train_step = None
+
+        return
+    
+    def optimizer( self ):
+        self._optimizer = tf.train.RMSPropOptimizer( 
+                              learning_rate = self._learning_rate,
+                              decay = self._decay,
+                              momentum = self._momentum
+                          )
+
+        return self._optimizer
+
+    def train_step( self, loss_op ):
+        self._train_step = self._optimizer.minimize( loss_op )
+        return self._train_step

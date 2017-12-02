@@ -239,7 +239,6 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
             正規分布に基づく乱数で初期化された重みの Variable 
             session.run(...) はされていない状態。
         """
-
         # ゼロで初期化すると、うまく重みの更新が出来ないので、正規分布に基づく乱数で初期化
         # tf.truncated_normal(...) : Tensor を正規分布なランダム値で初期化する
         init_tsr = tf.truncated_normal( shape = input_shape, stddev = 0.01 )
@@ -264,7 +263,6 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
             ゼロ初期化された重みの Variable 
             session.run(...) はされていない状態。
         """
-
         #init_tsr = tf.zeros( shape = input_shape )
         init_tsr = tf.random_normal( shape = input_shape )
 
@@ -290,7 +288,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
                                          tf.random_uniform( [self._n_vocab, self._n_in_embedding_vec], -1.0, 1.0 ) 
                                      )
 
-        # tf.nn.embedding_lookup(...) : 
+        # tf.nn.embedding_lookup(...) : バッチ内の各ソース単語について、ベクトルをルックアップ（検索）
         self._embedding_lookup_op = tf.nn.embedding_lookup( self._embedding_matrix_var, self._X_holder )
         #embedding_expanded_op = tf.expand_dims( self._embedding_lookup_op, -1 )
 
@@ -306,27 +304,42 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
                )
         self._rnn_cells.append( cell )
 
-
-        output, state = tf.nn.dynamic_rnn( cell, self._embedding_lookup_op, dtype=tf.float32 )
-        output = tf.nn.dropout( output, self._keep_prob_holder )
-        self._rnn_states.append( state )
-
-        # Get output of RNN sequence
-        output = tf.transpose( output, [1, 0, 2] )
-        last = tf.gather( output, int(output.get_shape()[0]) - 1)
-
+        #-----------------------------------------------------------------
+        # 過去の隠れ層の再帰処理
+        #-----------------------------------------------------------------
+        #with tf.variable_scope('RNNLM'):
         # 最初の時間 t0 では、過去の隠れ層がないので、
         # cell.zero_state(...) でゼロの状態を初期設定する。
         #initial_state_tsr = cell.zero_state( self._batch_size_holder, tf.float32 )
         #self._rnn_states.append( initial_state_tsr )
-        #print( "initial_state_tsr :", initial_state_tsr )
 
-        #-----------------------------------------------------------------
-        # 過去の隠れ層の再帰処理
-        #-----------------------------------------------------------------
+        # 動的に動作する RNN シーケンス を作成
+        # outputs_tsr: The RNN output Tensor
+        # state_tsr : The final state
+        outputs_tsr, state_tsr = tf.nn.dynamic_rnn(  
+                                    cell, 
+                                    self._embedding_lookup_op, 
+                                    dtype=tf.float32 
+                                )
+        
+        self._rnn_states.append( state_tsr )
+        print( "outputs_tsr :", outputs_tsr )   # outputs_tsr : Tensor("rnn/transpose:0", shape=(?, 25, 10), dtype=float32)
+        print( "state_tsr :", state_tsr )       # state_tsr : Tensor("rnn/while/Exit_2:0", shape=(?, 10), dtype=float32)
+        
+        # ドロップアウト処理を施す
+        output = tf.nn.dropout( outputs_tsr, self._keep_prob_holder )
+        print( "output :", output )             # output : Tensor("dropout/mul:0", shape=(?, 25, 10), dtype=float32)
+
+        # 予想値を取得するため、RNN を並び替えて、最後の出力を取り出す
+        output = tf.transpose( output, [1, 0, 2] )
+        print( "output :", output )             # output : Tensor("transpose_1:0", shape=(25, ?, 10), dtype=float32)
+
+        # 最終的な隠れ層の出力
+        # tf.gather(...) : axis で指定した階でスライスして，indeices で指定したインデックスのテンソルだけ取り出す。
+        h_out_op = tf.gather( output, int(output.get_shape()[0]) - 1 )
+        print( "h_out_op :", h_out_op )         # h_out_op : Tensor("Gather:0", shape=(?, 10), dtype=float32)
+
         """
-        self._rnn_states.append( initial_state_tsr )
-
         with tf.variable_scope('RNN'):
             for t in range( self._n_in_sequence ):
                 if (t > 0):
@@ -353,7 +366,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         #--------------------------------------------------------------
         # 出力層への入力
         #--------------------------------------------------------------
-        y_in_op = tf.matmul( last, self._weights[-1] ) + self._biases[-1]
+        y_in_op = tf.matmul( h_out_op, self._weights[-1] ) + self._biases[-1]
 
         #--------------------------------------------------------------
         # モデルの出力
@@ -439,7 +452,8 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
                 feed_dict = {
                     self._X_holder: X_train_shuffled,
                     self._t_holder: y_train_shuffled,
-                    self._batch_size_holder: self._batch_size
+#                    self._batch_size_holder: self._batch_size
+                    self._keep_prob_holder: 0.5
                 }
             )
             
@@ -452,7 +466,8 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
                        feed_dict = {
                            self._X_holder: X_train_shuffled,
                            self._t_holder: y_train_shuffled,
-                           self._batch_size_holder: self._batch_size
+                           #self._batch_size_holder: self._batch_size
+                           self._keep_prob_holder: 0.5
                        }
                    )
 

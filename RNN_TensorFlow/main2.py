@@ -40,6 +40,7 @@ from NNOptimizer import NesterovMomentum
 from NNOptimizer import Adagrad
 from NNOptimizer import Adadelta
 from NNOptimizer import Adam
+from NNOptimizer import RMSProp
 
 from NeuralNetworkBase import NeuralNetworkBase
 from RecurrectNNLanguageModel import RecurrectNNLanguageModel
@@ -115,12 +116,12 @@ def main():
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                n_inputLayer = 1,
                n_hiddenLayer = 10,
-               n_outputLayer = 1,
+               n_outputLayer = 2,
                n_in_sequence = 25,
                n_vocab = n_vocab,           # 934
                n_in_embedding_vec = 50,
-               epochs = 500,
-               batch_size = 10,
+               epochs = 5000,
+               batch_size = 250,
                eval_step = 1
            )
 
@@ -128,12 +129,12 @@ def main():
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                n_inputLayer = 1,
                n_hiddenLayer = 30,
-               n_outputLayer = 1,
+               n_outputLayer = 2,
                n_in_sequence = 25,
                n_vocab = n_vocab,           # 934
                n_in_embedding_vec = 50,
-               epochs = 500,
-               batch_size = 10,
+               epochs = 5000,
+               batch_size = 250,
                eval_step = 1
            )
 
@@ -172,8 +173,8 @@ def main():
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
-    rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
-    #rnn2.optimizer( Adam( learning_rate = learning_rate2, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    rnn1.optimizer( RMSProp( learning_rate = learning_rate1 ) )
+    #rnn2.optimizer( RMSProp( learning_rate = learning_rate2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -189,7 +190,7 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
-    #rnn1.fit( X_train, y_train )
+    rnn1.fit( X_train, y_train )
     #rnn2.fit( X_train, y_train )
 
     #rnn1.print( "after fitting" )
