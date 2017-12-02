@@ -348,8 +348,9 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     ```
 - 入力層：１ノード、出力層：１ノードで、隠れ層のノード数を変えたモデルでそれぞれ性能評価する。
 - 尚、この RNN モデルを TensorBoard で描写した計算グラフは以下のようになる。
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33439281-648d17f2-d630-11e7-9ace-31d3c78ec783.png)
-> わかりやすくなるように、モデルのスコープ・変数名修正中...
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 13](https://user-images.githubusercontent.com/25688193/33519991-5b067996-d7f5-11e7-856c-9d1b814202f6.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 15](https://user-images.githubusercontent.com/25688193/33519993-5c86959e-d7f5-11e7-9b01-aeed64f1b7aa.png)
+
 
 <br>
 
@@ -665,9 +666,9 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
         print( "label %d : %.3f" % ( i, accuracys1[i] ) )
     ```
 - 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 4](https://user-images.githubusercontent.com/25688193/33519829-422a4e5a-d7f2-11e7-886b-1a40e44d37b1.png)
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 5](https://user-images.githubusercontent.com/25688193/33519831-427d24ea-d7f2-11e7-9056-dfacd84b15bd.png)
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 6](https://user-images.githubusercontent.com/25688193/33519830-42534e9a-d7f2-11e7-94d5-870309d88981.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 10](https://user-images.githubusercontent.com/25688193/33519937-4f144a92-d7f4-11e7-992f-ab4c852d37d2.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 11](https://user-images.githubusercontent.com/25688193/33519939-4f5dd428-d7f4-11e7-990f-8f48560ae96d.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 12](https://user-images.githubusercontent.com/25688193/33519938-4f393000-d7f4-11e7-9c80-ac2fa34f4416.png)
 
 
 #### 補足（参考URL）

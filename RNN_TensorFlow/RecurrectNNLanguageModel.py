@@ -153,15 +153,17 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         # shape の行は、None にして汎用性を確保
         self._X_holder = tf.placeholder( 
                              tf.int32, 
-                             shape = [ None, self._n_in_sequence ]
+                             shape = [ None, self._n_in_sequence ],
+                             name = "X_holder"
                          )
 
         self._t_holder = tf.placeholder( 
                              tf.int32, 
-                             shape = [ None ]
+                             shape = [ None ],
+                             name = "t_holder"
                          )
 
-        self._keep_prob_holder = tf.placeholder( tf.float32 )
+        self._keep_prob_holder = tf.placeholder( tf.float32, name = "keep_prob_holder" )
 
         return
 
@@ -239,7 +241,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         init_tsr = tf.truncated_normal( shape = input_shape, stddev = 0.01 )
 
         # 重みの Variable
-        weight_var = tf.Variable( init_tsr )
+        weight_var = tf.Variable( init_tsr, name = "init_weight_var" )
         
         return weight_var
 
@@ -262,7 +264,7 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         init_tsr = tf.random_normal( shape = input_shape )
 
         # バイアス項の Variable
-        bias_var = tf.Variable( init_tsr )
+        bias_var = tf.Variable( init_tsr, name = "init_bias_var" )
 
         return bias_var
 
@@ -280,7 +282,8 @@ class RecurrectNNLanguageModel( NeuralNetworkBase ):
         # 埋め込み行列（単語ベクトルの集合）と埋め込み探索演算を作成
         #--------------------------------------------------------------
         self._embedding_matrix_var = tf.Variable( 
-                                         tf.random_uniform( [self._n_vocab, self._n_in_embedding_vec], -1.0, 1.0 ) 
+                                         tf.random_uniform( [self._n_vocab, self._n_in_embedding_vec], -1.0, 1.0 ),
+                                         name = "embedding_matrix_var"
                                      )
 
         # tf.nn.embedding_lookup(...) : バッチ内の各ソース単語について、ベクトルをルックアップ（検索）

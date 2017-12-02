@@ -174,6 +174,10 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
+    # TensorBoard 用のファイル（フォルダ）を作成
+    rnn1.write_tensorboard_graph()
+    
+    # fitting 処理
     rnn1.fit( X_train, y_train )
     rnn1.print( "after fitting" )
 
@@ -181,8 +185,6 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    # TensorBoard 用のファイル（フォルダ）を作成
-    rnn1.write_tensorboard_graph()
 
     # 時系列データの予想値を取得
     predicts1 = rnn1.predict( X_test )
