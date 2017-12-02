@@ -431,8 +431,6 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     [MLPreProcess.py]
     def load_sms_spam_collection( ... ):
         ...
-        # 水平タブを表すエスケープシーケンス `\t` 部分で別の配列に分割する。
-        # split(...) : 文字列の分割
         # [ ['ham', 'Go until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...\n'], 
         #   ['ham', 'Ok lar... Joki ..\n'], ...
         #   ['ham', "The guy did some bitching but I acted like i'd be interested in buying something else next week and he gave it to us for free\n"]
@@ -445,10 +443,6 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     [MLPreProcess.py]
     def load_sms_spam_collection( ... ):
         ...
-        # "ham", "spam" の文字列の部分を教師データに切り分け
-        # list(...) : リストの内包表記と合わせて text_data_labels と test_data_feature のリストの生成
-        # zip(*text_data) → zip(*list) : 関数の前のアスタリスクは展開されて解釈されるので、
-        # text_data の内容が "ham" or "spam" , と "本文" 部分に unpack（展開）解釈される。
         text_data_labels, text_data_features = [ list(str) for str in zip(*text_data) ]
     ```
     - クリーニング処理を行う。具体的には、文字量を減らすために、特殊文字と余分なホワイトスペースを取り除く。
@@ -467,12 +461,10 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
                           repl = "",                        # 置換する文字列 : "" なので文字なしに置換
                           string = str                      # 置換される文字列
                       )
-                #print( "re.sub(...) :", str )
 
                 # sep.join(seq) : sepを区切り文字として、seqを連結してひとつの文字列にする。
                 # 空白文字 " " を区切りにして分割処理
                 str = " ".join( str.split() )
-                #print( "sep.join( str.split() ) :", str )
 
                 # リスト中の大文字→小文字に変換
                 str = str.lower()
@@ -489,10 +481,6 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     [MLPreProcess.py]
     def def text_vocabulary_processing( ... ):
         ...
-        # テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、
-        # これよりも長いテキスト（シーケンス）は、この長さで打ち切り、
-        # それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
-        # 又、語彙に `min_word_freq` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size` のトレーニング可能なベクトルに埋め込む。
         vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
                               max_document_length = n_max_in_sequence, 
                               min_frequency = min_word_freq
