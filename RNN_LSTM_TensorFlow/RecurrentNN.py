@@ -40,6 +40,7 @@ from NNOptimizer import Momentum
 from NNOptimizer import NesterovMomentum
 from NNOptimizer import Adagrad
 from NNOptimizer import Adadelta
+from NNOptimizer import Adam
 
 
 class RecurrentNN( NeuralNetworkBase ):
@@ -140,16 +141,18 @@ class RecurrentNN( NeuralNetworkBase ):
         # shape の行は、None にして汎用性を確保
         self._X_holder = tf.placeholder( 
                              tf.float32, 
-                             shape = [ None, self._n_in_sequence, self._n_inputLayer ]
+                             shape = [ None, self._n_in_sequence, self._n_inputLayer ],
+                             name = "X_holder"
                          )
 
         self._t_holder = tf.placeholder( 
                              tf.float32, 
-                             shape = [ None, self._n_outputLayer ]
+                             shape = [ None, self._n_outputLayer ],
+                             name = "t_holder"
                          )
 
-        self._keep_prob_holder = tf.placeholder( tf.float32 )
-        self._batch_size_holder = tf.placeholder( tf.int32, shape=[] )
+        self._keep_prob_holder = tf.placeholder( tf.float32, name = "keep_prob_holder" )
+        self._batch_size_holder = tf.placeholder( tf.int32, shape=[], name = "batch_size_holder" )
 
         return
 
@@ -222,7 +225,7 @@ class RecurrentNN( NeuralNetworkBase ):
         init_tsr = tf.truncated_normal( shape = input_shape, stddev = 0.01 )
 
         # 重みの Variable
-        weight_var = tf.Variable( init_tsr )
+        weight_var = tf.Variable( init_tsr, name = "init_weight_var" )
         
         return weight_var
 
@@ -246,7 +249,7 @@ class RecurrentNN( NeuralNetworkBase ):
         init_tsr = tf.random_normal( shape = input_shape )
 
         # バイアス項の Variable
-        bias_var = tf.Variable( init_tsr )
+        bias_var = tf.Variable( init_tsr, name = "init_bias_var" )
 
         return bias_var
 

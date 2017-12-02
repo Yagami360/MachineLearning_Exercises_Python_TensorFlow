@@ -13,8 +13,9 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
     1. [LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main1.py`](#ID_3-1)
         1. [コードの内容説明](#ID_3-1-1)
         1. [コードの実行結果](#ID_3-1-2)
-    1. LSTM によるシェイクスピア作品のワード予想処理 : `main2.py`
-    1. 複数の LSTM 層によるシェイクスピア作品のワード予想処理 : `main3.py`
+    1. LSTM による Adding Problem 対する長期予想性とその評価処理 : `main2.py`
+    1. LSTM によるシェイクスピア作品のワード予想処理 : `main3.py`
+    1. 複数の LSTM 層によるシェイクスピア作品のワード予想処理 : `main4.py`
 1. [背景理論](#ID_4)
     1. [リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞](#ID_5)
         1. [長・短期記憶（LSTM [long short-term memory]）モデル](#ID_5-2)
@@ -116,9 +117,10 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
         self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
     ```
 - その他の処理は、 先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で使用した通常の RNN モデルと同様になる。
-- TensorBoard で表示される計算グラフ
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run lstm](https://user-images.githubusercontent.com/25688193/33447507-e63608de-d646-11e7-93e4-4bf43ee891b4.png)
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 2](https://user-images.githubusercontent.com/25688193/33447555-07d8a8ac-d647-11e7-8562-9942a7f7fe28.png)
+- 尚、この LSTM モデルを TensorBoard で描写した計算グラフは以下のようになる。
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 16](https://user-images.githubusercontent.com/25688193/33520066-08f105c0-d7f7-11e7-8939-e067401b527d.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/33520067-091a298c-d7f7-11e7-8060-42512d7241bf.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33520068-09417a78-d7f7-11e7-9711-39ae30ed39b5.png)
 
 <br>
 
