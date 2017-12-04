@@ -185,6 +185,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 
 式で書くと、
 >![image](https://user-images.githubusercontent.com/25688193/33545118-7a2030d4-d920-11e7-9a2a-c13c494588b3.png)<br>
+>
 >![image](https://user-images.githubusercontent.com/25688193/33545485-b521c82c-d921-11e7-8102-3064c87ee9c9.png)<br>
 >
 >この入力 x(t) に対しての、出力 y は、<br>
@@ -257,7 +258,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - この設定は、`RecurrectNNLSTM` クラスのインスタンス作成時の引数にて行う。
         - 入力層のノード数 `n_inputLayer` は **2** 個（入力データが、シグナルとマスクデータから成るので）、隠れ層のノード数 `n_hiddenLayer` は 100 個で検証、出力層のノード数 `n_outputLayer` は 1 個（ 推定器 Estimiter なので）
         - １つのシーケンスの長さ `n_in_sequence` は 250 個
-        - エポック数 `epochs` 500, ミニバッチサイズ `batch_size` 10
+        - エポック数は `epochs` 500, ミニバッチサイズ `batch_size`は 10
     ```python
     [main2.py]
     rnn1 = RecurrentNNLSTM(
@@ -297,7 +298,6 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 - 尚、この RNN モデルを TensorBoard で描写した計算グラフは以下のようになる。
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/33543980-62943bb2-d91c-11e7-9046-c376f1f1c18f.png)
 
-<br>
 
 <a id="ID_3-1-2"></a>
 
@@ -311,6 +311,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
     - １枚目の図が LSTM モデルでの損失関数のグラフ。２枚目の図が、通常の RNN モデルでの損失関数のグラフ
 ![rnn-lstm_2-1-2-h20](https://user-images.githubusercontent.com/25688193/33553385-da7fba92-d93b-11e7-98ce-10d10ff01e12.png)
+> コード実装中...
 
 <!--
 > LSTM モデルでは、損失関数の値が 0 付近に収束しており、うまく学習出来ていることが見て取れる。<br>
@@ -324,7 +325,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
     - １枚目の図が LSTM モデルでの予想波形のグラフ。２枚目の図が、通常の RNN モデルでの予想波形のグラフ
-
+> コード実装中...
 
 <br>
 
