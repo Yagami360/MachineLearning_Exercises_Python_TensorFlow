@@ -64,9 +64,11 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
 
 ## LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main1.py`
 
+LSTM モデルによる時系列データの取り扱いの簡単な例として、先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で行った処理と同じ、ノイズ付き sin 波形（時系列データとみなす）の予想（生成）を検証し、先の通常の RNN モデルと LSTM モデルの長期依存性の予想性能を比較評価する。
+
 <a id="ID_3-1-1"></a>
 
-LSTM モデルによる時系列データの取り扱いの簡単な例として、先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で行った処理と同じ、ノイズ付き sin 波形（時系列データとみなす）の予想（生成）を考える。
+以下、コードの説明。
 
 - 先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で使用した通常の RNN モデルで、`tf.contrib.rnn.BasicRNNCell(...)` としていた箇所を、`tf.contrib.rnn.LSTMCell(...)` に変更する。
     ```python
@@ -119,7 +121,6 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 4](https://user-images.githubusercontent.com/25688193/33547356-331fd9f8-d927-11e7-90c1-65027f1cdf7b.png)
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 5](https://user-images.githubusercontent.com/25688193/33547357-336b9f32-d927-11e7-8902-315b0e335a93.png)
 
-<br>
 
 <a id="ID_3-1-2"></a>
 
@@ -173,8 +174,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 <a id="ID_3-2"></a>
 
 ## LSTM による Adding Problem に対する長期予想性とその評価処理 : `main2.py`
-
-<a id="ID_3-2-1"></a>
+> コード実装中...
 
 先の ノイズ付き sin 波形の LSTM での予想処理で、LSTM が通常の RNN より、精度の高い予想が出来ていることを確認したが、
 より一般的に LSTM の長期依存性の学習評価を確認するために、Adding Problem というトイ・プロブレムで LSTM 長期依存性を評価する。
@@ -199,6 +199,10 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 一部を図示すると、
 > Adding Problem データの内、1, 2, 9999, 10000 つ目のシーケンスのデータを表示した図
 >![rnnlm_2-2-2](https://user-images.githubusercontent.com/25688193/33543425-6098de0a-d91a-11e7-8c95-ea65825b157a.png)
+
+<a id="ID_3-2-1"></a>
+
+以下、コードの説明。
 
 - まず、Adding Problem のデータセットに対応するデータを生成する。
     - この処理は、`generate_adding_problem(...)` 関数で行い、以下のようなコードになる。
@@ -299,7 +303,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/33543980-62943bb2-d91c-11e7-9046-c376f1f1c18f.png)
 
 
-<a id="ID_3-1-2"></a>
+<a id="ID_3-2-2"></a>
 
 ### コードの実行結果
 
@@ -310,7 +314,8 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
     - １枚目の図が LSTM モデルでの損失関数のグラフ。２枚目の図が、通常の RNN モデルでの損失関数のグラフ
-![rnn-lstm_2-1-2-h20](https://user-images.githubusercontent.com/25688193/33553385-da7fba92-d93b-11e7-98ce-10d10ff01e12.png)
+![rnn-lstm_2-2-2-h100_adam](https://user-images.githubusercontent.com/25688193/33554417-f888c480-d93f-11e7-8200-624a81867cd0.png)
+![rnn_2-2-1-h100_adam](https://user-images.githubusercontent.com/25688193/33555739-c7871ad0-d944-11e7-81b6-251d5993358e.png)
 > コード実装中...
 
 <!--
