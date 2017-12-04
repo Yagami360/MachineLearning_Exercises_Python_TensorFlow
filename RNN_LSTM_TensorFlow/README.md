@@ -2,8 +2,8 @@
 
 TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデルの予想、画像識別、自然言語処理の練習用実装コード集。
 
-この README.md ファイルには、各コードの実行結果、概要、RNN の背景理論の説明を記載しています。
-分かりやすいように main.py ファイル毎に１つの完結した実行コードにしています。
+この `README.md` ファイルには、各コードの実行結果、概要、RNN の背景理論の説明を記載しています。
+分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
 
 ### 項目 [Contents]
 
@@ -13,7 +13,9 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
     1. [LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理 : `main1.py`](#ID_3-1)
         1. [コードの内容説明](#ID_3-1-1)
         1. [コードの実行結果](#ID_3-1-2)
-    1. LSTM による Adding Problem 対する長期予想性とその評価処理 : `main2.py`
+    1. [LSTM による Adding Problem に対する長期予想性とその評価処理 : `main2.py`](#ID_3-2)
+        1. [コードの内容説明](#ID_3-2-1)
+        1. [コードの実行結果](#ID_3-2-2)
     1. LSTM によるシェイクスピア作品のワード予想処理 : `main3.py`
     1. 複数の LSTM 層によるシェイクスピア作品のワード予想処理 : `main4.py`
 1. [背景理論](#ID_4)
@@ -36,14 +38,6 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
 >> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
 
->> `tf.variable_scope(...)` : Variable に名前空間を与える。<br>
->>> https://www.tensorflow.org/api_docs/python/tf/variable_scope<br>
-
->> `tf.get_variable(...)` : <br>
->> 変数名の識別子（新規か？重複がないか？）を管理しながら変数の名前空間の定義を行い、必ず `tf.variable_scope()` とセットで使う。<br>
->>> https://qiita.com/TomokIshii/items/ffe999b3e1a506c396c8
-
-
 > その他ライブラリ
 >>
 
@@ -55,6 +49,9 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
 
 > ノイズ付き sin 波形（時系列データとして利用）
 ![rnn_1-1](https://user-images.githubusercontent.com/25688193/33367977-a1f6a1b0-d533-11e7-8daa-d6a51e5d9eb7.png)
+
+> Adding Problem データの内、1, 2, 9999, 10000 つ目のシーケンスのデータを表示した図
+![rnnlm_2-2-1](https://user-images.githubusercontent.com/25688193/33538063-8b2791a6-d902-11e7-8bb4-8528f21f7c3c.png)
 
 <br>
 
@@ -150,6 +147,82 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 <br>
 
 ---
+
+<a id="ID_3-2"></a>
+
+## LSTM による Adding Problem に対する長期予想性とその評価処理 : `main2.py`
+
+<a id="ID_3-2-1"></a>
+
+先の ノイズ付き sin 波形の LSTM での予想処理で、LSTM が通常の RNN より、精度の高い予想が出来ていることを確認したが、<br>
+より一般的に LSTM の長期依存性の学習評価を確認するために、Adding Problem というトイ・プロブレムで LSTM 長期依存性を評価する。
+
+
+> Adding Problem データの内、1, 2, 9999, 10000 つ目のシーケンスのデータを表示した図
+![rnnlm_2-2-1](https://user-images.githubusercontent.com/25688193/33538063-8b2791a6-d902-11e7-8bb4-8528f21f7c3c.png)
+
+- まず、Adding Problem のデータセットに対応するデータを生成する。
+    - この処理は、`generate_adding_problem(...)` 関数で行い、以下のようなコードになる。
+    ```python
+    [MLPreProcess.py]
+    @staticmethod
+    def generate_adding_problem( t, n_sequence, seed = 12 ):
+        numpy.random.seed( seed = seed )
+        
+        # 0~1 の間の一様ランダムからなるシグナル（シーケンス）× シグナル数（シーケンス数）作成
+        singnals = numpy.random.uniform( low = 0.0, high = 1.0, size = ( n_sequence, t ) )
+        
+        #-----------------------------
+        # 0 or 1 からなるマスクの作成
+        #-----------------------------
+        # まず全体を 0 で埋める
+        masks = numpy.zeros( shape = ( n_sequence, t ) )
+
+        for i in range( n_sequence ):
+            # マスクの値 0 or 1
+            mask = numpy.zeros( shape = ( t ) )
+            # numpy.random.permutation(...) : 配列をランダムに入れ替え
+            inidices = numpy.random.permutation( numpy.arange(t) )[:2]
+            mask[inidices] = 1
+            masks[i] = mask
+        
+        #-----------------------------
+        # シグナル×マスクの作成
+        #-----------------------------
+        # まず全体を 0 で埋める
+        adding_data = numpy.zeros( shape = ( n_sequence, t, 2 ) )
+        
+        # シグナルの配列
+        adding_data[ :, :, 0 ] = singnals
+        
+        # マスクの配列
+        adding_data[ :, :, 1 ] = masks
+
+        # 出力
+        adding_targets = ( singnals * masks ).sum( axis = 1 ).reshape( n_sequence, 1 )
+
+        return adding_data, adding_targets
+    ```
+    - そして、main 側でこの関数 `` を呼び出し、N = 10,000 個のデータを時間 t=200 の幅で生成する。
+    ```python
+    [main2.py]
+    X_features, y_labels = MLPreProcess.generate_adding_problem( t = 200, n_sequence = 10000, seed = 12 )
+    ```
+- データセットを、トレーニング用データセットと、テスト用データセットに分割する。
+分割割合は、トレーニング用データ 90%、テスト用データ 10%
+    ```python
+    [main2.py]
+    X_train, X_test, y_train, y_test \
+    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.1, input_random_state = 1 )
+    ```
+- その他の処理は、 先の [./RNN_LSTM_TensorFlow/main1.py](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow#lstm-によるノイズ付き-sin-波形時系列データからの長期の波形の予想生成処理--main1py) で使用した LSTM モデルと同様になる。
+- 尚、この RNN モデルを TensorBoard で描写した計算グラフは以下のようになる。
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 2](https://user-images.githubusercontent.com/25688193/33542457-78ef7ab2-d916-11e7-97bd-c93f77b543fb.png)
+
+<br>
+
+---
+
 
 <a id="ID_4"></a>
 

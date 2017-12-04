@@ -40,6 +40,7 @@ from NNOptimizer import Momentum
 from NNOptimizer import NesterovMomentum
 from NNOptimizer import Adagrad
 from NNOptimizer import Adadelta
+from NNOptimizer import Adam
 
 
 class RecurrentNNLSTM( RecurrentNN ):

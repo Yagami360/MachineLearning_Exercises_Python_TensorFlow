@@ -4,6 +4,7 @@
 """
     更新情報
     [17/11/18] : 新規作成
+    [17/12/04] : 損失関数の処理の名前空間を設定するように修正 
     [17/xx/xx] : 
                : 
 """
@@ -58,7 +59,9 @@ class NNLoss( object ):
         [Output]
             損失関数のオペレーター
         """
-        self._loss_op = None
+        # 名前空間の範囲
+        with tf.name_scope( self._node_name ):
+            self._loss_op = None
 
         return self._loss_op
 
@@ -75,10 +78,11 @@ class L1Norm( NNLoss ):
         return
 
     def loss( self, t_holder, y_out_op, node_name = "Loss_L1Norm_op" ):
-        # tf.reduce_mean(...) でバッチサイズに対しての平均をとる。
-        self._loss_op = tf.reduce_mean(
-                            tf.abs( t_holder - y_out_op )
-                        )
+        with tf.name_scope( self._node_name ):
+            # tf.reduce_mean(...) でバッチサイズに対しての平均をとる。
+            self._loss_op = tf.reduce_mean(
+                                tf.abs( t_holder - y_out_op )
+                            )
 
         return self._loss_op
 
@@ -95,9 +99,10 @@ class L2Norm( NNLoss ):
         return
 
     def loss( self, t_holder, y_out_op, node_name = "Loss_L2Norm_op" ):
-        self._loss_op = tf.reduce_mean(
-                            tf.square( t_holder - y_out_op )
-                        )
+        with tf.name_scope( self._node_name ):
+            self._loss_op = tf.reduce_mean(
+                                tf.square( t_holder - y_out_op )
+                            )
         
         return self._loss_op
 
@@ -114,9 +119,10 @@ class BinaryCrossEntropy( NNLoss ):
         return
 
     def loss( self, t_holder, y_out_op ):
-        self._loss_op = -tf.reduce_sum( 
-                            t_holder * tf.log( y_out_op ) + ( 1 - t_holder ) * tf.log( 1 - y_out_op )
-                        )
+        with tf.name_scope( self._node_name ):
+            self._loss_op = -tf.reduce_sum( 
+                                t_holder * tf.log( y_out_op ) + ( 1 - t_holder ) * tf.log( 1 - y_out_op )
+                            )
         
         return self._loss_op
 
@@ -133,14 +139,15 @@ class CrossEntropy( NNLoss ):
         return
 
     def loss( self, t_holder, y_out_op, node_name = "Loss_CrossEntropy_op" ):
-        # softmax で正規化済みの場合
-        # tf.clip_by_value(...) : 下限値、上限値を設定し, 値が更新されないことを防止
-        self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
-                            -tf.reduce_sum( 
-                                t_holder * tf.log( tf.clip_by_value(y_out_op, 1e-10, 1.0) ), 
-                                reduction_indices = [1]     # sum をとる行列の方向 ( 1:row 方向 )
+        with tf.name_scope( self._node_name ):
+            # softmax で正規化済みの場合
+            # tf.clip_by_value(...) : 下限値、上限値を設定し, 値が更新されないことを防止
+            self._loss_op = tf.reduce_mean(                     # ミニバッチ度に平均値を計算
+                                -tf.reduce_sum( 
+                                    t_holder * tf.log( tf.clip_by_value(y_out_op, 1e-10, 1.0) ), 
+                                    reduction_indices = [1]     # sum をとる行列の方向 ( 1:row 方向 )
+                                )
                             )
-                        )
         
         return self._loss_op
 
@@ -157,13 +164,14 @@ class SoftmaxCrossEntropy( NNLoss ):
         return
 
     def loss( self, t_holder, y_out_op ):
-        # softmax で正規化済みでない場合
-        self._loss_op = tf.reduce_mean(
-                            tf.nn.softmax_cross_entropy_with_logits(
-                                labels = t_holder,
-                                logits = y_out_op
+        with tf.name_scope( self._node_name ):
+            # softmax で正規化済みでない場合
+            self._loss_op = tf.reduce_mean(
+                                tf.nn.softmax_cross_entropy_with_logits(
+                                    labels = t_holder,
+                                    logits = y_out_op
+                                )
                             )
-                        )
         
         return self._loss_op
 
@@ -180,12 +188,13 @@ class SparseSoftmaxCrossEntropy( NNLoss ):
         return
 
     def loss( self, t_holder, y_out_op ):
-        self._loss_op = tf.reduce_mean(
-                            tf.nn.sparse_softmax_cross_entropy_with_logits(
-                                labels = t_holder,
-                                logits = y_out_op
+        with tf.name_scope( self._node_name ):
+            self._loss_op = tf.reduce_mean(
+                                tf.nn.sparse_softmax_cross_entropy_with_logits(
+                                    labels = t_holder,
+                                    logits = y_out_op
+                                )
                             )
-                        )
         
         return self._loss_op
 
