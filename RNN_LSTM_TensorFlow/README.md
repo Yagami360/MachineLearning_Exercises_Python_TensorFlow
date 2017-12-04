@@ -47,11 +47,12 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
 
 ### 使用するデータセット
 
-> ノイズ付き sin 波形（時系列データとして利用）
+- ノイズ付き sin 波形（時系列データとして利用）
 ![rnn_1-1](https://user-images.githubusercontent.com/25688193/33367977-a1f6a1b0-d533-11e7-8daa-d6a51e5d9eb7.png)
 
-> Adding Problem データの内、1, 2, 9999, 10000 つ目のシーケンスのデータを表示した図
-![rnnlm_2-2-1](https://user-images.githubusercontent.com/25688193/33538063-8b2791a6-d902-11e7-8bb4-8528f21f7c3c.png)
+- Adding Problem に対応するデータ（時系列データに対する長期の予想評価として利用）
+    - Adding Problem データの内、1, 2, 9999, 10000 つ目のシーケンスのデータを表示した図
+![rnnlm_2-2-2](https://user-images.githubusercontent.com/25688193/33543425-6098de0a-d91a-11e7-8c95-ea65825b157a.png)
 
 <br>
 
@@ -115,9 +116,8 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     ```
 - その他の処理は、 先の [`./RNN_TensorFlow/main1.py`](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow#rnn-によるノイズ付き-sin-波形時系列データからの波形の予想生成処理--main1py) で使用した通常の RNN モデルと同様になる。
 - 尚、この LSTM モデルを TensorBoard で描写した計算グラフは以下のようになる。
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 16](https://user-images.githubusercontent.com/25688193/33520066-08f105c0-d7f7-11e7-8939-e067401b527d.png)
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/33520067-091a298c-d7f7-11e7-8060-42512d7241bf.png)
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33520068-09417a78-d7f7-11e7-9711-39ae30ed39b5.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 4](https://user-images.githubusercontent.com/25688193/33547356-331fd9f8-d927-11e7-90c1-65027f1cdf7b.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 5](https://user-images.githubusercontent.com/25688193/33547357-336b9f32-d927-11e7-8902-315b0e335a93.png)
 
 <br>
 
@@ -127,18 +127,30 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 
 ### 損失関数のグラフ
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝の LSTM モデル 
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_2-1-20](https://user-images.githubusercontent.com/25688193/33446785-886412c0-d644-11e7-8b61-63a068403f02.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝の LSTM モデル 
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_2-1-50](https://user-images.githubusercontent.com/25688193/33447976-1d99f1e0-d648-11e7-9688-f6dec4b3219f.png)
 
 ### 予想出力値と元データの波形図（時系列データ）
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝の LSTM モデル 
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_2-2-20](https://user-images.githubusercontent.com/25688193/33446787-89d01aaa-d644-11e7-9288-fe6998441568.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の LSTM モデル 
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝の LSTM モデル 
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_2-2-50](https://user-images.githubusercontent.com/25688193/33447978-1eef3690-d648-11e7-82e1-29166b519557.png)
 
 > 先の通常の RNN モデルより、長期の予想が改善していることが分かる。
@@ -154,12 +166,27 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 
 <a id="ID_3-2-1"></a>
 
-先の ノイズ付き sin 波形の LSTM での予想処理で、LSTM が通常の RNN より、精度の高い予想が出来ていることを確認したが、<br>
+先の ノイズ付き sin 波形の LSTM での予想処理で、LSTM が通常の RNN より、精度の高い予想が出来ていることを確認したが、
 より一般的に LSTM の長期依存性の学習評価を確認するために、Adding Problem というトイ・プロブレムで LSTM 長期依存性を評価する。
 
+このデータは、時系列データである入力データ x(t) が、シグナルデータ s(t) とマスクデータ m(t) の２種類からなるデータで、<br>
+シグナルデータ s(t) が、 0 ~ 1 の一様乱数分布 U(0,1) に従って発生させたデータであり、<br>
+マスクデータ m(t) が、{ 0 or 1 } の値となるが、与えられた時間 t の範囲で、ランダムに選ばれた 2 つのデータのみ 1 を取り、その他は全て 0 となるようなデータである。
 
+式で書くと、
+>![image](https://user-images.githubusercontent.com/25688193/33545118-7a2030d4-d920-11e7-9a2a-c13c494588b3.png)<br>
+>![image](https://user-images.githubusercontent.com/25688193/33545485-b521c82c-d921-11e7-8102-3064c87ee9c9.png)<br>
+>この入力 x(t) に対しての、出力 y は、<br>
+>![image](https://user-images.githubusercontent.com/25688193/33545649-3423b5cc-d922-11e7-8067-de1e051dbefe.png)<br>
+
+<!--
+表で書くと、
+> 記載中...
+-->
+
+一部を図示すると、
 > Adding Problem データの内、1, 2, 9999, 10000 つ目のシーケンスのデータを表示した図
-![rnnlm_2-2-1](https://user-images.githubusercontent.com/25688193/33538063-8b2791a6-d902-11e7-8bb4-8528f21f7c3c.png)
+>![rnnlm_2-2-2](https://user-images.githubusercontent.com/25688193/33543425-6098de0a-d91a-11e7-8c95-ea65825b157a.png)
 
 - まず、Adding Problem のデータセットに対応するデータを生成する。
     - この処理は、`generate_adding_problem(...)` 関数で行い、以下のようなコードになる。
@@ -203,10 +230,10 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 
         return adding_data, adding_targets
     ```
-    - そして、main 側でこの関数 `` を呼び出し、N = 10,000 個のデータを時間 t=200 の幅で生成する。
+    - そして、main 側でこの関数 `generate_adding_problem(...)` を呼び出し、N = 10,000 個のデータを時間 t = 250 の幅で生成する。
     ```python
     [main2.py]
-    X_features, y_labels = MLPreProcess.generate_adding_problem( t = 200, n_sequence = 10000, seed = 12 )
+    X_features, y_labels = MLPreProcess.generate_adding_problem( t = 250, n_sequence = 10000, seed = 12 )
     ```
 - データセットを、トレーニング用データセットと、テスト用データセットに分割する。
 分割割合は、トレーニング用データ 90%、テスト用データ 10%
@@ -215,9 +242,77 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     X_train, X_test, y_train, y_test \
     = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.1, input_random_state = 1 )
     ```
+- LSTM モデルの各種パラメーターの設定を行う。
+    - この設定は、`RecurrectNNLSTM` クラスのインスタンス作成時の引数にて行う。
+        - 入力層のノード数 `n_inputLayer` は **2** 個（入力データが、シグナルとマスクデータから成るので）、隠れ層のノード数 `n_hiddenLayer` は 100 個で検証、出力層のノード数 `n_outputLayer` は 1 個（ 推定器 Estimiter なので）
+        - １つのシーケンスの長さ `n_in_sequence` は 250 個
+        - エポック数 `epochs` 500, ミニバッチサイズ `batch_size` 10
+    ```python
+    [main2.py]
+    rnn1 = RecurrentNNLSTM(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               n_inputLayer = len( X_features[0][0] ),
+               n_hiddenLayer = 100,
+               n_outputLayer = len( y_labels[0] ),
+               n_in_sequence = X_features.shape[1],
+               epochs = 500,
+               batch_size = 10,
+               eval_step = 1
+           )
+    ```
+- 損失関数として、L2ノルムを使用する。
+    ```python
+    [main2.py]
+    rnn1.loss( L2Norm() )
+    ```
+- 最適化アルゴリズム Optimizer として、Adam アルゴリズムを使用する。
+    - 学習率 `learning_rate` は、可変な値（0.001 等）で検証。減衰項は `beta1 = 0.9`, `beta1 = 0.999`
+    ```python
+    [main2.py]
+    rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    ```
+- トレーニング用データ `X_train`, `y_train` に対し、fitting 処理を行う。
+    ```python
+    [main2.py]
+    rnn1.fit( X_train, y_train )
+    ```
+- fitting 処理 `fit(...)` 後のモデルで、時系列データの予想を行う。
+    - 関数 `predict(...)` を、以下のように main 処理側で呼び出し、一連の時系列データの予想値を取得する。
+    ```python
+    [main2.py]
+    predicts1 = rnn1.predict( X_features )
+    ```
 - その他の処理は、 先の [./RNN_LSTM_TensorFlow/main1.py](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow#lstm-によるノイズ付き-sin-波形時系列データからの長期の波形の予想生成処理--main1py) で使用した LSTM モデルと同様になる。
 - 尚、この RNN モデルを TensorBoard で描写した計算グラフは以下のようになる。
-![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 2](https://user-images.githubusercontent.com/25688193/33542457-78ef7ab2-d916-11e7-97bd-c93f77b543fb.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/33543980-62943bb2-d91c-11e7-9046-c376f1f1c18f.png)
+
+<br>
+
+<a id="ID_3-1-2"></a>
+
+### コードの実行結果
+
+### 損失関数のグラフ
+
+- ｛入力層：２ノード、隠れ層：**100** ノード、出力層：１ノード｝の LSTM と RNN モデル
+    - 各シーケンス長 : 250 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
+    - 赤字が LSTM モデル、青字が通常の RNN モデル
+
+
+> 赤線のLSTM モデルでは、損失関数の値が 0 付近に収束しており、うまく学習出来ていることが見て取れる。<br>
+> 一方、青線の通常の RNN モデルでは、損失関数の値が収束しておらず、うまく学習出来ていないことが分かる。
+
+
+### 予想出力値と元データの波形図（時系列データ）
+
+- ｛入力層：２ノード、隠れ層：**100** ノード、出力層：１ノード｝の LSTM モデル
+    - 各シーケンス長 : 250 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
+
+
 
 <br>
 

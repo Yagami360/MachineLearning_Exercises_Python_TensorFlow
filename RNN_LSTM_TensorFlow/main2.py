@@ -42,6 +42,7 @@ from NNOptimizer import Adadelta
 from NNOptimizer import Adam
 
 from NeuralNetworkBase import NeuralNetworkBase
+from RecurrentNN import RecurrentNN
 from RecurrentNNLSTM import RecurrentNNLSTM
 
 
@@ -58,8 +59,8 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    X_features, y_labels = MLPreProcess.generate_adding_problem( t = 200, n_sequence = 10000, seed = 12 )
-    print( "X_features.shape :", X_features.shape )     # X_features.shape : (10000, 200, 2)
+    X_features, y_labels = MLPreProcess.generate_adding_problem( t = 250, n_sequence = 10000, seed = 12 )
+    print( "X_features.shape :", X_features.shape )     # X_features.shape : (10000, 250, 2)
     print( "y_labels.shape :", y_labels.shape )         # y_labels.shape : (10000, 1)
     
     #---------------------------------------------------------
@@ -184,7 +185,7 @@ def main():
     plt.grid()
     plt.tight_layout()
     
-    MLPlot.saveFigure( fileName = "RNNLM_2-2.png" )
+    MLPlot.saveFigure( fileName = "RNN-LSTM_2-2.png" )
     plt.show()
     """
 
@@ -223,6 +224,16 @@ def main():
                batch_size = 10,
                eval_step = 1
            )
+    rnn2 = RecurrentNN(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               n_inputLayer = len( X_features[0][0] ),
+               n_hiddenLayer = 100,
+               n_outputLayer = len( y_labels[0] ),
+               n_in_sequence = X_features.shape[1],
+               epochs = 500,
+               batch_size = 10,
+               eval_step = 1
+           )
     rnn1.print( "after __init__()" )
 
     #======================================================================
@@ -245,19 +256,22 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     rnn1.model()
-    rnn1.print( "after model()" )
+    rnn2.model()
+    #rnn1.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
     rnn1.loss( L2Norm() )
+    rnn2.loss( L2Norm() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
     rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    rnn2.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -275,19 +289,17 @@ def main():
     #======================================================================
     # TensorBoard 用のファイル（フォルダ）を作成
     #rnn1.write_tensorboard_graph()
+    #rnn2.write_tensorboard_graph()
 
     # fitting 処理を行う
     rnn1.fit( X_train, y_train )
+    rnn2.fit( X_train, y_train )
     rnn1.print( "after fitting" )
 
     #======================================================================
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    # 時系列データの予想値を取得
-    predicts1 = rnn1.predict( X_features )
-    print( "predicts1 :\n", predicts1 )
-
     #---------------------------------------------------------
     # 損失関数を plot
     #---------------------------------------------------------
@@ -300,6 +312,13 @@ def main():
         linewidth = 1,
         color = 'red'
     )
+    plt.plot(
+        range( rnn2._epochs ), rnn2._losses_train,
+        label = 'RNN1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate1 ) ,
+        linestyle = '--',
+        linewidth = 1,
+        color = 'blue'
+    )
 
     plt.title( "loss / L2 Norm (MSE)" )
     plt.legend( loc = 'best' )
@@ -308,13 +327,16 @@ def main():
     plt.grid()
     plt.tight_layout()
     
-    MLPlot.saveFigure( fileName = "RNNLM_2-2.png" )
+    MLPlot.saveFigure( fileName = "RNN-LSTM_2-2.png" )
     plt.show()
-
 
     #---------------------------------------------------------
     # 時系列データの予想値と元の Adding Problem 波形を plot
     #---------------------------------------------------------
+    # 時系列データの予想値を取得
+    #predicts1 = rnn1.predict( X_features )
+    #print( "predicts1 :\n", predicts1 )
+
     """
     plt.clf()
 
@@ -351,7 +373,7 @@ def main():
     plt.grid()
     plt.tight_layout()
    
-    MLPlot.saveFigure( fileName = "RNNLM_2-3.png" )
+    MLPlot.saveFigure( fileName = "RNN-LSTM_2-3.png" )
     plt.show()
     """
     #======================================================================
