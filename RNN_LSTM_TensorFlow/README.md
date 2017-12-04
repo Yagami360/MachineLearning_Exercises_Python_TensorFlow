@@ -163,7 +163,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 ![rnn-lstm_1-2-h50](https://user-images.githubusercontent.com/25688193/33553775-5f1f09fa-d93d-11e7-8702-501d0d9d9a81.png)
 ![rnn_1-3-50](https://user-images.githubusercontent.com/25688193/33424650-c905ced0-d5ff-11e7-8c80-743fd0319046.png)
 
-> 先の通常の RNN モデルより、長期の予想が改善していることが分かる。
+> LSTM モデルの方が、通常の RNN モデルより、長期の予想が格段に改善していることが分かる。
 
 
 <br>
