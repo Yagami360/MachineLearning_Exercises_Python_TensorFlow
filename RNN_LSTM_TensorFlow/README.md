@@ -132,6 +132,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 各シーケンス長 : **25** 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割
+    - エポック数 500 回, ミニバッチサイズ 10
     - １枚目の図が、LSTM モデルでの損失関数のグラフ。２枚目の図が、通常の RNN モデルでの損失関数のグラフ
 ![rnn-lstm_1-1-3-h20](https://user-images.githubusercontent.com/25688193/33553583-b75ce19c-d93c-11e7-980c-af30df4654a9.png)
 ![rnn_1-2-20](https://user-images.githubusercontent.com/25688193/33424393-151103c2-d5ff-11e7-9de3-4993be4767d8.png)
@@ -140,6 +141,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 各シーケンス長 : **25** 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割
+    - エポック数 500 回, ミニバッチサイズ 10
     - １枚目の図が、LSTM モデルでの損失関数のグラフ。２枚目の図が、通常の RNN モデルでの損失関数のグラフ
 ![rnn-lstm_1-1-3-h50](https://user-images.githubusercontent.com/25688193/33553772-5bb39f6a-d93d-11e7-82eb-549af7240967.png)
 ![rnn_1-2-50](https://user-images.githubusercontent.com/25688193/33424608-a70bf372-d5ff-11e7-8472-46bf4c47ea1c.png)
@@ -152,6 +154,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 各シーケンス長 : **25** 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割
+    - エポック数 500 回, ミニバッチサイズ 10
     - １枚目の図が LSTM モデルでの予想波形、２枚目の図が、通常の RNN モデルでの予想波形
 ![rnn-lstm_1-2-h20](https://user-images.githubusercontent.com/25688193/33553610-cdf9870c-d93c-11e7-9b6f-d3d8998aa14b.png)
 ![rnn_1-3-20](https://user-images.githubusercontent.com/25688193/33424647-c8b09c80-d5ff-11e7-8626-151369d31e83.png)
@@ -160,6 +163,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 各シーケンス長 : **25** 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割
+    - エポック数 500 回, ミニバッチサイズ 10
     - １枚目の図が LSTM モデルでの予想波形、２枚目の図が、通常の RNN モデルでの予想波形
 ![rnn-lstm_1-2-h50](https://user-images.githubusercontent.com/25688193/33553775-5f1f09fa-d93d-11e7-8702-501d0d9d9a81.png)
 ![rnn_1-3-50](https://user-images.githubusercontent.com/25688193/33424650-c905ced0-d5ff-11e7-8c80-743fd0319046.png)
@@ -174,7 +178,6 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 <a id="ID_3-2"></a>
 
 ## LSTM による Adding Problem に対する長期予想性とその評価処理 : `main2.py`
-> コード実装中...
 
 先の ノイズ付き sin 波形の LSTM での予想処理で、LSTM が通常の RNN より、精度の高い予想が出来ていることを確認したが、
 より一般的に LSTM の長期依存性の学習評価を確認するために、Adding Problem というトイ・プロブレムで LSTM 長期依存性を評価する。
@@ -189,6 +192,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 >![image](https://user-images.githubusercontent.com/25688193/33545485-b521c82c-d921-11e7-8102-3064c87ee9c9.png)<br>
 >
 >この入力 x(t) に対しての、出力 y は、<br>
+>
 >![image](https://user-images.githubusercontent.com/25688193/33545649-3423b5cc-d922-11e7-8067-de1e051dbefe.png)<br>
 
 <!--
@@ -262,7 +266,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - この設定は、`RecurrectNNLSTM` クラスのインスタンス作成時の引数にて行う。
         - 入力層のノード数 `n_inputLayer` は **2** 個（入力データが、シグナルとマスクデータから成るので）、隠れ層のノード数 `n_hiddenLayer` は 100 個で検証、出力層のノード数 `n_outputLayer` は 1 個（ 推定器 Estimiter なので）
         - １つのシーケンスの長さ `n_in_sequence` は 250 個
-        - エポック数は `epochs` 500, ミニバッチサイズ `batch_size`は 10
+        - エポック数は `epochs` 300, ミニバッチサイズ `batch_size`は 200
     ```python
     [main2.py]
     rnn1 = RecurrentNNLSTM(
@@ -299,7 +303,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     predicts1 = rnn1.predict( X_features )
     ```
 - その他の処理は、 先の [./RNN_LSTM_TensorFlow/main1.py](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow#lstm-によるノイズ付き-sin-波形時系列データからの長期の波形の予想生成処理--main1py) で使用した LSTM モデルと同様になる。
-- 尚、この RNN モデルを TensorBoard で描写した計算グラフは以下のようになる。
+- 尚、この LSTM モデルを TensorBoard で描写した計算グラフは以下のようになる。
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/33543980-62943bb2-d91c-11e7-9046-c376f1f1c18f.png)
 
 
@@ -313,7 +317,10 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 各シーケンス長 : 250 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
+    - エポック回数 300, ミニバッチサイズ 200
     - １枚目の図が LSTM モデルでの損失関数のグラフ。２枚目の図が、通常の RNN モデルでの損失関数のグラフ
+![rnn-lstm_2-2-3-h100_adam](https://user-images.githubusercontent.com/25688193/33565294-106207fe-d960-11e7-8c6b-276a7df208b1.png)
+    - エポック回数 500, ミニバッチサイズ 10
 ![rnn-lstm_2-2-2-h100_adam](https://user-images.githubusercontent.com/25688193/33554417-f888c480-d93f-11e7-8200-624a81867cd0.png)
 ![rnn_2-2-1-h100_adam](https://user-images.githubusercontent.com/25688193/33555739-c7871ad0-d944-11e7-81b6-251d5993358e.png)
 > コード実装中...
@@ -328,7 +335,8 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 - ｛入力層：２ノード、隠れ層：**100** ノード、出力層：１ノード｝の LSTM モデルと通常の RNN モデルの比較
     - 各シーケンス長 : 250 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
-    - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
+    - トレーニング用データ : 90 %、テスト用データ : 10% に分割
+    - エポック回数 300, ミニバッチサイズ 200 
     - １枚目の図が LSTM モデルでの予想波形のグラフ。２枚目の図が、通常の RNN モデルでの予想波形のグラフ
 > コード実装中...
 
@@ -393,3 +401,39 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 ---
 
 デバッグメモ
+
+[17/12/04]
+
+```python
+X_features.shape : (10000, 250, 2)
+y_labels.shape : (10000, 1)
+X_train.shape : (9000, 250, 2)
+y_train.shape : (9000, 1)
+--------------
+_y_out_op :  Tensor("add:0", shape=(?, 1), dtype=float32)
+_n_inputLayer :  2
+_n_hiddenLayer :  100
+_n_outputLayer :  1
+_n_in_sequence :  250
+_epoches :  300
+_batch_size :  100
+_eval_step :  1
+_X_holder :  Tensor("X_holder:0", shape=(?, 250, 2), dtype=float32)
+_t_holder :  Tensor("t_holder:0", shape=(?, 1), dtype=float32)
+-----------------------
+n_sequences : 19999
+
+i=0
+X_t : shape =(1,250,2)
+X_t_last : shape =(1,250,2)
+prob : array([ 0.983289], dtype=float32)
+
+new_sequence = numpy.concatenate(
+    ( X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:], prob ), axis = 0
+    ).reshape( 1, self._n_in_sequence, self._n_inputLayer )
+ValueError: all the input array dimensions except for the concatenation axis must match exactly
+
+
+
+
+```
