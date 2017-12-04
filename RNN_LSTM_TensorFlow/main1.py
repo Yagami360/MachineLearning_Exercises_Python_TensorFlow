@@ -42,11 +42,13 @@ from NNOptimizer import Adadelta
 from NNOptimizer import Adam
 
 from NeuralNetworkBase import NeuralNetworkBase
+from RecurrentNN import RecurrentNN
 from RecurrentNNLSTM import RecurrentNNLSTM
+
 
 def main():
     """
-    TensorFlow を用いた RNN によるノイズ付き sin 波形（時系列データ）からの波形の予想（生成）処理
+    TensorFlow を用いた LSTM によるノイズ付き sin 波形（時系列データ）からの波形の予想（生成）処理
     """
     print("Enter main()")
 
@@ -108,10 +110,6 @@ def main():
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
-    train_size = int( len(data) * 0.9 )
-    print( "train_size :", train_size )
-
-
     X_train, X_test, y_train, y_test \
     = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.1, input_random_state = 1 )
 
@@ -139,7 +137,18 @@ def main():
                batch_size = 10,
                eval_step = 1
            )
-
+    """
+    rnn2 = RecurrentNN(
+               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               n_inputLayer = len( X_features[0][0] ),
+               n_hiddenLayer = 50,
+               n_outputLayer = len( y_labels[0] ),
+               n_in_sequence = n_in_sequence,
+               epochs = 500,
+               batch_size = 10,
+               eval_step = 1
+           )
+    """
     rnn1.print( "after __init__()" )
 
     #======================================================================
@@ -162,18 +171,21 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     rnn1.model()
+    #rnn2.model()
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
     rnn1.loss( L2Norm() )
+    #rnn2.loss( L2Norm() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
     rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    #rnn2.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -194,6 +206,7 @@ def main():
 
     # fitting 処理を行う
     rnn1.fit( X_train, y_train )
+    #rnn2.fit( X_train, y_train )
     rnn1.print( "after fitting" )
 
     #======================================================================
@@ -202,6 +215,7 @@ def main():
     #======================================================================
     # 時系列データの予想値を取得
     predicts1 = rnn1.predict( X_features )
+    #predicts2 = rnn2.predict( X_features )
     print( "predicts1 :\n", predicts1 )
 
     #---------------------------------------------------------
@@ -216,15 +230,23 @@ def main():
         #linewidth = 2,
         color = 'red'
     )
-
+    """
+    plt.plot(
+        range( rnn2._epochs ), rnn2._losses_train,
+        label = 'RNN1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate1 ) ,
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'blue'
+    )
+    """
     plt.title( "loss / L2 Norm (MSE)" )
     plt.legend( loc = 'best' )
-    #plt.ylim( [0, 1.05] )
+    plt.ylim( ymin = 0.0 )
     plt.xlabel( "Epocs" )
     plt.grid()
     plt.tight_layout()
     
-    MLPlot.saveFigure( fileName = "RNN_2-1.png" )
+    MLPlot.saveFigure( fileName = "RNN-LSTM_1-1.png" )
     plt.show()
 
 
@@ -258,7 +280,15 @@ def main():
         #linewidth = 2,
         color = 'red'
     )
-
+    """
+    plt.plot(
+        x_dat, predicts2,
+        label = 'predict2 : RNN1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate1 ),
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'blue'
+    )
+    """
     plt.title( "time series / sin-wave with noize" )
     plt.legend( loc = 'best' )
     plt.ylim( [-1.10, 1.10] )
@@ -266,7 +296,7 @@ def main():
     plt.grid()
     plt.tight_layout()
    
-    MLPlot.saveFigure( fileName = "RNN_2-2.png" )
+    MLPlot.saveFigure( fileName = "RNN-LSTM_1-2.png" )
     plt.show()
 
     #======================================================================

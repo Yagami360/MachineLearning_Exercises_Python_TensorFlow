@@ -224,6 +224,8 @@ def main():
                batch_size = 10,
                eval_step = 1
            )
+
+    """
     rnn2 = RecurrentNN(
                session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                n_inputLayer = len( X_features[0][0] ),
@@ -234,6 +236,8 @@ def main():
                batch_size = 10,
                eval_step = 1
            )
+    """
+
     rnn1.print( "after __init__()" )
 
     #======================================================================
@@ -256,7 +260,7 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     rnn1.model()
-    rnn2.model()
+    #rnn2.model()
     #rnn1.print( "after model()" )
 
     #======================================================================
@@ -264,14 +268,14 @@ def main():
     # Declare the loss functions.
     #======================================================================
     rnn1.loss( L2Norm() )
-    rnn2.loss( L2Norm() )
+    #rnn2.loss( L2Norm() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
     rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
-    rnn2.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    #rnn2.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -293,7 +297,7 @@ def main():
 
     # fitting 処理を行う
     rnn1.fit( X_train, y_train )
-    rnn2.fit( X_train, y_train )
+    #rnn2.fit( X_train, y_train )
     rnn1.print( "after fitting" )
 
     #======================================================================
@@ -307,11 +311,12 @@ def main():
 
     plt.plot(
         range( rnn1._epochs ), rnn1._losses_train,
-        label = 'RNN-LSTM1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
+        label = 'RNN - %s = [%d - %d - %d], learning_rate = %0.3f' % ( type(rnn1) , rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
         linestyle = '-',
         linewidth = 1,
         color = 'red'
     )
+    """
     plt.plot(
         range( rnn2._epochs ), rnn2._losses_train,
         label = 'RNN1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate1 ) ,
@@ -319,10 +324,10 @@ def main():
         linewidth = 1,
         color = 'blue'
     )
-
+    """
     plt.title( "loss / L2 Norm (MSE)" )
     plt.legend( loc = 'best' )
-    plt.ylim( [0, 1.05] )
+    plt.ylim( ymin = 0.0 )
     plt.xlabel( "Epocs" )
     plt.grid()
     plt.tight_layout()
