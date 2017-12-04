@@ -274,6 +274,7 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
     rnn1.loss( L2Norm() )
     ```
 - 最適化アルゴリズム Optimizer として、Adam アルゴリズムを使用する。
+    - 学習率 `learning_rate` は、可変な値（0.001 等）で検証。減衰項は `beta1 = 0.9`, `beta1 = 0.999`
     ```python
     [main1.py]
     rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
@@ -362,16 +363,28 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 ### 損失関数のグラフ
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝の RNN モデル
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-2-20](https://user-images.githubusercontent.com/25688193/33424393-151103c2-d5ff-11e7-9de3-4993be4767d8.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**30**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個のの RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**30**</span> ノード、出力層：１ノード｝の RNN モデル
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-2-30](https://user-images.githubusercontent.com/25688193/33424585-9c44a07e-d5ff-11e7-9182-64c30b40a22c.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個のの RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-2-50](https://user-images.githubusercontent.com/25688193/33424608-a70bf372-d5ff-11e7-8472-46bf4c47ea1c.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**100**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**100**</span> ノード、出力層：１ノード｝の RNN モデル
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-2-100](https://user-images.githubusercontent.com/25688193/33424610-a85f0fc0-d5ff-11e7-96e1-35116462eb54.png)
 
 > 隠れ層のノード数を変えた各 RNN モデル（各シーケンス長 : 25 個）での損失関数のグラフ。<br>
@@ -381,16 +394,28 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 ### 予想出力値と元データの波形図（時系列データ）
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**20**</span> ノード、出力層：１ノード｝の RNN モデル<br>
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-3-20](https://user-images.githubusercontent.com/25688193/33424647-c8b09c80-d5ff-11e7-8626-151369d31e83.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**30**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**30**</span> ノード、出力層：１ノード｝の RNN モデル<br>
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-3-30](https://user-images.githubusercontent.com/25688193/33424649-c8ddc8a4-d5ff-11e7-8d4c-c35bdb327eac.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**50**</span> ノード、出力層：１ノード｝の RNN モデル<br>
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-3-50](https://user-images.githubusercontent.com/25688193/33424650-c905ced0-d5ff-11e7-8c80-743fd0319046.png)
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**100**</span> ノード、出力層：１ノード｝、各シーケンス長 : 25 個の RNN モデル<br>
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**100**</span> ノード、出力層：１ノード｝の RNN モデル<br>
+    - 各シーケンス長 : 25 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-3-100](https://user-images.githubusercontent.com/25688193/33424651-c92f8036-d5ff-11e7-9d66-39ab0aef9d41.png)
 
 > 隠れ層のノード数を変えた各 RNN モデル（各シーケンス長 : 25 個）での時系列データの予想値のグラフ。<br>
@@ -403,7 +428,10 @@ RNN による時系列モデルの取り扱いの簡単な例として、ノイ�
 
 <br>
 
-- ｛入力層：１ノード、隠れ層：<span style="color:red">**51**</span> ノード、出力層：１ノード｝、各シーケンス長 : <span style="color:red">**50**</span> 個の RNN モデル
+- ｛入力層：１ノード、隠れ層：<span style="color:red">**51**</span> ノード、出力層：１ノード｝の RNN モデル
+    - 各シーケンス長 : **50** 個
+    - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 00 %、テスト用データ : 10% に分割
 ![rnn_1-2-51-seq50](https://user-images.githubusercontent.com/25688193/33427984-87dd4c2a-d60a-11e7-8bd4-3d0892d58a86.png)
 ![rnn_1-3-51-seq50](https://user-images.githubusercontent.com/25688193/33427986-8bc8751c-d60a-11e7-8a48-13d6834d1a96.png)
 > 検証した条件の内、最もよく近似できている。（隠れ層のノード数＝各シーケンス長＋１）
@@ -646,6 +674,7 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
     rnn1.loss( SparseSoftmaxCrossEntropy() )
     ```
 - 最適化アルゴリズム Optimizer として、Adam アルゴリズム を使用する。
+    - 学習率 `learning_rate` は、0.0001 で検証。減衰項は `beta1 = 0.9`, `beta1 = 0.999`
     ```python
     [main2.py]
     rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
@@ -698,7 +727,7 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 
 - 入力層 : 1, 隠れ層 : 10, 出力層 2
     - テキストのシーケンス長 : 25、単語ベクトルのサイズ : 50
-    - 学習率 0.0001, 最適化アルゴリズム : Adam
+    - 学習率 0.0001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 80 %、テスト用データ : 20% に分割
 ![rnnlm_2-1-h10-seq25-mat50-adam_1](https://user-images.githubusercontent.com/25688193/33519743-a45b8a0a-d7f0-11e7-8bb4-55b86dab0d0a.png)
 > エポック数 1500 程度で損失関数が 0.3 付近に収束しており、うまく学習出来ていることが見て取れる。
@@ -708,7 +737,7 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
 
 - 入力層 : 1, 隠れ層 : 10, 出力層 2
     - テキストのシーケンス長 : 25、単語ベクトルのサイズ : 50
-    - 学習率 0.0001, 最適化アルゴリズム : Adam
+    - 学習率 0.0001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 80 %、テスト用データ : 20% に分割
 
 |ラベル|Acuraccy [test data]|サンプル数[test data]|サンプル数[total]|
