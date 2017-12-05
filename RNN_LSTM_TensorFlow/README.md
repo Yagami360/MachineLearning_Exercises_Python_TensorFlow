@@ -275,7 +275,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - この設定は、`RecurrectNNLSTM` クラスのインスタンス作成時の引数にて行う。
         - 入力層のノード数 `n_inputLayer` は **2** 個（入力データが、シグナルとマスクデータから成るので）、隠れ層のノード数 `n_hiddenLayer` は 100 個で検証、出力層のノード数 `n_outputLayer` は 1 個（ 推定器 Estimiter なので）
         - １つのシーケンスの長さ `n_in_sequence` は 250 個
-        - エポック数は `epochs` 30000, ミニバッチサイズ `batch_size`は 200
+        - エポック数は `epochs` 15000, ミニバッチサイズ `batch_size`は 200
     ```python
     [main2.py]
     rnn1 = RecurrentNNLSTM(
@@ -326,12 +326,10 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 各シーケンス長 : 250 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
-    - エポック回数 **30000**, ミニバッチサイズ 200
+    - エポック回数 **15000**, ミニバッチサイズ 200
     - １枚目の図が LSTM モデルでの損失関数のグラフ。２枚目の図が、通常の RNN モデルでの損失関数のグラフ
-![rnn-lstm_2-2-1-h100_adam_epoch30000](https://user-images.githubusercontent.com/25688193/33615562-d121fedc-da1d-11e7-9a1f-89ed8036ef37.png)
-> 先の太さ修正中...
-
-
+![rnn-lstm_2-3-epoch15000](https://user-images.githubusercontent.com/25688193/33630175-c65539e8-da49-11e7-9dd9-7fa823160460.png)
+![rnn-2-2-2-h100_adam_epoch30000](https://user-images.githubusercontent.com/25688193/33623193-88a9d178-da33-11e7-8904-b6ad800574ab.png)
 > LSTM モデルでは、損失関数の値が 0 付近に収束しており、うまく学習出来ていることが見て取れる。<br>
 > 一方、通常の RNN モデルでは、損失関数の値が 0 付近には収束しておらず、うまく学習出来ていないことが分かる。
 

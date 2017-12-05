@@ -220,7 +220,7 @@ def main():
                n_hiddenLayer = 100,
                n_outputLayer = len( y_labels[0] ),
                n_in_sequence = X_features.shape[1],
-               epochs = 30000,
+               epochs = 15000,
                batch_size = 100,
                eval_step = 1
            )
@@ -291,15 +291,15 @@ def main():
     #---------------------------------------------------------
     plt.clf()
     plt.plot(
-        range( rnn1._epochs ), rnn1._losses_train,
+        range( len( rnn1._losses_train ) ), rnn1._losses_train,
         label = 'RNN - %s = [%d - %d - %d], learning_rate = %0.3f' % ( type(rnn1) , rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
         linestyle = '-',
-        linewidth = 1,
+        linewidth = 0.2,
         color = 'red'
     )
     plt.title( "loss / L2 Norm (MSE)" )
     plt.legend( loc = 'best' )
-    plt.ylim( ymin = 0.0 )
+    plt.ylim( [0.0, 0.55] )
     plt.xlabel( "Epocs" )
     plt.grid()
     plt.tight_layout()
