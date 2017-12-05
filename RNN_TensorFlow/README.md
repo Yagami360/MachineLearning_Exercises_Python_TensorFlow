@@ -18,8 +18,8 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
         1. [コードの実行結果](#ID_3-2-2)
     1. [（外部リンク）LSTM によるノイズ付き sin 波形（時系列データ）からの長期の波形の予想（生成）処理](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow#lstm-によるノイズ付き-sin-波形時系列データからの長期の波形の予想生成処理--main1py)
     1. [（外部リンク）LSTM による Adding Problem 対する長期予想性とその評価処理](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow#lstm-による-adding-problem-に対する長期予想性とその評価処理--main2py)
-    1. LSTM によるシェイクスピア作品のワード予想処理
-    1. 複数の LSTM 層によるシェイクスピア作品のワード予想処理
+    1. [（外部リンク）LSTM による英文学作品のワード予想処理](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow#lstm-による英文学作品のワード予想処理--main3py)
+    1. 複数の LSTM 層による英文学作品のワード予想処理
     1. GNU による sin 波形（時系列データ）の生成処理
     1. 双方向 RNN による MNIST データセットの識別処理
     1. RNN Encoder-Decoder による自然言語処理（足し算の応答）
@@ -750,7 +750,7 @@ RNNLM [Recurrent Neural Network Language Model] による自然言語処理の�
     - 学習率 0.0001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 80 %、テスト用データ : 20% に分割
     - エポック数 1000 回, ミニバッチサイズ 250
-    
+
 |ラベル|Acuraccy [test data]|サンプル数[test data]|サンプル数[total]|
 |---|---|---|---|
 |全ラベル|0.972|1115|5573|
