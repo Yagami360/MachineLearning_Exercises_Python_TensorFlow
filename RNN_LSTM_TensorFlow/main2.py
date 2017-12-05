@@ -215,29 +215,16 @@ def main():
     adam_beta2 = 0.999      # For the Adam optimizer
 
     rnn1 = RecurrentNNLSTM(
-               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+               session = tf.Session(),
                n_inputLayer = len( X_features[0][0] ),
                n_hiddenLayer = 100,
                n_outputLayer = len( y_labels[0] ),
                n_in_sequence = X_features.shape[1],
-               epochs = 500,
-               batch_size = 10,
+               epochs = 30000,
+               batch_size = 100,
                eval_step = 1
            )
-
-    """
-    rnn2 = RecurrentNN(
-               session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-               n_inputLayer = len( X_features[0][0] ),
-               n_hiddenLayer = 100,
-               n_outputLayer = len( y_labels[0] ),
-               n_in_sequence = X_features.shape[1],
-               epochs = 500,
-               batch_size = 10,
-               eval_step = 1
-           )
-    """
-
+    
     rnn1.print( "after __init__()" )
 
     #======================================================================
@@ -260,7 +247,6 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     rnn1.model()
-    #rnn2.model()
     #rnn1.print( "after model()" )
 
     #======================================================================
@@ -268,14 +254,12 @@ def main():
     # Declare the loss functions.
     #======================================================================
     rnn1.loss( L2Norm() )
-    #rnn2.loss( L2Norm() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
     rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
-    #rnn2.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -293,11 +277,9 @@ def main():
     #======================================================================
     # TensorBoard 用のファイル（フォルダ）を作成
     #rnn1.write_tensorboard_graph()
-    #rnn2.write_tensorboard_graph()
 
     # fitting 処理を行う
     rnn1.fit( X_train, y_train )
-    #rnn2.fit( X_train, y_train )
     rnn1.print( "after fitting" )
 
     #======================================================================
@@ -308,7 +290,6 @@ def main():
     # 損失関数を plot
     #---------------------------------------------------------
     plt.clf()
-
     plt.plot(
         range( rnn1._epochs ), rnn1._losses_train,
         label = 'RNN - %s = [%d - %d - %d], learning_rate = %0.3f' % ( type(rnn1) , rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
@@ -316,15 +297,6 @@ def main():
         linewidth = 1,
         color = 'red'
     )
-    """
-    plt.plot(
-        range( rnn2._epochs ), rnn2._losses_train,
-        label = 'RNN1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn2._n_inputLayer, rnn2._n_hiddenLayer, rnn2._n_outputLayer, learning_rate1 ) ,
-        linestyle = '--',
-        linewidth = 1,
-        color = 'blue'
-    )
-    """
     plt.title( "loss / L2 Norm (MSE)" )
     plt.legend( loc = 'best' )
     plt.ylim( ymin = 0.0 )
@@ -338,34 +310,24 @@ def main():
     #---------------------------------------------------------
     # 時系列データの予想値と元の Adding Problem 波形を plot
     #---------------------------------------------------------
-    # 時系列データの予想値を取得
-    #predicts1 = rnn1.predict( X_features )
-    #print( "predicts1 :\n", predicts1 )
-
     """
+    # 時系列データの予想値を取得
+    predicts1 = rnn1.predict( X_features )
+    print( "predicts1 :\n", predicts1 )
+    
+    # 
     plt.clf()
-
-    x_dat_with_noize, y_dat_with_noize = MLPreProcess.generate_sin_with_noize( t = times, T = T1, noize_size = noize_size1, seed = 12 )
     plt.plot(
-        x_dat_with_noize, y_dat_with_noize,
-        label = 'noize = %0.3f' % noize_size1,
+        range( len(X_features[0,:,1]) ), X_features[0,:,0] * X_features[0,:,1],
+        label = 'adding_data / n = 1',
         linestyle = '-',
         #linewidth = 2,
         color = 'black'
     )
 
-    x_dat_without_noize, y_dat_without_noize = MLPreProcess.generate_sin_with_noize( t = times, T = T1, noize_size = 0, seed = 12 )
     plt.plot(
-        x_dat_without_noize, y_dat_without_noize,
-        label = 'without noize',
-        linestyle = '--',
-        #linewidth = 2,
-        color = 'black'
-    )
-
-    plt.plot(
-        x_dat, predicts1,
-        label = 'predict1 : RNN-LSTM1 = [%d - %d - %d], learning_rate = %0.3f' % ( rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ),
+        range( len(predicts1) ), predicts1,
+        label = 'predict1 : RNN - %s = [%d - %d - %d], learning_rate = %0.3f' % ( type(rnn1), rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ),
         linestyle = '-',
         #linewidth = 2,
         color = 'red'
@@ -381,6 +343,7 @@ def main():
     MLPlot.saveFigure( fileName = "RNN-LSTM_2-3.png" )
     plt.show()
     """
+
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================

@@ -434,7 +434,7 @@ class RecurrentNN( NeuralNetworkBase ):
             predicts : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
-        # 元データの最初の一部 τ 文だけを切り出し、
+        # 元データの最初の一部 τ 文（１シーケンス）だけを切り出し、
         # 後に、τ+1 を予想 → τ+2 を予想 ...
         X_t = X_test[:1]    # X(t=1) ~ X(t=τ)
 
@@ -442,9 +442,16 @@ class RecurrentNN( NeuralNetworkBase ):
         # t=1～τ までの予想値はないので None とする。
         predicts = [ None for i in range(self._n_in_sequence) ]
         
-        # 指定した時系列データの総数(t)
+        # 指定した時系列データの総数(t) / t は シーケンス数 t-τ+1 の t 項に対応した値
         if ( X_test.ndim >= 2):
-            n_sequences = len( X_test[:,1] ) + len( X_test[1,:] ) - 1
+            # 入力層の数が１ノード（入力データの特徴量が１種類）
+            if ( self._n_inputLayer == 1 ):
+                n_sequences = len( X_test[:,0] ) + len( X_test[0,:] ) - 1
+            # 入力層の数が複数ノード（入力データの特徴量が複数個）
+            elif( self._n_inputLayer >= 2 ):
+                n_sequences = ( len( X_test[:,0] ) + len( X_test[0,:] ) ) * self._n_inputLayer - 1
+            else:
+                n_sequences = len( X_test[:,0] ) + len( X_test[0,:] ) - 1
         else:
             n_sequences = len( X_test ) - 1
 
@@ -469,16 +476,25 @@ class RecurrentNN( NeuralNetworkBase ):
                    )
             #print( "prob :", prob )
 
-            # 予測結果 prob を用いて新しい時系列データ new_sequence を生成
-            # numpy.concatenate(...) : ２個以上の配列を軸指定して結合
+            # ? 予測結果 prob を用いて新しい時系列データ new_sequence を生成
+            # numpy.concatenate(...) : ２個以上の配列を軸指定して結合 / axis : 0
             # x_last + prob
             # X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:] : 
             # shape = [25,1] に reshape し、[1:] で2番目~最後のシーケンス（各々サイズ _n_in_sequence のベクトル）指定
+            """
             new_sequence = numpy.concatenate(
                                ( X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:], prob ), axis = 0
                            ).reshape( 1, self._n_in_sequence, self._n_inputLayer )
+            """
             #print( "new_sequence.shape :", new_sequence.shape )
             #print( "new_sequence :", new_sequence )
+
+            new_sequence = X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[:]
+            #print( "X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[:] :", new_sequence )    # [signal, mask] / shape = (249, 2)
+            new_sequence = numpy.concatenate( new_sequence, axis = 0 )
+            #print( "numpy.concatenate( new_sequence, axis = 0 ) :", new_sequence )                      # [signal[0]], [mask[0]], ... / shape = (498,)
+            new_sequence = new_sequence.reshape( 1, self._n_in_sequence, self._n_inputLayer )
+            #print( "numpy.concatenate( new_sequence, axis = 0 ) :", new_sequence )
 
             # new_sequence を append した新たな X_t とする。
             X_t = numpy.append( X_t, new_sequence, axis = 0 )

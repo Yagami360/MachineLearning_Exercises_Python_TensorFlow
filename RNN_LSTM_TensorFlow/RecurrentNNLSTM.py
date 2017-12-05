@@ -100,7 +100,8 @@ class RecurrentNNLSTM( RecurrentNN ):
         # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
         # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
         cell = tf.contrib.rnn.LSTMCell( 
-                   num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
+                   num_units = self._n_hiddenLayer,     # int, The number of units in the RNN cell.
+                   forget_bias = 1.0                    # 忘却ゲートのバイアス項 / Default : 1.0  in order to reduce the scale of forgetting at the beginning of the training.
                    #activation = "tanh"                  # Nonlinearity to use. Default: tanh
                )
         #print( "cell :", cell )

@@ -16,7 +16,9 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
     1. [LSTM による Adding Problem に対する長期予想性とその評価処理 : `main2.py`](#ID_3-2)
         1. [コードの内容説明](#ID_3-2-1)
         1. [コードの実行結果](#ID_3-2-2)
-    1. LSTM によるシェイクスピア作品のワード予想処理 : `main3.py`
+    1. [LSTM によるシェイクスピア作品のワード予想処理 : `main3.py`](#ID_3-3)
+        1. [コードの内容説明](#ID_3-3-1)
+        1. [コードの実行結果](#ID_3-3-2)
     1. 複数の LSTM 層によるシェイクスピア作品のワード予想処理 : `main4.py`
 1. [背景理論](#ID_4)
     1. [リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞](#ID_5)
@@ -266,7 +268,7 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - この設定は、`RecurrectNNLSTM` クラスのインスタンス作成時の引数にて行う。
         - 入力層のノード数 `n_inputLayer` は **2** 個（入力データが、シグナルとマスクデータから成るので）、隠れ層のノード数 `n_hiddenLayer` は 100 個で検証、出力層のノード数 `n_outputLayer` は 1 個（ 推定器 Estimiter なので）
         - １つのシーケンスの長さ `n_in_sequence` は 250 個
-        - エポック数は `epochs` 300, ミニバッチサイズ `batch_size`は 200
+        - エポック数は `epochs` 30000, ミニバッチサイズ `batch_size`は 200
     ```python
     [main2.py]
     rnn1 = RecurrentNNLSTM(
@@ -317,19 +319,24 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - 各シーケンス長 : 250 個
     - 学習率 0.001, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
     - トレーニング用データ : 90 %、テスト用データ : 10% に分割 
-    - エポック回数 300, ミニバッチサイズ 200
+    - エポック回数 30000, ミニバッチサイズ 200
     - １枚目の図が LSTM モデルでの損失関数のグラフ。２枚目の図が、通常の RNN モデルでの損失関数のグラフ
-![rnn-lstm_2-2-3-h100_adam](https://user-images.githubusercontent.com/25688193/33565294-106207fe-d960-11e7-8c6b-276a7df208b1.png)
-    - エポック回数 500, ミニバッチサイズ 10
-![rnn-lstm_2-2-2-h100_adam](https://user-images.githubusercontent.com/25688193/33554417-f888c480-d93f-11e7-8200-624a81867cd0.png)
-![rnn_2-2-1-h100_adam](https://user-images.githubusercontent.com/25688193/33555739-c7871ad0-d944-11e7-81b6-251d5993358e.png)
-> コード実装中...
 
-<!--
 > LSTM モデルでは、損失関数の値が 0 付近に収束しており、うまく学習出来ていることが見て取れる。<br>
 > 一方、通常の RNN モデルでは、損失関数の値が収束しておらず、うまく学習出来ていないことが分かる。
+
+
+<!--
+    - LSTM : エポック回数 300, ミニバッチサイズ 200
+![rnn-lstm_2-2-3-h100_adam](https://user-images.githubusercontent.com/25688193/33565294-106207fe-d960-11e7-8c6b-276a7df208b1.png)
+    - LSTM : エポック回数 500, ミニバッチサイズ 10
+![rnn-lstm_2-2-2-h100_adam](https://user-images.githubusercontent.com/25688193/33554417-f888c480-d93f-11e7-8200-624a81867cd0.png)
+
+    - RNN : エポック回数 500, ミニバッチサイズ 10
+![rnn_2-2-1-h100_adam](https://user-images.githubusercontent.com/25688193/33555739-c7871ad0-d944-11e7-81b6-251d5993358e.png)
 -->
 
+<!--
 ### 予想出力値と元データの波形図（時系列データ）
 
 - ｛入力層：２ノード、隠れ層：**100** ノード、出力層：１ノード｝の LSTM モデルと通常の RNN モデルの比較
@@ -339,6 +346,18 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
     - エポック回数 300, ミニバッチサイズ 200 
     - １枚目の図が LSTM モデルでの予想波形のグラフ。２枚目の図が、通常の RNN モデルでの予想波形のグラフ
 > コード実装中...
+-->
+
+<br>
+
+
+---
+
+<a id="ID_3-3"></a>
+
+## LSTM によるシェイクスピア作品のワード予想処理 : `main3.py`
+> 実装中...
+
 
 <br>
 
@@ -432,8 +451,105 @@ new_sequence = numpy.concatenate(
     ( X_t_last.reshape(self._n_in_sequence, self._n_inputLayer)[1:], prob ), axis = 0
     ).reshape( 1, self._n_in_sequence, self._n_inputLayer )
 ValueError: all the input array dimensions except for the concatenation axis must match exactly
+```
 
+[17/12/05]
+```python
+[main2_2.py]
+X.shape : (10000, 200, 2)
+Y.shape : (10000, 1)
 
-
+n_batches : 90
+epoch = 0 / start = 0, end = 100
+epoch = 0 / start = 100, end = 200
+epoch = 0 / start = 200, end = 300
+epoch = 0 / start = 300, end = 400
+epoch = 0 / start = 400, end = 500
+epoch = 0 / start = 500, end = 600
+epoch = 0 / start = 600, end = 700
+epoch = 0 / start = 700, end = 800
+epoch = 0 / start = 800, end = 900
+epoch = 0 / start = 900, end = 1000
+epoch = 0 / start = 1000, end = 1100
+epoch = 0 / start = 1100, end = 1200
+epoch = 0 / start = 1200, end = 1300
+epoch = 0 / start = 1300, end = 1400
+epoch = 0 / start = 1400, end = 1500
+epoch = 0 / start = 1500, end = 1600
+epoch = 0 / start = 1600, end = 1700
+epoch = 0 / start = 1700, end = 1800
+epoch = 0 / start = 1800, end = 1900
+epoch = 0 / start = 1900, end = 2000
+epoch = 0 / start = 2000, end = 2100
+epoch = 0 / start = 2100, end = 2200
+epoch = 0 / start = 2200, end = 2300
+epoch = 0 / start = 2300, end = 2400
+epoch = 0 / start = 2400, end = 2500
+epoch = 0 / start = 2500, end = 2600
+epoch = 0 / start = 2600, end = 2700
+epoch = 0 / start = 2700, end = 2800
+epoch = 0 / start = 2800, end = 2900
+epoch = 0 / start = 2900, end = 3000
+epoch = 0 / start = 3000, end = 3100
+epoch = 0 / start = 3100, end = 3200
+epoch = 0 / start = 3200, end = 3300
+epoch = 0 / start = 3300, end = 3400
+epoch = 0 / start = 3400, end = 3500
+epoch = 0 / start = 3500, end = 3600
+epoch = 0 / start = 3600, end = 3700
+epoch = 0 / start = 3700, end = 3800
+epoch = 0 / start = 3800, end = 3900
+epoch = 0 / start = 3900, end = 4000
+epoch = 0 / start = 4000, end = 4100
+epoch = 0 / start = 4100, end = 4200
+epoch = 0 / start = 4200, end = 4300
+epoch = 0 / start = 4300, end = 4400
+epoch = 0 / start = 4400, end = 4500
+epoch = 0 / start = 4500, end = 4600
+epoch = 0 / start = 4600, end = 4700
+epoch = 0 / start = 4700, end = 4800
+epoch = 0 / start = 4800, end = 4900
+epoch = 0 / start = 4900, end = 5000
+epoch = 0 / start = 5000, end = 5100
+epoch = 0 / start = 5100, end = 5200
+epoch = 0 / start = 5200, end = 5300
+epoch = 0 / start = 5300, end = 5400
+epoch = 0 / start = 5400, end = 5500
+epoch = 0 / start = 5500, end = 5600
+epoch = 0 / start = 5600, end = 5700
+epoch = 0 / start = 5700, end = 5800
+epoch = 0 / start = 5800, end = 5900
+epoch = 0 / start = 5900, end = 6000
+epoch = 0 / start = 6000, end = 6100
+epoch = 0 / start = 6100, end = 6200
+epoch = 0 / start = 6200, end = 6300
+epoch = 0 / start = 6300, end = 6400
+epoch = 0 / start = 6400, end = 6500
+epoch = 0 / start = 6500, end = 6600
+epoch = 0 / start = 6600, end = 6700
+epoch = 0 / start = 6700, end = 6800
+epoch = 0 / start = 6800, end = 6900
+epoch = 0 / start = 6900, end = 7000
+epoch = 0 / start = 7000, end = 7100
+epoch = 0 / start = 7100, end = 7200
+epoch = 0 / start = 7200, end = 7300
+epoch = 0 / start = 7300, end = 7400
+epoch = 0 / start = 7400, end = 7500
+epoch = 0 / start = 7500, end = 7600
+epoch = 0 / start = 7600, end = 7700
+epoch = 0 / start = 7700, end = 7800
+epoch = 0 / start = 7800, end = 7900
+epoch = 0 / start = 7900, end = 8000
+epoch = 0 / start = 8000, end = 8100
+epoch = 0 / start = 8100, end = 8200
+epoch = 0 / start = 8200, end = 8300
+epoch = 0 / start = 8300, end = 8400
+epoch = 0 / start = 8400, end = 8500
+epoch = 0 / start = 8500, end = 8600
+epoch = 0 / start = 8600, end = 8700
+epoch = 0 / start = 8700, end = 8800
+epoch = 0 / start = 8800, end = 8900
+epoch = 0 / start = 8900, end = 9000
+epoch: 0  validation loss: 0.172521
 
 ```
