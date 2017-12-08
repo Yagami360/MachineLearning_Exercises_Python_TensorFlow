@@ -349,11 +349,101 @@ LSTM による自然言語処理（NLP）の一例として、英文学作品の
 
 以下、コードの説明
 
+- まず、The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み＆抽出処理を行う。
+    - この処理は、`MLPreProcess.load_textdata_by_shakespeare_from_theProjectGutenbergEBook(...)` 関数にて行う。
+        - 具体的には、まず、指定されたテキストデータの各行を Unicode 形式で読み込み、データを格納する。
+        ```python
+        [MLPreProcess.py]
+        def load_textdata_by_shakespeare_from_theProjectGutenbergEBook( ... ):
+            text_data = []
+
+            #--------------------------------------------------------
+            # codecs.open() 関数と with 構文でテキストデータの読み込む
+            # "r" : 文字のまま読み込み
+            #--------------------------------------------------------
+            with codecs.open( path, "r", "utf-8" ) as file:
+                # txt ファイルの各行に関してのループ処理
+                for row in file:
+                    # 各行の文字列全体（特殊文字、空白込 : \t　\n）を格納
+                    text_data.append( row )
+        ```
+        - 読み込むテキストデータの内容上、本文とは関係ない説明文を除外する。
+        ```python
+        [MLPreProcess.py]
+        def load_textdata_by_shakespeare_from_theProjectGutenbergEBook( ... ):
+            ...
+            # EBook のテキストファイルに含まれている、最初の説明文の段落部分を除外
+            text_data = text_data[ n_DeleteParagraph : ]
+        ```
+        - 改行, 先頭に復帰の特殊文字 \n, \r を削除する
+        ```python
+        [MLPreProcess.py]
+        def load_textdata_by_shakespeare_from_theProjectGutenbergEBook( ... ):
+            ...
+            text_data = [ str.replace( "\r\n", "" ) for str in text_data ]
+            text_data = [ str.replace( "\n", "" ) for str in text_data ]
+        ```
+        - クリーニング処理を実施する。<br>
+        これは、文字量を減らすために、各種句読点、余分なホワイトスペースを削除する処理となる。<br>
+        但し、ハイフン "-" と、アポストロフィ "'" は残す。（この作品文章が文章内容を繋ぐのに、頻繁に使用されているため）
+        ```python
+        [MLPreProcess.py]
+        def load_textdata_by_shakespeare_from_theProjectGutenbergEBook( ... ):
+            ...
+            if ( bCleaning == True ):
+                # string.punctuation : 文字と文字の間の句読点、括弧などをまとめたもの
+                # 置換表現で「!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~」等
+                punctuation = string.punctuation
+
+                # punctuation から ハイフン "-" と、アポストロフィ "'" を除外
+                # sep.join(seq) : sepを区切り文字として、seqを連結してひとつの文字列にする。
+                punctuation = ''.join( [ x for x in punctuation if x not in ['-', "'"] ] )
+
+                def clean_text( str ):
+                    # ハイフン "-" と、アポストロフィ "'" 以外の特殊文字をホワイトスペース " " に置換
+                    # re.sub() : 正規表現で文字列を別の文字列で置換
+                    str = re.sub( 
+                              pattern = r"[{}]".format( punctuation ),  # 正規表現 : []集合, |和集合（または）()グループ化
+                              repl = " ",                               # 置換する文字列 : " " なのでホワイトスペースに置換
+                              string = str                              # 置換される文字列
+                          )
+
+                    # 任意の空白文字 \s = [\t\n\r\f\v] をホワイトスペース " " に置換
+                    # + : １回以上の繰り返し（正規表現）
+                    str = re.sub( 
+                              pattern = "\s+",      # 正規表現 : []集合, |和集合（または）()グループ化
+                              repl = " ",           # 置換する文字列 : " " なのでホワイトスペースに置換
+                            string = str          # 置換される文字列
+                        )
+
+                    # ホワイトスペース " " に置換したものを一斉に除外
+                    # str.strip() : 引数を指定しないとホワイトスペースを除去する
+                    str = str.strip()
+
+                    # リスト中の大文字→小文字に変換
+                    str = str.lower()
+
+                    return str
+
+            text_data = [ clean_text(str) for str in text_data ]
+        ```
+- 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する。
+    - この処理は `MLPreProcess.xxx(...)` にて行う。
+        - xxx
+        ```python
+        [MLPreProcess]
+        ```
+- 更に、抽出したテキストデータを、このディクショナリに基づき、数値情報に変換する。
+    - この処理は `MLPreProcess.xxx(...)` にて行う。
+        - xxx
+        ```python
+        [MLPreProcess]
+        ```
 - xxx
 
-
-
 <br>
+
+
 
 ---
 

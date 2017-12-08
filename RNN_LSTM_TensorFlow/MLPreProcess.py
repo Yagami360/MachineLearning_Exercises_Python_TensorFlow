@@ -13,6 +13,7 @@
     [17/12/01] : スパム文判定用テキストデータである SMS Spam Collection データセットの読み込み関数 load_SMS_Spam_Collection(...) 追加
     [17/12/02] : TensorFlow の組み込み関数を用いて、テキストをインデックスのリストに変換する関数 text_vocabulary_processing(...) 追加
     [17/12/03] : Adding Problem のデータの生成関数 generate_adding_problem(...) 追加
+    [17/12/08] : The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み関数 `load_textdata_by_shakespeare_from_theProjectGutenbergEBook(...)` 追加
     [xx/xx/xx] :
 
 """
@@ -24,6 +25,7 @@ import requests     #
 import struct       #
 import codecs       # 文字コード
 import re           # 正規表現での replace 置換処理群モジュール
+import string       # 
 
 import numpy
 
@@ -785,7 +787,7 @@ class MLPreProcess( object ):
         text_data = []
 
         #----------------------------------------------------
-        # codecs.open() 関数と with 構文で画像データの読み込む
+        # codecs.open() 関数と with 構文でテキストデータを読み込む
         # "r" : 文字のまま読み込み
         #----------------------------------------------------
         with codecs.open( path, "r", "utf-8" ) as file:
@@ -886,6 +888,105 @@ class MLPreProcess( object ):
         n_vocab = len( vocab_processor.vocabulary_ )
 
         return text_processed, n_vocab
+
+
+    def load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path, n_DeleteParagraph = 182, bCleaning = True ):
+        """
+        The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み関数
+
+        [Input]
+            path : str
+                テキストデータへのパス（ファイル名含む）
+            n_DeleteParagraph : int
+                読み込み対象のテキストファイルに対して、（先頭から）除外する段落の数
+                Default : 182 → 対象 eBook のテキストファイルの本文とは関係ない説明部分になっている。
+            bCleaning : Bool
+                クリーニング処理を行うか否かのフラグ
+                クリーニング処理は、文字量を減らすために、特殊文字と余分なホワイトスペースを取り除く
+
+        [Output]
+            text_data : list <str>
+                シェイクスピア作品の本文の文字列から成るテキストデータのリスト
+        """
+        text_data = []
+
+        #--------------------------------------------------------
+        # codecs.open() 関数と with 構文でテキストデータの読み込む
+        # "r" : 文字のまま読み込み
+        #--------------------------------------------------------
+        with codecs.open( path, "r", "utf-8" ) as file:
+           # txt ファイルの各行に関してのループ処理
+           for row in file:
+               # 各行の文字列全体（特殊文字、空白込 : \t　\n）を格納
+               text_data.append( row )
+
+        # ['\ufeffThe Project Gutenberg EBook of The Complete Works of William Shakespeare, by\r\n', 
+        # 'William Shakespeare\r\n', '\r\n', ...
+        # '\r\n', '*** END: FULL LICENSE ***\r\n']
+        #print( "text_data :\n", text_data )
+
+        # EBook のテキストファイルに含まれている、最初の説明文の段落部分を除外
+        text_data = text_data[ n_DeleteParagraph : ]
+        #print( "text_data :\n", text_data )
+
+        # 改行, 先頭に復帰の特殊文字 \n, \r を削除する
+        text_data = [ str.replace( "\r\n", "" ) for str in text_data ]
+        text_data = [ str.replace( "\n", "" ) for str in text_data ]
+        #print( "text_data :\n", text_data )
+
+        #----------------------------------------------------------------
+        # クリーニング処理
+        # 文字量を減らすために、
+        # 各種句読点、余分なホワイトスペースを削除する
+        # ハイフン "-" と、アポストロフィ "'" は残す。（この作品文章が文章内容を繋ぐのに、頻繁に使用されているため）
+        #----------------------------------------------------------------
+        if ( bCleaning == True ):
+            # string.punctuation : 文字と文字の間の句読点、括弧などをまとめたもの
+            # 置換表現で「!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~」等
+            punctuation = string.punctuation
+            #print( "punctuation :", punctuation )     # punctuation : !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
+
+            # punctuation から ハイフン "-" と、アポストロフィ "'" を除外
+            # sep.join(seq) : sepを区切り文字として、seqを連結してひとつの文字列にする。
+            punctuation = ''.join( [ x for x in punctuation if x not in ['-', "'"] ] )
+            #print( "punctuation :", punctuation )     # punctuation : !"#$%&()*+,./:;<=>?@[\]^_`{|}~
+
+            def clean_text( str ):
+                # ハイフン "-" と、アポストロフィ "'" 以外の特殊文字をホワイトスペース " " に置換
+                # re.sub() : 正規表現で文字列を別の文字列で置換
+                str = re.sub( 
+                          pattern = r"[{}]".format( punctuation ),  # 正規表現 : []集合, |和集合（または）()グループ化
+                          repl = " ",                               # 置換する文字列 : " " なのでホワイトスペースに置換
+                          string = str                              # 置換される文字列
+                      )
+                #print( "clean_text( str ) / step1 :", str )
+
+                # 任意の空白文字 \s = [\t\n\r\f\v] をホワイトスペース " " に置換
+                # + : １回以上の繰り返し（正規表現）
+                str = re.sub( 
+                          pattern = "\s+",      # 正規表現 : []集合, |和集合（または）()グループ化
+                          repl = " ",           # 置換する文字列 : " " なのでホワイトスペースに置換
+                          string = str          # 置換される文字列
+                      )
+                #print( "clean_text( str ) / step2 :", str )
+
+                # ホワイトスペース " " に置換したものを一斉に除外
+                # str.strip() : 引数を指定しないとホワイトスペースを除去する
+                str = str.strip()
+                #print( "clean_text( str ) / step3 :", str )
+
+                # リスト中の大文字→小文字に変換
+                str = str.lower()
+                #print( "clean_text( str ) / step4 :", str )
+
+                return str
+
+            text_data = [ clean_text(str) for str in text_data ]
+
+        #print( "text_data", text_data )
+
+        return text_data
+
 
     #---------------------------------------------------------
     # 欠損値の処理を行う関数群
