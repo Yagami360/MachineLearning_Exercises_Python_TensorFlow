@@ -14,6 +14,7 @@
     [17/12/02] : TensorFlow の組み込み関数を用いて、テキストをインデックスのリストに変換する関数 text_vocabulary_processing(...) 追加
     [17/12/03] : Adding Problem のデータの生成関数 generate_adding_problem(...) 追加
     [17/12/08] : The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み関数 `load_textdata_by_shakespeare_from_theProjectGutenbergEBook(...)` 追加
+    [17/12/09] : テキストデータを数値インデックスの配列に変換する関数 `text_vocabulary_processing_without_tensorflow( ... )` 追加
     [xx/xx/xx] :
 
 """
@@ -23,9 +24,10 @@ import sys          #
 
 import requests     #  
 import struct       #
-import codecs       # 文字コード
+import codecs       # 文字コードに関連した機能を提供するモジュール
 import re           # 正規表現での replace 置換処理群モジュール
 import string       # 
+import collections  # コンテナデータ型を提供するモジュール
 
 import numpy
 
@@ -852,44 +854,6 @@ class MLPreProcess( object ):
         return text_data_features, text_data_labels
 
 
-    def text_vocabulary_processing( text_data, n_max_in_sequence = 25, min_word_freq = 10 ):
-        """
-        TensorFlow の組み込み関数を用いて、テキスト情報を数値インデックスのリストに変換する。
-        [Input]
-            text_data : list<str>
-                テキストデータのリスト
-            n_max_in_sequence : str
-                １つのシーケンスのテキストの最大の長さ
-
-        [Output]
-            text_processed : array<int>
-                テキスト情報を表す数値インデックスのリスト
-            n_vocaburary : int
-                vocabulary のサイズ（埋め込み行列の行数）
-        """
-        # テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、
-        # これよりも長いテキスト（シーケンス）は、この長さで打ち切り、
-        # それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
-        # 又、語彙に `min_word_freq` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size` のトレーニング可能なベクトルに埋め込む。
-        vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
-                              max_document_length = n_max_in_sequence, 
-                              min_frequency = min_word_freq
-                          )
-
-        # ? Transform the text using the vocabulary.
-        # VocabularyProcessor.fit_transform(...) : <generator object VocabularyProcessor.transform at 0x000001FAF79EF4C0>
-        # [ [ 44 456   0 ...,   0   0   0] [ 47 316   0 ...,   0   0   0] ..., [  5 494 109 ...,   1 199  12] ]
-        text_processed = numpy.array( list( vocab_processor.fit_transform( text_data ) ) )      # ?
-        #print( "VocabularyProcessor.fit_transform(...) :", vocab_processor.fit_transform( text_data ) )
-        #print( "list( VocabularyProcessor.fit_transform(...) ) :", list( vocab_processor.fit_transform( text_data ) ) )
-        #print( "numpy.array( list( vocab_processor.fit_transform( text_data ) ) ) :", text_processed )
-        
-        # vocabulary のサイズ（埋め込み行列の行数）
-        n_vocab = len( vocab_processor.vocabulary_ )
-
-        return text_processed, n_vocab
-
-
     def load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path, n_DeleteParagraph = 182, bCleaning = True ):
         """
         The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み関数
@@ -987,6 +951,125 @@ class MLPreProcess( object ):
 
         return text_data
 
+    #---------------------------------------------------------
+    # テキストデータの数値データへの変換処理を行う関数群
+    #---------------------------------------------------------
+    def text_vocabulary_processing( text_data, n_max_in_sequence = 25, min_word_freq = 10 ):
+        """
+        TensorFlow の組み込み関数を用いて、テキスト情報を数値インデックスのリストに変換する。
+        この際、指定した出現頻度の単語のみを対象とする。それ以下の出現頻度の単語は除外する。
+        [Input]
+            text_data : list<str>
+                テキストデータのリスト
+            n_max_in_sequence : int
+                １つのシーケンスのテキストの最大の長さ
+            min_word_freq : int
+                対象とする単語の出現頻度の閾値
+        [Output]
+            text_processed : array<int>
+                テキスト情報を表す数値インデックスのリスト
+            n_vocaburary : int
+                vocabulary のサイズ（埋め込み行列の行数）
+        """
+        # テキストの長さは最大で `n_max_in_sequence` 個の単語数とし、
+        # これよりも長いテキスト（シーケンス）は、この長さで打ち切り、
+        # それよりも短いテキスト（シーケンス）は 0 で埋める。（つまり、シーケンスなしとする）
+        # 又、語彙に `min_word_freq` 回以上出現する単語のみを考慮し、それらの単語をサイズが `embedding_size` のトレーニング可能なベクトルに埋め込む。
+        vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
+                              max_document_length = n_max_in_sequence, 
+                              min_frequency = min_word_freq
+                          )
+
+        # ? Transform the text using the vocabulary.
+        # VocabularyProcessor.fit_transform(...) : <generator object VocabularyProcessor.transform at 0x000001FAF79EF4C0>
+        # [ [ 44 456   0 ...,   0   0   0] [ 47 316   0 ...,   0   0   0] ..., [  5 494 109 ...,   1 199  12] ]
+        text_processed = numpy.array( list( vocab_processor.fit_transform( text_data ) ) )      # ?
+        #print( "VocabularyProcessor.fit_transform(...) :", vocab_processor.fit_transform( text_data ) )
+        #print( "list( VocabularyProcessor.fit_transform(...) ) :", list( vocab_processor.fit_transform( text_data ) ) )
+        #print( "numpy.array( list( vocab_processor.fit_transform( text_data ) ) ) :", text_processed )
+        
+        # vocabulary のサイズ（埋め込み行列の行数）
+        n_vocab = len( vocab_processor.vocabulary_ )
+
+        return text_processed, n_vocab
+
+
+    def text_vocabulary_processing_without_tensorflow( text_data, min_word_freq = 10 ):
+        """
+        TensorFlow の組み込み関数を用いずに、テキスト情報を数値インデックスのリストに変換する。
+        この際、指定した出現頻度の単語のみを対象とする。それ以下の出現頻度の単語は除外する。
+
+        [Input]
+            text_data : list<str>
+                テキストデータのリスト
+            min_word_freq : int
+                対象とする単語の出現頻度の閾値
+
+        [Output]
+            text_data_idx : array<int>
+                テキストデータのインデックスの配列
+            n_vocab : int
+                出現頻度の高い単語（ワード、語彙）の数
+        """
+        # list<str> → １つの str に変換
+        text_data = "".join( text_data )
+        #print( "text_data:\n", text_data )
+
+        # 空白スペースで split し、単語単位の配列に変換
+        text_data = text_data.split( " " )
+        #print( "text_data:\n", text_data )
+
+        # collections.Counter(...) : 単語などの出現頻度を数える
+        # collections.Counter(...) : Counter( { 'the': 23974, 'and': 19409, ... , '6': 70, '8': 46, '7': 44 } )
+        word_counts = collections.Counter( text_data )
+        #print( "collections.Counter(...) :", word_counts )
+
+        #----------------------------------------------------------------------
+        # 抽出した単語の出現頻度から、
+        # 出現頻度の高い (min_word_freq 値以上の) 単語をディクショナリに登録する。
+        # 出現頻度の低い単語は除外
+        #----------------------------------------------------------------------
+        word_counts = { key: count for (key,count) in word_counts.items() if count > min_word_freq }    # ディクショナリの内包表現
+        
+        #---------------------------------------------------------
+        # 語彙 "xxx" → インデックスへの map を作成
+        #---------------------------------------------------------
+        # dict.keys() : ディクショナリから key を取り出し
+        dict_keys_words = word_counts.keys()
+        #print( "dict_keys_words :\n", dict_keys_words )         # dict_keys(['from', 'fairest', 'creatures', ... , 'donations', 'f'])
+        dict_vcab_to_idx = { key: (idx+1) for (idx,key) in enumerate( dict_keys_words ) }
+        # 不明な key (=vocab) のインデックスとして 0 を登録
+        dict_vcab_to_idx[ "unknown" ] = 0
+        #print( "dict_vcab_to_idx :\n", dict_vcab_to_idx )       # {'from': 1, 'fairest': 2, 'creatures': 3, ... , 'donations': 7509, 'f': 7510}
+
+        #---------------------------------------------------------
+        # インデックス → 語彙 "xxx" への map を作成
+        #---------------------------------------------------------
+        dict_idx_to_vocab = { idx: key for (key,idx) in dict_vcab_to_idx.items() }
+        #print( "dict_idx_to_vocab :\n", dict_idx_to_vocab )     # {1: 'from', 2: 'fairest', 3: 'creatures', ... , 7509: 'donations', 7510: 'f'}
+
+        #---------------------------------------------------------
+        # テキストデータのインデックス配列
+        #---------------------------------------------------------
+        text_data_idx = []
+        
+        # テキストから抽出した単語単位の配列 text_data に関してのループ
+        for (idx,words) in enumerate( text_data ):
+            try:
+                text_data_idx.append( dict_vcab_to_idx[words] )
+            except:
+                text_data_idx.append( 0 )
+
+        # list → ndarray に変換
+        text_data_idx = numpy.array( text_data_idx )
+
+        # 単語の数
+        n_vocab = len( dict_idx_to_vocab ) + 1
+
+        #print( "text_data_idx :\n", text_data_idx )     # [   1    2    3 ...,    0  953 4616]
+        #print( "n_vocab :\n", n_vocab )                 #
+
+        return text_data_idx, n_vocab
 
     #---------------------------------------------------------
     # 欠損値の処理を行う関数群

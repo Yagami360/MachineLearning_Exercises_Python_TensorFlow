@@ -66,9 +66,11 @@ def main():
     print( "text_data :\n", text_data )
 
     # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
-
-    # 抽出したテキストデータを、このディクショナリに基づき、数値情報に変換する。
-
+    # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
+    text_data_idx, n_vocab = MLPreProcess.text_vocabulary_processing_without_tensorflow( text_data , min_word_freq = 5 )
+    print( "text_data_idx :", text_data_idx )
+    print( "len( text_data_idx ) :", len( text_data_idx ) )
+    print( "n_vocab :", n_vocab )
 
     #======================================================================
     # データを変換、正規化

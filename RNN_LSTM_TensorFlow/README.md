@@ -427,17 +427,75 @@ LSTM による自然言語処理（NLP）の一例として、英文学作品の
 
             text_data = [ clean_text(str) for str in text_data ]
         ```
-- 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する。
-    - この処理は `MLPreProcess.xxx(...)` にて行う。
-        - xxx
+- 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する。<br>
+（出現頻度の高い単語のみ学習の対象とする。出現頻度の低い単語は除外）
+    - この処理は `MLPreProcess.text_vocabulary_processing_without_tensorflow(...)` にて行う。
+        - 前段階として、str からなる list → １つの str に変換したものを、空白スペースで split し、単語単位の配列に変換しておく。
         ```python
         [MLPreProcess]
+        def text_vocabulary_processing_without_tensorflow(...):
+            ...
+            # list<str> → １つの str に変換
+            text_data = "".join( text_data )
+            
+            # 空白スペースで split し、単語単位の配列に変換
+            text_data = text_data.split( " " )
         ```
-- 更に、抽出したテキストデータを、このディクショナリに基づき、数値情報に変換する。
-    - この処理は `MLPreProcess.xxx(...)` にて行う。
-        - xxx
+        - `collections` モジュールの `collections.Counter(...)` を用いて、抽出したテキストデータから、単語の出現頻度を数える
         ```python
         [MLPreProcess]
+        def text_vocabulary_processing_without_tensorflow(...):
+            ...
+            word_counts = collections.Counter( text_data )
+        ```
+        - 抽出した単語の出現頻度から、出現頻度の高い (`min_word_freq` 値以上の) 単語をディクショナリに登録する。出現頻度の低い単語は除外
+        ```python
+        [MLPreProcess]
+        def text_vocabulary_processing_without_tensorflow(...):
+            ...
+            word_counts = { key: count for (key,count) in word_counts.items() if count > min_word_freq }    # ディクショナリの内包表現
+        ```
+        - 語彙 "xxx" → インデックスへの map を作成する。
+        ```python
+        [MLPreProcess]
+        def text_vocabulary_processing_without_tensorflow(...):
+            ...
+            # dict.keys() : ディクショナリから key を取り出し
+            dict_keys_words = word_counts.keys()
+            dict_vcab_to_idx = { key: (idx+1) for (idx,key) in enumerate( dict_keys_words ) }
+            # 不明な key (=vocab) のインデックスとして 0 を登録
+            dict_vcab_to_idx[ "unknown" ] = 0
+
+        ```
+        - インデックス → 語彙 "xxx" への map を作成する。
+        ```python
+        [MLPreProcess]
+        def text_vocabulary_processing_without_tensorflow(...):
+            ...
+            dict_idx_to_vocab = { idx: key for (key,idx) in dict_vcab_to_idx.items() }
+        ```
+        - 更に、抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
+        ```python
+        [MLPreProcess]
+        def text_vocabulary_processing_without_tensorflow(...):
+            ...
+            #---------------------------------------------------------
+            # テキストデータのインデックス配列
+            #---------------------------------------------------------
+            text_data_idx = []
+        
+            # テキストから抽出した単語単位の配列 text_data に関してのループ
+            for (idx,words) in enumerate( text_data ):
+                try:
+                    text_data_idx.append( dict_vcab_to_idx[words] )
+                except:
+                    text_data_idx.append( 0 )
+
+            # list → ndarray に変換
+            text_data_idx = numpy.array( text_data_idx )
+
+            # 単語の数
+            n_vocab = len( dict_idx_to_vocab ) + 1
         ```
 - xxx
 
