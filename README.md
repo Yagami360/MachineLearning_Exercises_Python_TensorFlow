@@ -41,3 +41,4 @@ https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/</br>
 1. [./CNN_StyleNet_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/CNN_StyleNet_TensorFlow)
 1. [./RNN_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow)
 1. [./RNN_LSTM_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow)
+1. [./RNN_Encoder-Decoder_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_Encoder-Decoder_TensorFlow)
