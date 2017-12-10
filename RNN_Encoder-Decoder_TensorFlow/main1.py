@@ -42,13 +42,11 @@ from NNOptimizer import Adadelta
 from NNOptimizer import Adam
 
 from NeuralNetworkBase import NeuralNetworkBase
-from RecurrectNNLanguageModel import RecurrectNNLanguageModel
-from RecurrentNNLSTMLanguageModel import RecurrentNNLSTMLanguageModel
 
 
 def main():
     """
-    TensorFlow を用いた RNN Encoder-Decoder（LSTM 使用） によるシェイクスピア作品のワード予想処理
+    TensorFlow を用いた RNN Encoder-Decoder（LSTM 使用） による簡単な質問応答（足し算）処理
     """
     print("Enter main()")
 
@@ -59,18 +57,7 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    path_text = "C:\Data\MachineLearning_DataSet\Project_Gutenberg\William_Shakespeare\pg100.txt"
-
-    # The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み＆抽出処理
-    text_data = MLPreProcess.load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path = path_text, n_DeleteParagraph = 182, bCleaning = True )
-    print( "text_data :\n", text_data )
-
-    # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
-    # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
-    text_data_idx, n_vocab = MLPreProcess.text_vocabulary_processing_without_tensorflow( text_data , min_word_freq = 5 )
-    print( "text_data_idx :", text_data_idx )
-    print( "len( text_data_idx ) :", len( text_data_idx ) )
-    print( "n_vocab :", n_vocab )
+    
 
     #======================================================================
     # データを変換、正規化
@@ -93,6 +80,7 @@ def main():
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
+    """
     rnn1 = RecurrentNNLSTMLanguageModel(
                session = tf.Session(),
                n_inputLayer = 1,
@@ -107,7 +95,7 @@ def main():
                save_step = 500               
            )
     rnn1.print( "after __init__()" )
-
+    """
     #======================================================================
     # 変数とプレースホルダを設定
     # Initialize variables and placeholders.
@@ -127,8 +115,8 @@ def main():
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
-    rnn1.model()
-    rnn1.print( "after model()" )
+    #rnn1.model()
+    #rnn1.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。
