@@ -19,7 +19,7 @@ TensorFlow を用いた、RNN Encoder-Decoder による自然言語処理（質�
     1. RNN Encoder-Decoder（複数の LSTM 層使用） による英文学作品のワード予想処理 : `main3.py`
 1. [背景理論](#ID_4)
     1. [リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞](#ID_5)
-        1.[]
+        1. [RNN Encoder-Decoder (Seqenence-to-sequence models)](#ID_5-5)
 
 <a id="ID_1"></a>
 
@@ -263,5 +263,13 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 ![image](https://user-images.githubusercontent.com/25688193/30980712-f06a0906-a4bc-11e7-9b15-4c46834dd6d2.png)
 ![image](https://user-images.githubusercontent.com/25688193/30981066-22f53124-a4be-11e7-9111-9514f04aed7c.png)
 
-<a id="ID_5-2"></a>
+<a id="ID_5-5"></a>
+
+### RNN Encoder-Decoder (Seqenence-to-sequence models)
+![image](https://user-images.githubusercontent.com/25688193/31340555-7cd2efac-ad41-11e7-85f0-d70f0f9c7bee.png)
+![image](https://user-images.githubusercontent.com/25688193/31370123-203bf512-adc4-11e7-8bc1-d65df760a43f.png)
+![image](https://user-images.githubusercontent.com/25688193/31370130-2c510356-adc4-11e7-9a59-d2b93cfa4698.png)
+![image](https://user-images.githubusercontent.com/25688193/31370139-372bbfd2-adc4-11e7-965c-96bc88661505.png)
+![image](https://user-images.githubusercontent.com/25688193/31371878-45210ec6-adce-11e7-9096-3bbd77dee065.png)
+![image](https://user-images.githubusercontent.com/25688193/31376678-b29f4ff0-ade0-11e7-9988-88602f28b32c.png)
 
