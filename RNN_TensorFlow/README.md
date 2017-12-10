@@ -21,7 +21,7 @@ TensorFlow を用いた、リカレントニューラルネットワーク（RNN
     1. （外部リンク）GNU による sin 波形（時系列データ）の生成処理
     1. （外部リンク）双方向 RNN による MNIST データセットの識別処理
     1. [（外部リンク）RNN Encoder-Decoder（LSTM 使用） による簡単な質問応答（足し算）処理](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_Encoder-Decoder_TensorFlow#rnn-encoder-decoderlstm-使用-による簡単な質問応答足し算処理--main1py)
-    1. [RNN Encoder-Decoder（LSTM 使用） による英文学作品のワード予想処理](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_Encoder-Decoder_TensorFlow#rnn-encoder-decoderlstm-使用-による英文学作品のワード予想処理--main2py)
+    1. [（外部リンク）RNN Encoder-Decoder（LSTM 使用） による英文学作品のワード予想処理](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_Encoder-Decoder_TensorFlow#rnn-encoder-decoderlstm-使用-による英文学作品のワード予想処理--main2py)
     1. （外部リンク）RNN Encoder-Decoder（複数の LSTM 層使用） による英文学作品のワード予想処理
 1. [背景理論](#ID_4)
     1. [リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞](#ID_5)
