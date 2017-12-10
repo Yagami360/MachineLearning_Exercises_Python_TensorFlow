@@ -42,8 +42,8 @@ from NNOptimizer import Adadelta
 from NNOptimizer import Adam
 
 from NeuralNetworkBase import NeuralNetworkBase
-from RecurrentNN import RecurrentNN
-from RecurrentNNLSTM import RecurrentNNLSTM
+from RecurrectNNLanguageModel import RecurrectNNLanguageModel
+from RecurrentNNLSTMLanguageModel import RecurrentNNLSTMLanguageModel
 
 
 def main():
@@ -93,19 +93,20 @@ def main():
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
-    """
-    rnn1 = RecurrentNNLSTM(
+    rnn1 = RecurrentNNLSTMLanguageModel(
                session = tf.Session(),
-               n_inputLayer = len( X_features[0][0] ),
-               n_hiddenLayer = 100,
-               n_outputLayer = len( y_labels[0] ),
-               n_in_sequence = X_features.shape[1],
-               epochs = 30000,
+               n_inputLayer = 1,
+               n_hiddenLayer = 128,                 # rnn_size
+               n_outputLayer = 1,
+               n_in_sequence = 50,                  # 前後の単語のシーケンス長
+               n_vocab = n_vocab,                   # 7511
+               n_in_embedding_vec = 50,             # 
+               epochs = 1000,
                batch_size = 100,
-               eval_step = 1
+               eval_step = 1,
+               save_step = 500               
            )
-    """
-    #rnn1.print( "after __init__()" )
+    rnn1.print( "after __init__()" )
 
     #======================================================================
     # 変数とプレースホルダを設定
@@ -126,8 +127,8 @@ def main():
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
-    #rnn1.model()
-    #rnn1.print( "after model()" )
+    rnn1.model()
+    rnn1.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。

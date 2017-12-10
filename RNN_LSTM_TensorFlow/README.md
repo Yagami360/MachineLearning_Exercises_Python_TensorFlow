@@ -497,6 +497,9 @@ LSTM による自然言語処理（NLP）の一例として、英文学作品の
             # 単語の数
             n_vocab = len( dict_idx_to_vocab ) + 1
         ```
+- 自然言語処理（NLP）に対応した、LSTM モデルの各種パラメーターの設定を行う。
+    - この設定は、`RecurrectNNLSTMLanguageModel` クラスのインスタンス作成時の引数にて行う。
+    - xxx
 - xxx
 
 <br>
