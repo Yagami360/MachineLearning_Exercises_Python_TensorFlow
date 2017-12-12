@@ -93,6 +93,7 @@ def main():
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
+    """
     rnn1 = RecurrentNNLSTMLanguageModel(
                session = tf.Session(),
                n_inputLayer = 1,
@@ -107,7 +108,7 @@ def main():
                save_step = 500               
            )
     rnn1.print( "after __init__()" )
-
+    """
     #======================================================================
     # 変数とプレースホルダを設定
     # Initialize variables and placeholders.
@@ -127,8 +128,8 @@ def main():
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
-    rnn1.model()
-    rnn1.print( "after model()" )
+    #rnn1.model()
+    #rnn1.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。
