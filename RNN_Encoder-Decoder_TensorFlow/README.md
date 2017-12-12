@@ -1,6 +1,6 @@
-## TensorFlow を用いた RNN Encoder-Decoder の実装と簡単な応用
+## TensorFlow を用いた RNN Encoder-Decoder / Sequence-to-Seuqence の実装と簡単な応用
 
-TensorFlow を用いた、RNN Encoder-Decoder による自然言語処理（質問応答、ワード予想等）の練習用実装コード集。
+TensorFlow を用いた、RNN Encoder-Decoder / Sequence-to-Seqence による自然言語処理（質問応答、ワード予想等）の練習用実装コード集。
 
 この `README.md` ファイルには、各コードの実行結果、概要、RNN の背景理論の説明を記載しています。
 分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
@@ -31,7 +31,7 @@ TensorFlow を用いた、RNN Encoder-Decoder による自然言語処理（質�
 >> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
 
->> `tf.einsum(...)` : Tensor のアインシュタイン縮約記法<br>
+>> `tf.einsum(...)` : Tensor 積等の Tensor 間演算をアインシュタイン縮約記法で指定する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/einsum<br>
 
 > その他ライブラリ
@@ -275,8 +275,13 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 ### コードの実行結果
 
 ### 損失関数のグラフ
-> コード実装中...
 
+- ｛入力層 : 12 ノード、隠れ層 : **128** ノード、出力層 : 12 ノード｝の RNN Encoder-Decoder モデル
+    - エンコーダーのシーケンス長 : **7** 個, デコーダーのシーケンス長 : **4** 個
+    - 学習率 **0.001**, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = 0.9, beta2 = 0.999 )
+    - トレーニング用データ : 90 %、テスト用データ : 10% に分割
+    - エポック数 4000 回, ミニバッチサイズ 200
+![rnn_encoder-decoder_1-1-1 _batch200-adam](https://user-images.githubusercontent.com/25688193/33892570-737ad4f0-df9c-11e7-9b9c-b32ac82e8a20.png)
 
 <br>
 

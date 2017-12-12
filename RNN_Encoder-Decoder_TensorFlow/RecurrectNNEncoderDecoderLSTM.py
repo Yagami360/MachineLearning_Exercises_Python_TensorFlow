@@ -86,6 +86,8 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
         _batch_size_holder : placeholder
             バッチサイズ _batch_size にデータを供給するための placeholder
             cell.zero_state(...) でバッチサイズを指定する必要があり、可変長に対応するために必要
+        _bTraining_holder : placeholder
+            トレーニング処理中か否かを表す placeholder
 
     [protedted] protedted な使用法を想定 
 
@@ -149,6 +151,7 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
 
         self._dropout_holder = tf.placeholder( tf.float32, name = "dropout_holder" )
         self._batch_size_holder = tf.placeholder( tf.int32, shape=[], name = "batch_size_holder" )
+        self._bTraining_holder = tf.placeholder( tf.bool, name = "bTraining_holder" )
 
         return
 
@@ -176,10 +179,11 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
         print( "_batch_size : ", self._batch_size )
         print( "_eval_step : ", self._eval_step )
 
-        print( "_X_holder : ", self._X_holder )
-        print( "_t_holder : ", self._t_holder )
-        print( "_dropout_holder : ", self._dropout_holder )
-        print( "_batch_size_holder : ", self._batch_size_holder )
+        print( "_X_holder :", self._X_holder )
+        print( "_t_holder :", self._t_holder )
+        print( "_dropout_holder :", self._dropout_holder )
+        print( "_batch_size_holder :", self._batch_size_holder )
+        print( "_bTraing_holder :", self._bTraining_holder )
 
         print( "_rnn_cells_encoder : \n", self._rnn_cells_encoder )
         print( "_rnn_states_encoder : \n", self._rnn_states_encoder )
@@ -309,6 +313,13 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
         initial_state_decoder_tsr = self._rnn_states_encoder[-1]
         self._rnn_states_decoder.append( initial_state_decoder_tsr )
 
+        # 隠れ層 ~ 出力層の重みを事前に設定
+        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
+        self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
+
+        # ?
+        eval_outputs = []
+
         # Decoder の過去の隠れ層の再帰処理
         with tf.variable_scope('Decoder'):
             # t = 1 ~ self._n_in_sequence_decoder 間のループ処理 (t != 0)
@@ -319,38 +330,89 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                     # reuse_variables() : reuse フラグを True にすることで、再利用できるようになる。
                     tf.get_variable_scope().reuse_variables()
 
-                # LSTMCellクラスの `__call__(...)` を順次呼び出し、
-                # 各時刻 t における出力 cell_output, 及び状態 state を算出
-                cell_decoder_output, state_decoder_tsr = cell_decoder( inputs = self._t_holder[:, t-1, :], state = self._rnn_states_decoder[-1] )
+                # トレーニング処理中の場合のルート
+                if ( self._bTraining_holder == True ):
+                    with tf.name_scope( "Traning_root" ):
+                        # LSTMCellクラスの `__call__(...)` を順次呼び出し、
+                        # 各時刻 t における出力 cell_output, 及び状態 state を算出
+                        cell_decoder_output, state_decoder_tsr = cell_decoder( inputs = self._t_holder[:, t-1, :], state = self._rnn_states_decoder[-1] )
+                
+                # loss 値などの評価用の値の計算時のルート
+                # デコーダーの次の step における出力計算時、self._t_holder[:, t-1, :] という正解データ（教師データ）を使用しないようにルート分岐させる。
+                else:
+                    with tf.name_scope( "Eval_root" ):
+                        # matmul 計算時、直前の出力 self._rnn_cells_decoder[-1] を入力に用いる
+                        cell_decoder_output = tf.matmul( self._rnn_cells_decoder[-1], self._weights[-1] ) + self._biases[-1]
+                        cell_decoder_output = tf.nn.softmax( cell_decoder_output )
+
+                        # ?
+                        eval_outputs.append( cell_decoder_output )
+
+                        # ?
+                        cell_decoder_output = tf.one_hot( tf.argmax(cell_decoder_output, -1), depth = self._n_in_sequence_decoder)
+                    
+                        # ?
+                        cell_decoder_output, state_decoder_tsr = cell_decoder( cell_decoder_output, self._rnn_states_decoder[-1] )
 
                 # 過去の隠れ層の出力をリストに追加
                 self._rnn_cells_decoder.append( cell_decoder_output )
                 self._rnn_states_decoder.append( state_decoder_tsr )
 
-        #--------------------------------------------------------------
-        # 出力層への入力
-        #--------------------------------------------------------------
-        # 隠れ層 ~ 出力層の重み
-        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
-        self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
-
-        # self._rnn_cells_decoder の形状を shape = ( データ数, シーケンス長, 隠れ層のノード数 ) に reshape 
-        # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
-        output = tf.reshape( 
-                     tf.concat( self._rnn_cells_decoder, axis = 1 ),
-                     shape = [ -1, self._n_in_sequence_decoder, self._n_hiddenLayer ]
-                 )
+        # トレーニング処理中の場合のルート
+        if ( self._bTraining_holder == True ):
+            with tf.name_scope( "Traning_root" ):
+                #--------------------------------------------------------------
+                # 出力層への入力
+                #--------------------------------------------------------------
+                # self._rnn_cells_decoder の形状を shape = ( データ数, デコーダーのシーケンス長, 隠れ層のノード数 ) に reshape 
+                # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
+                output = tf.reshape( 
+                             tf.concat( self._rnn_cells_decoder, axis = 1 ),
+                             shape = [ -1, self._n_in_sequence_decoder, self._n_hiddenLayer ]
+                        )
         
-        #y_in_op = tf.matmul( output, self._weights[-1] ) + self._biases[-1]
-        # tf.einsum(...) : 
+                #y_in_op = tf.matmul( output, self._weights[-1] ) + self._biases[-1]
 
-        y_in_op = tf.einsum( "ijk,kl->ijl", output, self._weights[-1] ) + self._biases[-1]
+                # 3 階の Tensorとの積を取る（２階なら行列なので matmul でよかった）
+                # Σ_{ijk} の j 成分を残して、matmul する
+                # tf.einsum(...) : Tensor の積の アインシュタインの縮約表現
+                # equation : the equation is obtained from the more familiar element-wise （要素毎の）equation by
+                # 1. removing variable names, brackets, and commas, 
+                # 2. replacing "*" with ",", 
+                # 3. dropping summation signs, 
+                # and 4. moving the output to the right, and replacing "=" with "->".
+                y_in_op = tf.einsum( "ijk,kl->ijl", output, self._weights[-1] ) + self._biases[-1]
+        
+                #--------------------------------------------------------------
+                # モデルの出力
+                #--------------------------------------------------------------
+                # softmax
+                self._y_out_op = tf.nn.softmax( y_in_op )
 
-        #--------------------------------------------------------------
-        # モデルの出力
-        #--------------------------------------------------------------
-        # softmax
-        self._y_out_op = Softmax().activate( input = y_in_op )
+        # loss 値などの評価用の値の計算時のルート
+        else:
+            with tf.name_scope( "Eval_root" ):
+                #--------------------------------------------------------------
+                # 出力層への入力
+                #--------------------------------------------------------------
+                y_in_op = tf.matmul( self._rnn_cells_decoder[-1], self._weights[-1] ) + self._biases[-1]
+
+                #--------------------------------------------------------------
+                # モデルの出力
+                #--------------------------------------------------------------
+                # softmax
+                self._y_out_op = tf.nn.softmax( y_in_op )
+
+                # ?
+                eval_outputs.append( self._y_out_op )
+
+                # ?
+                # self._y_out_op の形状を shape = ( データ数, デコーダーのシーケンス長, 出力層ののノード数 ) に reshape 
+                # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
+                self._y_out_op = tf.reshape(
+                                     tf.concat( eval_outputs, axis = 1 ),
+                                     [-1, self._n_in_sequence_decoder, self._n_outputLayer ]
+                                 )
 
         return self._y_out_op
 
@@ -419,18 +481,15 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
             idx_shuffled = numpy.random.choice( len(X_train), size = self._batch_size )
             X_train_shuffled = X_train[ idx_shuffled ]
             y_train_shuffled = y_train[ idx_shuffled ]
-
-            #print( "X_train_shuffled.shape", X_train_shuffled.shape )
-            #print( "y_train_shuffled.shape", y_train_shuffled.shape )
-            #print( "X_train_shuffled.shape", X_train_shuffled.shape )
-
+            
             # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
             self._session.run(
                 self._train_step,
                 feed_dict = {
                     self._X_holder: X_train_shuffled,
                     self._t_holder: y_train_shuffled,
-                    self._batch_size_holder: self._batch_size
+                    self._batch_size_holder: self._batch_size,
+                    self._bTraining_holder: True
                 }
             )
             
@@ -443,7 +502,8 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                        feed_dict = {
                            self._X_holder: X_train_shuffled,
                            self._t_holder: y_train_shuffled,
-                           self._batch_size_holder: self._batch_size
+                           self._batch_size_holder: self._batch_size,
+                           self._bTraining_holder: False
                        }
                    )
 
@@ -472,13 +532,14 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                    self._y_out_op,
                    feed_dict = { 
                        self._X_holder: X_test,
-                       self._dropout_holder: 1.0  # ドロップアウトなし
+                       self._batch_size_holder: 1,
+                       self._bTraining_holder: False
                    }
                )
         
         # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
         # axis : 最大値を読み取る軸の方向 (1 : 行方向)
-        predicts = numpy.argmax( prob, axis = 1 )
+        predicts = numpy.argmax( prob, axis = -1 )
 
         return predicts
 
@@ -496,7 +557,8 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                    session = self._session,
                    feed_dict = {
                        self._X_holder: X_test,
-                       self._dropout_holder: 1.0  # ドロップアウトなし
+                       self._batch_size_holder: 1,
+                       self._bTraining_holder: False
                    }
                )
         
@@ -520,38 +582,3 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
 
         return accuracy
 
-    def accuracy_labels( self, X_test, y_test ):
-        """
-        指定したデータでのラベル毎の正解率 [acuuracy] を算出する。
-        """
-        # 予想ラベルを算出する。
-        predicts = self.predict( X_test )
-
-        # ラベル毎の正解率のリスト
-        n_labels = len( numpy.unique( y_test ) )    # ユニークな要素数
-        accuracys = []
-
-        for label in range(n_labels):
-            # label 値に対応する正解数
-            # where(...) : 条件を満たす要素番号を抽出
-            n_correct = len( numpy.where( predicts == label )[0] )
-            """
-            n_correct = numpy.sum( 
-                            numpy.equal( 
-                                numpy.where( predict == label )[0], 
-                                numpy.where( y_test == label )[0]
-                            ) 
-                        )
-            """
-
-            # サンプル数
-            n_sample = len( numpy.where( y_test == label )[0] )
-
-            accuracy = n_correct / n_sample
-            accuracys.append( accuracy )
-            
-            #print( "numpy.where( predict == label ) :", numpy.where( predict == label ) )
-            #print( "numpy.where( predict == label )[0] :", numpy.where( predict == label )[0] )
-            print( " %d / n_correct = %d / n_sample = %d" % ( label, n_correct, n_sample ) )
-
-        return accuracys

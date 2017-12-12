@@ -91,7 +91,7 @@ def main():
                n_outputLayer = 12,                  # 12 : "0123456789+ " の 12 文字
                n_in_sequence_encoder = 7,           # エンコーダー側のシーケンス長 / 足し算の式のシーケンス長 : "123 " "+" "456 " の計 4+1+4=7 文字
                n_in_sequence_decoder = 4,           # デコーダー側のシーケンス長 / 足し算の式の結果のシーケンス長 : "1000" 計 4 文字
-               epochs = 1000,
+               epochs = 4000,
                batch_size = 200,
                eval_step = 1
            )
@@ -181,10 +181,15 @@ def main():
     # 予想値
     #---------------------------------------------------------
     # 予想値を取得
-    #predicts1 = rnn1.predict( X_features )
-    #print( "predicts1 :\n", predicts1 )
+    predicts1 = rnn1.predict( X_test )
+    print( "predicts1 :", predicts1 )
     
-    
+    # 正解率を取得
+    accuracy_train1 = rnn1.accuracy( X_train, y_train )
+    accuracy_test1 = rnn1.accuracy( X_test, y_test )
+    print( "accuracy_train1 :", accuracy_train1 )
+    print( "accuracy_test1 :", accuracy_test1 )
+
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================
