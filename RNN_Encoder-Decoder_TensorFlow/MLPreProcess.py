@@ -15,6 +15,7 @@
     [17/12/03] : Adding Problem のデータの生成関数 generate_adding_problem(...) 追加
     [17/12/08] : The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み関数 `load_textdata_by_shakespeare_from_theProjectGutenbergEBook(...)` 追加
     [17/12/09] : テキストデータを数値インデックスの配列に変換する関数 `text_vocabulary_processing_without_tensorflow( ... )` 追加
+    [17/12/10] : 整数の加算演算データセット `generate_add_uint_operation_dataset(...)` 生成関数追加
     [xx/xx/xx] :
 
 """
@@ -279,6 +280,100 @@ class MLPreProcess( object ):
         adding_targets = ( singnals * masks ).sum( axis = 1 ).reshape( n_sequence, 1 )
 
         return adding_data, adding_targets
+
+    @staticmethod
+    def generate_add_uint_operation_dataset( n_samples = 100, digits = 3, seed = 12 ):
+        """
+        整数の加算演算データセットを生成する。
+        加算されるデータは、指定された桁数のランダムな値
+
+        [Input]
+            n_samples : int
+
+            digit : int
+                生成する整数の桁数
+        [Output]
+            X_features : numpy.ndarray / shape = (n_samples, n_sequence(=input_digit), one-hot encoded vector size)
+                加算されるデータセットからなる 3 次元 Numpy 配列 ( padding 処理 & one-hot encode 済み )
+                n_sequence : padding 処理されたシーケンス長で、2*digits + 1 (ex: 123+456)
+                one-hot encoded vector size : 12 "0123456789+" の 12文字に対応
+            y_labels : numpy.ndarray / shape = (n_samples, n_sequence(=output_digit), one-hot encoded vector size)
+                加算されたデータセットからなる 3 次元 Numpy 配列 ( padding 処理 & one-hot encode 済み )
+                n_sequence : padding 処理されたシーケンス長で、digits + 1 (ex: 1000(=500+500) のような桁上りケースの対応)
+                one-hot encoded vector size : 12 "0123456789+" の 12文字に対応
+        """
+        numpy.random.seed( seed )
+        
+        def generate_number_uint( digits ):
+            """
+            指定された桁数の整数字をランダムに生成する。
+            """
+            number = ""
+
+            # 1 ~ digit 番目の桁数に関してのループ
+            for i in range( numpy.random.randint(1, digits+1) ):
+                number += numpy.random.choice( list("0123456789") )
+    
+            return int(number)
+        
+        def padding( str, max_len ):
+            """
+            空白文字の Padding 処理による桁合わせ
+            """
+            # 空白 × 埋め合わせ数
+            str_padding = str + " " * ( max_len - len(str) )
+            
+            return str_padding
+
+        # 入力桁数
+        input_digit = digits * 2 + 1     # 123+456
+        # 出力桁数
+        output_digit = digits + 1        # 500+500=1000 のような桁上りのケースを考慮
+
+        # 
+        dat_x = []
+        dat_y = []
+
+        # 指定されたサンプル数ぶんループ処理
+        for i in range( n_samples ):
+            uint_x = generate_number_uint( digits )
+            uint_y = generate_number_uint( digits )
+            #print( "unit_x = {}, uint_y = {}".format( uint_x, uint_y ) )
+
+            train = "{}+{}".format( uint_x, uint_y )
+            train = padding( train, input_digit )
+            dat_x.append( train )
+
+            target = "{}".format( uint_x + uint_y )
+            target = padding( target, output_digit )
+            dat_y.append( target )
+
+        print( "dat_x :\n", dat_x )
+        print( "dat_y :\n", dat_y )
+
+        #---------------------------------------------------------------------
+        # one-hot encoding
+        #---------------------------------------------------------------------
+        map_str = "0123456789+ "  # map 作成用の使用する文字列
+        # 文字からインデックスへの map
+        dict_str_to_idx = { key: idx for (idx,key) in enumerate( map_str ) }
+        
+        # インデックスから文字への map
+        dict_idx_to_str = { idx: key for (key,idx) in dict_str_to_idx.items() }
+        #print( "dict_str_to_idx :", dict_str_to_idx )
+        #print( "dict_idx_to_str :", dict_idx_to_str )
+
+        # one-hot encode されたデータ shape = (n_sample, sequence, one-hot encodeed vector size)
+        X_features = numpy.zeros( ( len(dat_x), input_digit, len(map_str) ), dtype = numpy.int )
+        y_labels = numpy.zeros( ( len(dat_x), output_digit, len(map_str) ), dtype = numpy.int )
+
+        for i in range( n_samples ):
+            for (j, str) in enumerate( dat_x[i] ):
+                X_features[ i, j, dict_str_to_idx[str] ] = 1     # one-hot encode の 1 の部分
+            for (j, str) in enumerate( dat_y[i] ):
+                y_labels[ i, j, dict_str_to_idx[str] ] = 1     # one-hot encode の 1 の部分
+
+        return X_features, y_labels
 
 
     #---------------------------------------------------------
@@ -757,6 +852,7 @@ class MLPreProcess( object ):
         return image, labels
 
 
+    @staticmethod
     def load_sms_spam_collection( path, bCleaning = True ):
         """
         スパム文判定用テキストデータである SMS Spam Collection データセットの読み込み関数
@@ -854,6 +950,7 @@ class MLPreProcess( object ):
         return text_data_features, text_data_labels
 
 
+    @staticmethod
     def load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path, n_DeleteParagraph = 182, bCleaning = True ):
         """
         The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み関数
@@ -954,6 +1051,7 @@ class MLPreProcess( object ):
     #---------------------------------------------------------
     # テキストデータの数値データへの変換処理を行う関数群
     #---------------------------------------------------------
+    @staticmethod
     def text_vocabulary_processing( text_data, n_max_in_sequence = 25, min_word_freq = 10 ):
         """
         TensorFlow の組み込み関数を用いて、テキスト情報を数値インデックスのリストに変換する。
@@ -993,7 +1091,7 @@ class MLPreProcess( object ):
 
         return text_processed, n_vocab
 
-
+    @staticmethod
     def text_vocabulary_processing_without_tensorflow( text_data, min_word_freq = 10 ):
         """
         TensorFlow の組み込み関数を用いずに、テキスト情報を数値インデックスのリストに変換する。

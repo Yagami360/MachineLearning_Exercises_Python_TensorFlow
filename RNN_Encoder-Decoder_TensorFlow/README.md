@@ -31,6 +31,9 @@ TensorFlow を用いた、RNN Encoder-Decoder による自然言語処理（質�
 >> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
 
+>> `tf.einsum(...)` : Tensor のアインシュタイン縮約記法<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/einsum<br>
+
 > その他ライブラリ
 >>
 
@@ -58,21 +61,222 @@ TensorFlow を用いた、RNN Encoder-Decoder による自然言語処理（質�
 ## RNN Encoder-Decoder（LSTM 使用） による簡単な質問応答（足し算）処理 : `main1.py`
 > 実装中...
 
-<!--
+RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例として、質問応答（QA）があるが、ここでは、この質問応答（QA）の簡単な例として、指定された数字の足し算を答える応答問題を考える。
+
 
 <a id="ID_3-1-1"></a>
 
 以下、コードの説明。
 
-- xxx
+- まず、指定された数字の足し算を答える応答用に、整数の加算演算データセットを生成する関数 `MLPreProcess.generate_add_uint_operation_dataset(...)` を実装する。<br>
+![image](https://user-images.githubusercontent.com/25688193/33876304-7fd5dcc4-df68-11e7-9534-f33e4a12c194.png)<br>
+![image](https://user-images.githubusercontent.com/25688193/33877497-e442e23a-df6b-11e7-9210-5c230548f28d.png)
+    - この関数の処理は、以下のコードのようになる。<br>
+    - 指定された桁数の整数字をランダムに生成する処理を、関数ブロックで以下のコードのように実装しておく。（後述の処理で使用）
+    ```python
+    [MLPreProcess.py]
+    def generate_add_uint_operation_dataset( ... ):
+        ...
+        def generate_number_uint( digits ):
+            """
+            指定された桁数の整数字をランダムに生成する。
+            """
+            number = ""
+
+            # 1 ~ digit 番目の桁数に関してのループ
+            for i in range( numpy.random.randint(1, digits+1) ):
+                number += numpy.random.choice( list("0123456789") )
+    
+            return int(number)
+    ```
+    - そして、各シーケンスの空白文字の Padding 処理による桁合わせ処理を、関数ブロックで以下のコードのように実装する。（後述の処理で使用）
+    ```python
+    [MLPreProcess.py]
+    def generate_add_uint_operation_dataset( ... ):
+        ...
+        def padding( str, max_len ):
+            """
+            空白文字の Padding 処理による桁合わせ
+            """
+            # 空白 × 埋め合わせ数
+            str_padding = str + " " * ( max_len - len(str) )
+            
+            return str_padding
+    ```
+    - ランダムに生成した、桁数 `digits` からなる２つの整数の足し算の式 `uint_x + uint_y` と、この式の解に対応するデータ（応答データ）を、指定されたサンプル数 `n_samples` 個ぶん作成し、それらを空白文字 `" "` で padding 処理してシーケンス長を揃えておく。
+    ```python
+    [MLPreProcess.py]
+    def generate_add_uint_operation_dataset( ... ):
+        ...
+        # 入力桁数
+        input_digit = digits * 2 + 1     # 123+456
+        # 出力桁数
+        output_digit = digits + 1        # 500+500=1000 のような桁上りのケースを考慮
+
+        # 
+        dat_x = []
+        dat_y = []
+
+        # 指定されたサンプル数ぶんループ処理
+        for i in range( n_samples ):
+            uint_x = generate_number_uint( digits )
+            uint_y = generate_number_uint( digits )
+
+            train = "{}+{}".format( uint_x, uint_y )
+            train = padding( train, input_digit )
+            dat_x.append( train )
+
+            target = "{}".format( uint_x + uint_y )
+            target = padding( target, output_digit )
+            dat_y.append( target )
+    ```
+    - 文字からインデックスへのディクショナリ `dict_str_to_idx` にもとづき、各文字を one-hot encode 処理する。
+    ```python
+    [MLPreProcess.py]
+    def generate_add_uint_operation_dataset( ... ):
+        ...
+        map_str = "0123456789+ "  # map 作成用の使用する文字列
+        # 文字からインデックスへの map
+        dict_str_to_idx = { key: idx for (idx,key) in enumerate( map_str ) }
+        
+        # インデックスから文字への map
+        dict_idx_to_str = { idx: key for (key,idx) in dict_str_to_idx.items() }
+
+        # one-hot encode されたデータ shape = (n_sample, sequence, one-hot encodeed vector size)
+        X_features = numpy.zeros( ( len(dat_x), input_digit, len(map_str) ), dtype = numpy.int )
+        y_labels = numpy.zeros( ( len(dat_x), output_digit, len(map_str) ), dtype = numpy.int )
+
+        for i in range( n_samples ):
+            for (j, str) in enumerate( dat_x[i] ):
+                X_features[ i, j, dict_str_to_idx[str] ] = 1     # one-hot encode の 1 の部分
+            for (j, str) in enumerate( dat_y[i] ):
+                y_labels[ i, j, dict_str_to_idx[str] ] = 1     # one-hot encode の 1 の部分
+
+        return X_features, y_labels
+    ```
+- データセットを、トレーニング用データセットと、テスト用データセットに分割する。
+    - 分割割合は、トレーニング用データ 90%、テスト用データ 10%
+    ```python
+    X_train, X_test, y_train, y_test \
+    = MLPreProcess.dataTrainTestSplit( X_input = X_features, y_input = y_labels, ratio_test = 0.1, input_random_state = 1 )
+    ```
+- この自然言語処理（NLP）に対応した、RNN Encoder-Decoder モデルの各種パラメーターの設定を行う。
+    - この設定は、`RecurrectNNEncoderDecoderLSTM` クラスのインスタンス作成時の引数にて行う。
+    ```python
+    [main1.py]
+    rnn1 = RecurrectNNEncoderDecoderLSTM(
+               session = tf.Session(),
+               n_inputLayer = 12,                   # 12 : "0123456789+ " の 12 文字
+               n_hiddenLayer = 128,                 # rnn の cell 数と同じ
+               n_outputLayer = 12,                  # 12 : "0123456789+ " の 12 文字
+               n_in_sequence_encoder = 7,           # エンコーダー側のシーケンス長 / 足し算の式のシーケンス長 : "123 " "+" "456 " の計 4+1+4=7 文字
+               n_in_sequence_decoder = 4,           # デコーダー側のシーケンス長 / 足し算の式の結果のシーケンス長 : "1000" 計 4 文字
+               epochs = 1000,
+               batch_size = 200,
+               eval_step = 1
+           )
+    ```
+- RNN Encoder-Decoder （LSTM使用） モデルの構造を定義する。
+![image](https://user-images.githubusercontent.com/25688193/31370123-203bf512-adc4-11e7-8bc1-d65df760a43f.png)
+    - この処理は、`RecurrectNNEncoderDecoderLSTM` クラスの `model()` メソッドにて行う。
+    - まず、Encoder 側のモデルを RNN の再帰構造に従って構築していく。
+    ```python
+    [RecurrectNNEncoderDecoderLSTM.py]
+    def model():
+        ...
+        #--------------------------------------------------------------
+        # Encoder
+        #--------------------------------------------------------------
+        # tf.contrib.rnn.LSTMCell(...) : 時系列に沿った RNN 構造を提供するクラス `LSTMCell` のオブジェクト cell を返す。
+        # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
+        # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+        cell_encoder = tf.contrib.rnn.LSTMCell( 
+                           num_units = self._n_hiddenLayer,     # int, The number of units in the RNN cell.
+                           forget_bias = 1.0                    # 忘却ゲートのバイアス項 / Default : 1.0  in order to reduce the scale of forgetting at the beginning of the training.
+                       )
+        #self._rnn_cells_encoder.append( cell_encoder ) # 後述の処理で同様の処理が入るので不要
+
+        # 最初の時間 t0 では、過去の隠れ層がないので、
+        # cell.zero_state(...) でゼロの状態を初期設定する。
+        initial_state_encoder_tsr = cell_encoder.zero_state( self._batch_size_holder, tf.float32 )
+        self._rnn_states_encoder.append( initial_state_encoder_tsr )
+
+        # Encoder の過去の隠れ層の再帰処理
+        with tf.variable_scope('Encoder'):
+            for t in range( self._n_in_sequence_encoder ):
+                if (t > 0):
+                    # tf.get_variable_scope() : 名前空間を設定した Variable にアクセス
+                    # reuse_variables() : reuse フラグを True にすることで、再利用できるようになる。
+                    tf.get_variable_scope().reuse_variables()
+
+                # LSTMCellクラスの `__call__(...)` を順次呼び出し、
+                # 各時刻 t における出力 cell_output, 及び状態 state を算出
+                cell_encoder_output, state_encoder_tsr = cell_encoder( inputs = self._X_holder[:, t, :], state = self._rnn_states_encoder[-1] )
+
+                # 過去の隠れ層の出力をリストに追加
+                self._rnn_cells_encoder.append( cell_encoder_output )
+                self._rnn_states_encoder.append( state_encoder_tsr )
+
+        # 最終的な Encoder の出力
+        #output_encoder = self._rnn_cells_encoder[-1]
+    ```
+    - 次に、Decoder 側のモデルを RNN の再帰構造に従って構築していく。
+        - Decoder の初期状態は Encoder の最終出力なので、これに従って初期状態を定める。
+    ```python
+    [RecurrectNNEncoderDecoderLSTM.py]
+    def model():
+        ...
+    ```
+    - xxx
+    ```python
+    [RecurrectNNEncoderDecoderLSTM.py]
+    def model():
+        ...
+    ```
+    - 最終的なモデルの出力は、隠れ層から出力層への入力を softmax して出力する。
+    ```python
+    [RecurrectNNEncoderDecoderLSTM.py]
+    def model():
+        ...
+        #--------------------------------------------------------------
+        # モデルの出力
+        #--------------------------------------------------------------
+        # softmax
+        self._y_out_op = Softmax().activate( input = y_in_op )
+
+        return self._y_out_op
+    ```
+- 損失関数として、ソフトマックス・エントロピー関数を使用する。
+    ```python
+    [main1.py]
+    rnn1.loss( SoftmaxCrossEntropy() )
+    ```
+- 最適化アルゴリズム Optimizer として、Adam アルゴリズム を使用する。
+    - 学習率 `learning_rate` は、0.001 で検証。減衰項は `beta1 = 0.9`, `beta1 = 0.999`
+    ```python
+    [main1.py]
+    rnn1.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    ```
+- トレーニング用データ `X_train`, `y_train` に対し、fitting 処理を行う。
+    ```python
+    [main1.py]
+    rnn1.fit( X_train, y_train )
+    ```
+- fitting 処理 `fit(...)` 後のモデルで予想を行い、正解率を算出する。
+    - xxx
+- 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/33880754-feae2346-df75-11e7-982a-28f4f805da71.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33880755-fed72192-df75-11e7-9fab-4bfc5b9459fb.png)
+
+
 
 <a id="ID_3-1-2"></a>
 
 ### コードの実行結果
 
 ### 損失関数のグラフ
+> コード実装中...
 
--->
 
 <br>
 
