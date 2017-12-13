@@ -523,14 +523,13 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
             X_test : numpy.ndarry / shape = [n_samples, n_in_sequence_encoder, one-hot vector size]
                 予想したいシーケンスデータ
                 n_samples : シーケンスデータのサンプル数
-                n_in_sequence : Encoder に入力するシーケンスのサイズ
-                dim : 各シーケンスの要素の次元数
+                n_in_sequence_encoder : Encoder に入力するシーケンスのサイズ
+                one-hot vector size : 各単語の one-hot encoding 後のサイズ
 
         [Output]
-            predicts : numpy.ndarry ( shape = [n_samples] )
+            predicts : numpy.ndarry ( shape = [n_samples, n_in_sequence_encoder] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
-        #print( "len( X_test[0] ) :", len( X_test[:,0,0] ) )
         prob = self._session.run(
                    self._y_out_op,
                    feed_dict = { 
@@ -555,8 +554,15 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
         Encoder に入力するシーケンスデータに対する Decoder のクラスの所属確率の予想値を返す。
         
         [Input]
-            X_test : numpy.ndarry ( shape = [n_samples, n_features] )
-                予想したい特徴行列
+            X_test : numpy.ndarry / shape = [n_samples, n_in_sequence_encoder, one-hot vector size]
+                予想したいシーケンスデータ
+                n_samples : シーケンスデータのサンプル数
+                n_in_sequence_encoder : Encoder に入力するシーケンスのサイズ
+                one-hot vector size : 各単語の one-hot encoding 後のサイズ
+
+        [Output]
+            prob : nadarry 
+                所属確率の予想値のリスト
         """
         prob = self._y_out_op.eval(
                    session = self._session,
@@ -573,6 +579,22 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
     def accuracy( self, X_test, y_test ):
         """
         Encoder に入力する指定したデータでの正解率 [accuracy] を計算する。
+
+        [Input]
+            X_test : numpy.ndarry / shape = [n_samples, n_in_sequence_encoder, one-hot vector size]
+                予想したいシーケンスデータ
+                n_samples : シーケンスデータのサンプル数
+                n_in_sequence_encoder : Encoder に入力するシーケンスのサイズ
+                one-hot vector size : 各単語の one-hot encoding 後のサイズ
+            y_test : numpy.ndarry / shape = [n_samples, n_in_sequence_decoder, one-hot vector size]
+                X_test に対する正解データ（教師データ）
+                n_samples : シーケンスデータのサンプル数
+                n_in_sequence_decoder : Decoder に入力するシーケンスのサイズ
+                one-hot vector size : 各単語の one-hot encoding 後のサイズ
+
+        [Output]
+            accuracy : float
+                正解率 (0.0~1.0)
         """
         # 予想ラベルを算出する。
         predicts = self.predict( X_test )
@@ -593,7 +615,6 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
         print( "n_corrects : {}".format (n_corrects) )
  
         # 正解率
-        #accuracy = numpy.mean( numpy.equal( predicts, y_labels ).astype( numpy.float ) )
         accuracy = n_corrects / len( X_test[:,0,0] )
 
         return accuracy
@@ -602,13 +623,19 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
     def question_answer_responce( self, question, dict_idx_to_str ):
         """
         学習済みモデルで、指定された質問文に対する応答文を返す。
+        [Input]
+            question : naddary
+                数値インデックス（one-hot encoded）に変換された質問文
+            dict_idx_to_str : ディクショナリ
+                one-hot encoding する際に参照した数値インデックスから文字への map
 
+        [Output]
+            answer : str
+                質問文に対する応答文（数値インデックスを文字に変換済み）
         """
         if ( question.ndim == 2):
             # 3 次元に reshape / (7,12) → (1,7,12)
-            #question = numpy.reshape( question, (1, question[:,0], question[0,:]) )
             question = [ question ]
-            #print( "question :", question )
 
         # question に対する予想値
         prob = self._y_out_op.eval(
