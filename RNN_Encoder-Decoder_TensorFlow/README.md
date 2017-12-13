@@ -227,6 +227,23 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
     [RecurrectNNEncoderDecoderLSTM.py]
     def model():
         ...
+        cell_decoder = tf.contrib.rnn.LSTMCell( 
+                           num_units = self._n_hiddenLayer,     # int, The number of units in the RNN cell.
+                           forget_bias = 1.0                    # 忘却ゲートのバイアス項 / Default : 1.0  in order to reduce the scale of forgetting at the beginning of the training.
+                       )
+
+        # Decoder の初期状態は Encoder の最終出力
+        self._rnn_cells_decoder.append( self._rnn_cells_encoder[-1] )
+
+        # Decoder の初期状態は Encoder の最終出力
+        initial_state_decoder_tsr = self._rnn_states_encoder[-1]
+        self._rnn_states_decoder.append( initial_state_decoder_tsr )
+
+        # 隠れ層 ~ 出力層の重みを事前に設定
+        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_outputLayer] ) )
+        self._biases.append( self.init_bias_variable( input_shape = [self._n_outputLayer] ) )
+        eval_outputs = []
+
         # Decoder の過去の隠れ層の再帰処理
         with tf.variable_scope('Decoder'):
             # t = 1 ~ self._n_in_sequence_decoder 間のループ処理 (t != 0)
