@@ -345,13 +345,13 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                         cell_decoder_output = tf.matmul( self._rnn_cells_decoder[-1], self._weights[-1] ) + self._biases[-1]
                         cell_decoder_output = tf.nn.softmax( cell_decoder_output )
 
-                        # ?
+                        # eval 時の出力リストに追加
                         eval_outputs.append( cell_decoder_output )
 
                         # ?
                         cell_decoder_output = tf.one_hot( tf.argmax(cell_decoder_output, -1), depth = self._n_in_sequence_decoder)
                     
-                        # ?
+                        # 後述の　過去の隠れ層の出力をリストに追加　のための処理
                         cell_decoder_output, state_decoder_tsr = cell_decoder( cell_decoder_output, self._rnn_states_decoder[-1] )
 
                 # 過去の隠れ層の出力をリストに追加
@@ -364,15 +364,15 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                 #--------------------------------------------------------------
                 # 出力層への入力
                 #--------------------------------------------------------------
+                # まず、Decoder の出力を `tf.concat(...)` で結合し、`tf.reshape(...)` で適切な形状に reshape する。
                 # self._rnn_cells_decoder の形状を shape = ( データ数, デコーダーのシーケンス長, 隠れ層のノード数 ) に reshape 
                 # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
                 output = tf.reshape( 
                              tf.concat( self._rnn_cells_decoder, axis = 1 ),
                              shape = [ -1, self._n_in_sequence_decoder, self._n_hiddenLayer ]
                         )
-        
-                #y_in_op = tf.matmul( output, self._weights[-1] ) + self._biases[-1]
 
+                # そして、reshape した Tensor に対し、`tf.einsum(...)` or `tf.matmul(...)` を用いてテンソル積 or 行列積をとる。
                 # 3 階の Tensorとの積を取る（２階なら行列なので matmul でよかった）
                 # Σ_{ijk} の j 成分を残して、matmul する
                 # tf.einsum(...) : Tensor の積の アインシュタインの縮約表現
@@ -403,10 +403,10 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                 # softmax
                 self._y_out_op = tf.nn.softmax( y_in_op )
 
-                # ?
+                # モデルの最終的な出力を含める
                 eval_outputs.append( self._y_out_op )
 
-                # ?
+                # Decoder の出力、及び モデルの最終的な出力を `tf.concat(...)` で結合し、`tf.reshape(...)` で適切な形状に reshape する。
                 # self._y_out_op の形状を shape = ( データ数, デコーダーのシーケンス長, 出力層ののノード数 ) に reshape 
                 # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
                 self._y_out_op = tf.reshape(
