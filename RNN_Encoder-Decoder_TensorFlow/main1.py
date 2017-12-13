@@ -177,7 +177,7 @@ def main():
     plt.tight_layout()
     
     MLPlot.saveFigure( fileName = "RNN_Encoder-Decoder_1-1.png" )
-    #plt.show()
+    plt.show()
     
     #---------------------------------------------------------
     # 予想値
