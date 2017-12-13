@@ -176,7 +176,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
            )
     ```
 - RNN Encoder-Decoder （LSTM使用） モデルの構造を定義する。
-![image](https://user-images.githubusercontent.com/25688193/33949026-b0354950-e06b-11e7-9ef0-6d9c570f08e4.png)<br>
+![image](https://user-images.githubusercontent.com/25688193/33949198-48d7a32e-e06c-11e7-944d-d83478af53e1.png)<br>
     - この処理は、`RecurrectNNEncoderDecoderLSTM` クラスの `model()` メソッドにて行う。
     - まず、Encoder 側のモデルを RNN の再帰構造に従って構築していく。
     ```python
