@@ -69,7 +69,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
 - まず、指定された数字の足し算を答える応答用に、整数の加算演算データセット（サンプル数 `n_samples` = 20000 個）を生成する関数 `MLPreProcess.generate_add_uint_operation_dataset(...)` を実装する。<br>
 ![image](https://user-images.githubusercontent.com/25688193/33876304-7fd5dcc4-df68-11e7-9534-f33e4a12c194.png)<br>
-![image](https://user-images.githubusercontent.com/25688193/33937473-057dd6cc-e047-11e7-9eb9-085acd485425.png)
+![image](https://user-images.githubusercontent.com/25688193/33940107-1b0159c4-e051-11e7-9c6e-78fe28316bbc.png)
     - この関数の処理は、以下のコードのようになる。<br>
     - 指定された桁数の整数字をランダムに生成する処理を、関数ブロックで以下のコードのように実装しておく。（後述の処理で使用）
     ```python
@@ -221,7 +221,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
     ```
     - 次に、Decoder 側のモデルを RNN の再帰構造に従って構築していく。
         - Decoder の初期状態は Encoder の最終出力なので、これに従って初期状態を定める。
-        - 又、Decoder のモデルは、教師データの一部を使用するが、損失関数等の評価指数の計算時は、この教師データは使用しないので、モデルのトレーニング時と損失関数等のモデルに関連付けられた評価指数の計算時とで、処理を分ける。
+        - 尚、Decoder のモデルは、教師データの一部を使用するが、損失関数等の評価指数の計算時は、この教師データは使用しないので、モデルのトレーニング時と損失関数等のモデルに関連付けられた評価指数の計算時とで、処理を分ける。
     ```python
     [RecurrectNNEncoderDecoderLSTM.py]
     def model():
