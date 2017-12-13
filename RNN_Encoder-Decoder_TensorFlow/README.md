@@ -67,9 +67,9 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
 以下、コードの説明。
 
-- まず、指定された数字の足し算を答える応答用に、整数の加算演算データセットを生成する関数 `MLPreProcess.generate_add_uint_operation_dataset(...)` を実装する。<br>
+- まず、指定された数字の足し算を答える応答用に、整数の加算演算データセット（サンプル数 `n_samples` = 20000 個）を生成する関数 `MLPreProcess.generate_add_uint_operation_dataset(...)` を実装する。<br>
 ![image](https://user-images.githubusercontent.com/25688193/33876304-7fd5dcc4-df68-11e7-9534-f33e4a12c194.png)<br>
-![image](https://user-images.githubusercontent.com/25688193/33877497-e442e23a-df6b-11e7-9210-5c230548f28d.png)
+![image](https://user-images.githubusercontent.com/25688193/33937473-057dd6cc-e047-11e7-9eb9-085acd485425.png)
     - この関数の処理は、以下のコードのようになる。<br>
     - 指定された桁数の整数字をランダムに生成する処理を、関数ブロックで以下のコードのように実装しておく。（後述の処理で使用）
     ```python
@@ -151,7 +151,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
             for (j, str) in enumerate( dat_y[i] ):
                 y_labels[ i, j, dict_str_to_idx[str] ] = 1     # one-hot encode の 1 の部分
 
-        return X_features, y_labels
+        return X_features, y_labels, dict_str_to_idx, dict_idx_to_str
     ```
 - データセットを、トレーニング用データセットと、テスト用データセットに分割する。
     - 分割割合は、トレーニング用データ 90%、テスト用データ 10%
@@ -170,13 +170,13 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
                n_outputLayer = 12,                  # 12 : "0123456789+ " の 12 文字
                n_in_sequence_encoder = 7,           # エンコーダー側のシーケンス長 / 足し算の式のシーケンス長 : "123 " "+" "456 " の計 4+1+4=7 文字
                n_in_sequence_decoder = 4,           # デコーダー側のシーケンス長 / 足し算の式の結果のシーケンス長 : "1000" 計 4 文字
-               epochs = 4000,
-               batch_size = 200,
+               epochs = 20000,
+               batch_size = 100,
                eval_step = 1
            )
     ```
 - RNN Encoder-Decoder （LSTM使用） モデルの構造を定義する。
-![image](https://user-images.githubusercontent.com/25688193/31370123-203bf512-adc4-11e7-8bc1-d65df760a43f.png)
+![image](https://user-images.githubusercontent.com/25688193/33937923-b1570170-e048-11e7-9616-18c82045648f.png)
     - この処理は、`RecurrectNNEncoderDecoderLSTM` クラスの `model()` メソッドにて行う。
     - まず、Encoder 側のモデルを RNN の再帰構造に従って構築していく。
     ```python
@@ -221,27 +221,105 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
     ```
     - 次に、Decoder 側のモデルを RNN の再帰構造に従って構築していく。
         - Decoder の初期状態は Encoder の最終出力なので、これに従って初期状態を定める。
+        - 又、Decoder のモデルは、教師データの一部を使用するが、損失関数等の評価指数の計算時は、この教師データは使用しないので、モデルのトレーニング時と損失関数等のモデルに関連付けられた評価指数の計算時とで、処理を分ける。
     ```python
     [RecurrectNNEncoderDecoderLSTM.py]
     def model():
         ...
+        # Decoder の過去の隠れ層の再帰処理
+        with tf.variable_scope('Decoder'):
+            # t = 1 ~ self._n_in_sequence_decoder 間のループ処理 (t != 0)
+            # t = 0 を含まないのは、Decoder の t = 0 の初期状態は、Encoder の最終出力で処理済みのため
+            for t in range( 1, self._n_in_sequence_decoder ):
+                if (t > 1):
+                    # tf.get_variable_scope() : 名前空間を設定した Variable にアクセス
+                    # reuse_variables() : reuse フラグを True にすることで、再利用できるようになる。
+                    tf.get_variable_scope().reuse_variables()
+
+                # トレーニング処理中の場合のルート
+                if ( self._bTraining_holder == True ):
+                    with tf.name_scope( "Traning_root" ):
+                        # LSTMCellクラスの `__call__(...)` を順次呼び出し、
+                        # 各時刻 t における出力 cell_output, 及び状態 state を算出
+                        cell_decoder_output, state_decoder_tsr = cell_decoder( inputs = self._t_holder[:, t-1, :], state = self._rnn_states_decoder[-1] )
+                
+                # loss 値などの評価用の値の計算時のルート
+                # デコーダーの次の step における出力計算時、self._t_holder[:, t-1, :] という正解データ（教師データ）を使用しないようにルート分岐させる。
+                else:
+                    with tf.name_scope( "Eval_root" ):
+                        # matmul 計算時、直前の出力 self._rnn_cells_decoder[-1] を入力に用いる
+                        cell_decoder_output = tf.matmul( self._rnn_cells_decoder[-1], self._weights[-1] ) + self._biases[-1]
+                        cell_decoder_output = tf.nn.softmax( cell_decoder_output )
+                        eval_outputs.append( cell_decoder_output )
+                        cell_decoder_output = tf.one_hot( tf.argmax(cell_decoder_output, -1), depth = self._n_in_sequence_decoder)
+
+                        cell_decoder_output, state_decoder_tsr = cell_decoder( cell_decoder_output, self._rnn_states_decoder[-1] )
+
+                # 過去の隠れ層の出力をリストに追加
+                self._rnn_cells_decoder.append( cell_decoder_output )
+                self._rnn_states_decoder.append( state_decoder_tsr )
+
     ```
-    - xxx
+    - 出力層への入力と、最終的な出力層からの出力 `self._y_out_op` を構築する。
+        - 最終的なモデルの出力は、隠れ層から出力層への入力を softmax して出力する。
+<!--
+        - `tf.reshape(...)` で、デコーダーからの出力を shape = 
+-->
     ```python
     [RecurrectNNEncoderDecoderLSTM.py]
     def model():
         ...
-    ```
-    - 最終的なモデルの出力は、隠れ層から出力層への入力を softmax して出力する。
-    ```python
-    [RecurrectNNEncoderDecoderLSTM.py]
-    def model():
-        ...
-        #--------------------------------------------------------------
-        # モデルの出力
-        #--------------------------------------------------------------
-        # softmax
-        self._y_out_op = Softmax().activate( input = y_in_op )
+        # トレーニング処理中の場合のルート
+        if ( self._bTraining_holder == True ):
+            with tf.name_scope( "Traning_root" ):
+                #--------------------------------------------------------------
+                # 出力層への入力
+                #--------------------------------------------------------------
+                # self._rnn_cells_decoder の形状を shape = ( データ数, デコーダーのシーケンス長, 隠れ層のノード数 ) に reshape 
+                # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
+                output = tf.reshape( 
+                             tf.concat( self._rnn_cells_decoder, axis = 1 ),
+                             shape = [ -1, self._n_in_sequence_decoder, self._n_hiddenLayer ]
+                        )
+        
+                # 3 階の Tensorとの積を取る（２階なら行列なので matmul でよかった）
+                # Σ_{ijk} の j 成分を残して、matmul する
+                # tf.einsum(...) : Tensor の積の アインシュタインの縮約表現
+                # equation : the equation is obtained from the more familiar element-wise （要素毎の）equation by
+                # 1. removing variable names, brackets, and commas, 
+                # 2. replacing "*" with ",", 
+                # 3. dropping summation signs, 
+                # and 4. moving the output to the right, and replacing "=" with "->".
+                y_in_op = tf.einsum( "ijk,kl->ijl", output, self._weights[-1] ) + self._biases[-1]
+        
+                #--------------------------------------------------------------
+                # モデルの出力
+                #--------------------------------------------------------------
+                # softmax
+                self._y_out_op = tf.nn.softmax( y_in_op )
+
+        # loss 値などの評価用の値の計算時のルート
+        else:
+            with tf.name_scope( "Eval_root" ):
+                #--------------------------------------------------------------
+                # 出力層への入力
+                #--------------------------------------------------------------
+                y_in_op = tf.matmul( self._rnn_cells_decoder[-1], self._weights[-1] ) + self._biases[-1]
+
+                #--------------------------------------------------------------
+                # モデルの出力
+                #--------------------------------------------------------------
+                # softmax
+                self._y_out_op = tf.nn.softmax( y_in_op )
+
+                eval_outputs.append( self._y_out_op )
+
+                # self._y_out_op の形状を shape = ( データ数, デコーダーのシーケンス長, 出力層ののノード数 ) に reshape 
+                # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
+                self._y_out_op = tf.reshape(
+                                     tf.concat( eval_outputs, axis = 1 ),
+                                     [-1, self._n_in_sequence_decoder, self._n_outputLayer ]
+                                 )
 
         return self._y_out_op
     ```
@@ -261,9 +339,21 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
     [main1.py]
     rnn1.fit( X_train, y_train )
     ```
-- fitting 処理 `fit(...)` 後のモデルで予想を行い、正解率を算出する。
-    - xxx
-- 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
+- fitting 処理 `fit(...)` 後のモデル（学習済みモデル）で、予想を行い、正解率を算出する。
+    - 正解率の算出は `accuracy(...)` メソッドを使用して行う。
+    ```python
+    [main1.py]
+    # 正解率を取得
+    accuracy_total1 = rnn1.accuracy( X_features, y_labels )
+    accuracy_train1 = rnn1.accuracy( X_train, y_train )
+    accuracy_test1 = rnn1.accuracy( X_test, y_test )
+    print( "accuracy_total1 : {} / n_sample : {}".format( accuracy_total1,  len(X_features[:,0,0]) ) )
+    print( "accuracy_train1 : {} / n_sample : {}".format( accuracy_train1,  len(X_train[:,0,0]) ) )
+    print( "accuracy_test1 : {} / n_sample : {}".format( accuracy_test1,  len(X_test[:,0,0]) ) )
+    ```
+- fitting 処理 `fit(...)` 後のモデル（学習済みモデル）で、幾つかの指定された質問文に対する応答文の予想値を確かめてみる。
+    - この質問文に対する応答文の予想は `question_answer_responce(...)` メソッドを使用して行う。
+- 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。（純粋なモデルの構築時の計算グラフ。損失関数等のモデルに関連付けられた評価指数の計算時の計算グラフではない）
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/33880754-feae2346-df75-11e7-982a-28f4f805da71.png)
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33880755-fed72192-df75-11e7-9fab-4bfc5b9459fb.png)
 
@@ -291,9 +381,6 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 |total|0.969|20000|
 |train data|0.989|18000 (90.0%)|
 |test data|0.794|2000 (10.0%)|
-
-> トレーニング用データ、テスト用データともに高い正解率となっており、<br>
-> この自然言語処理の問題に対し、このモデルはうまく適用出来ていることが分かる。
 
 ##### 学習済みモデルでのテスト用データでの応答処理結果（実行条件１）
 
@@ -512,90 +599,3 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 
 ## デバッグメモ
 
-[17/12/13]
-```python
-    def predict( self, X_test ):
-        prob = self._session.run(
-                   self._y_out_op,
-                   feed_dict = { 
-                       self._X_holder: X_test,
-                       self._batch_size_holder: 1
-                   }
-               )
-
-tensorflow.python.framework.errors_impl.InvalidArgumentError: ConcatOp : Dimensions of inputs should match: shape[0] = [10,12] vs. shape[1] = [1,128]
-	 [[Node: Encoder/Encoder/lstm_cell/concat = ConcatV2[N=2, T=DT_FLOAT, Tidx=DT_INT32, _device="/job:localhost/replica:0/task:0/device:CPU:0"](Encoder/strided_slice, LSTMCellZeroState/zeros, Decoder/Eval_root/Decoder/lstm_cell/split_2/split_dim)]]
-
-X_test.shape : (10, 7, 12)
-self._y_out_op : shape = TensorShape([Dimension(None), Dimension(4), Dimension(12)])
-self._X_holder :.shape = TensorShape([Dimension(None), Dimension(7), Dimension(12)])
-
-----------------------------------
-after model()
-RecurrectNNEncoderDecoderLSTM(batch_size=None, epochs=None, eval_step=None,
-               n_hiddenLayer=None, n_in_sequence_decoder=None,
-               n_in_sequence_encoder=None, n_inputLayer=None,
-               n_outputLayer=None, session=None)
-_session :  <tensorflow.python.client.session.Session object at 0x0000029D73B43F60>
-_init_var_op :
- None
-_loss_op :  None
-_optimizer :  None
-_train_step :  None
-_y_out_op :  Tensor("Eval_root/Reshape:0", shape=(?, 4, 12), dtype=float32)
-_n_inputLayer :  12
-_n_hiddenLayer :  128
-_n_outputLayer :  12
-_n_in_sequence_encoder : 7
-_n_in_sequence_decoder : 4
-_epoches :  100
-_batch_size :  20
-_eval_step :  1
-_X_holder : Tensor("X_holder:0", shape=(?, 7, 12), dtype=float32)
-_t_holder : Tensor("t_holder:0", shape=(?, 4, 12), dtype=float32)
-_dropout_holder : Tensor("dropout_holder:0", dtype=float32)
-_batch_size_holder : Tensor("batch_size_holder:0", shape=(), dtype=int32)
-_bTraing_holder : Tensor("bTraining_holder:0", dtype=bool)
-_rnn_cells_encoder : 
- [<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_11:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_14:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_17:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>]
-_rnn_states_encoder : 
- [LSTMStateTuple(c=<tf.Tensor 'LSTMCellZeroState/zeros:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'LSTMCellZeroState/zeros_1:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_1:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_3:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_5:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_7:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_11:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_9:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_14:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_11:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_17:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_13:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>)]
-_rnn_cells_decoder : 
- [<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>]
-_rnn_states_decoder : 
- [LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_13:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/add_1:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/add_3:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/add_5:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>)]
-_weights : 
- [<tf.Variable 'init_weight_var:0' shape=(128, 12) dtype=float32_ref>]
-_biases : 
- [<tf.Variable 'init_bias_var:0' shape=(12,) dtype=float32_ref>]
-----------------------------------
-
-```
-
-```python
-
-epochs : 200
-n_batches : 90
-
-==========
-Epoch: 0
-==========
-validation loss: 0.605214
-validation acc:  0.35025
-
-==========
-Epoch: 110
-==========
-validation loss: 0.0786947
-validation acc:  0.9175
-
-==========
-Epoch: 158
-==========
-validation loss: 0.0823262
-validation acc:  0.92675
-```
-
-```python
-
-```
