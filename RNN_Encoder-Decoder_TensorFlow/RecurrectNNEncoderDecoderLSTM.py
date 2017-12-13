@@ -515,30 +515,34 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
 
     def predict( self, X_test ):
         """
-        fitting 処理したモデルで、推定を行い、時系列データの予想値を返す。
+        fitting 処理したモデルで、推定を行い、
+        Encoder に入力するシーケンスデータに対する Decoder の予想値（応答値）を 
+        one-hot encode 処理前のインデックス値で返す。
 
         [Input]
-            X_test : numpy.ndarry ( shape = [n_samples, n_features(=n_in_sequence), dim] )
-                予想したい特徴行列（時系列データの行列）
-                n_samples : シーケンスに分割した時系列データのサンプル数
-                n_features(=n_in_sequence) : １つのシーケンスのサイズ
+            X_test : numpy.ndarry / shape = [n_samples, n_in_sequence_encoder, one-hot vector size]
+                予想したいシーケンスデータ
+                n_samples : シーケンスデータのサンプル数
+                n_in_sequence : Encoder に入力するシーケンスのサイズ
                 dim : 各シーケンスの要素の次元数
 
         [Output]
             predicts : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
+        #print( "len( X_test[0] ) :", len( X_test[:,0,0] ) )
         prob = self._session.run(
                    self._y_out_op,
                    feed_dict = { 
                        self._X_holder: X_test,
-                       self._batch_size_holder: 1,
+                       self._batch_size_holder: len( X_test[:,0,0] ),
                        self._bTraining_holder: False
                    }
                )
-        
+        #print( "prob :", prob )
+
         # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
-        # axis : 最大値を読み取る軸の方向 (1 : 行方向)
+        # axis : 最大値を読み取る軸の方向 (-1 : 最後の次元数、この場合 i,j,k の k)
         predicts = numpy.argmax( prob, axis = -1 )
 
         return predicts
@@ -546,9 +550,9 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
 
     def predict_proba( self, X_test ):
         """
-        fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
-        proba : probability
-
+        fitting 処理したモデルで、推定を行い、
+        Encoder に入力するシーケンスデータに対する Decoder のクラスの所属確率の予想値を返す。
+        
         [Input]
             X_test : numpy.ndarry ( shape = [n_samples, n_features] )
                 予想したい特徴行列
@@ -557,7 +561,7 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                    session = self._session,
                    feed_dict = {
                        self._X_holder: X_test,
-                       self._batch_size_holder: 1,
+                       self._batch_size_holder: len( X_test[:,0,0] ),
                        self._bTraining_holder: False
                    }
                )
@@ -567,18 +571,19 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
 
     def accuracy( self, X_test, y_test ):
         """
-        指定したデータでの正解率 [accuracy] を計算する。
+        Encoder に入力する指定したデータでの正解率 [accuracy] を計算する。
         """
         # 予想ラベルを算出する。
         predicts = self.predict( X_test )
 
-        # 正解数
-        n_correct = numpy.sum( numpy.equal( predicts, y_test ) )
-        #print( "numpy.equal( predict, y_test ) :", numpy.equal( predict, y_test ) )
-        #print( "n_correct :", n_correct )
+        # y_test の one-hot encode された箇所を数値インデックスに変換
+        y_labels = numpy.argmax( y_test, axis = -1 )
+        print( "y_labels :", y_labels )
 
-        # 正解率 = 正解数 / データ数
-        accuracy = n_correct / X_test.shape[0]
+        # 正解率
+        accuracy = numpy.mean( numpy.equal( predicts, y_labels ).astype( numpy.float ) )
+        print( "numpy.equal( predicts, y_labels ) :", numpy.equal( predicts, y_labels ) )
+        print( "numpy.equal( predicts, y_labels ).astype( numpy.float ) :", numpy.equal( predicts, y_labels ).astype( numpy.float ) )
 
         return accuracy
 

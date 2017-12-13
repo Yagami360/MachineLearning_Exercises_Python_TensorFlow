@@ -171,7 +171,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
                n_outputLayer = 12,                  # 12 : "0123456789+ " の 12 文字
                n_in_sequence_encoder = 7,           # エンコーダー側のシーケンス長 / 足し算の式のシーケンス長 : "123 " "+" "456 " の計 4+1+4=7 文字
                n_in_sequence_decoder = 4,           # デコーダー側のシーケンス長 / 足し算の式の結果のシーケンス長 : "1000" 計 4 文字
-               epochs = 1000,
+               epochs = 4000,
                batch_size = 200,
                eval_step = 1
            )
@@ -482,3 +482,67 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 ![image](https://user-images.githubusercontent.com/25688193/31371878-45210ec6-adce-11e7-9096-3bbd77dee065.png)
 ![image](https://user-images.githubusercontent.com/25688193/31376678-b29f4ff0-ade0-11e7-9988-88602f28b32c.png)
 
+
+<br>
+
+## デバッグメモ
+
+[17/12/13]
+```python
+    def predict( self, X_test ):
+        prob = self._session.run(
+                   self._y_out_op,
+                   feed_dict = { 
+                       self._X_holder: X_test,
+                       self._batch_size_holder: 1
+                   }
+               )
+
+tensorflow.python.framework.errors_impl.InvalidArgumentError: ConcatOp : Dimensions of inputs should match: shape[0] = [10,12] vs. shape[1] = [1,128]
+	 [[Node: Encoder/Encoder/lstm_cell/concat = ConcatV2[N=2, T=DT_FLOAT, Tidx=DT_INT32, _device="/job:localhost/replica:0/task:0/device:CPU:0"](Encoder/strided_slice, LSTMCellZeroState/zeros, Decoder/Eval_root/Decoder/lstm_cell/split_2/split_dim)]]
+
+X_test.shape : (10, 7, 12)
+self._y_out_op : shape = TensorShape([Dimension(None), Dimension(4), Dimension(12)])
+self._X_holder :.shape = TensorShape([Dimension(None), Dimension(7), Dimension(12)])
+
+----------------------------------
+after model()
+RecurrectNNEncoderDecoderLSTM(batch_size=None, epochs=None, eval_step=None,
+               n_hiddenLayer=None, n_in_sequence_decoder=None,
+               n_in_sequence_encoder=None, n_inputLayer=None,
+               n_outputLayer=None, session=None)
+_session :  <tensorflow.python.client.session.Session object at 0x0000029D73B43F60>
+_init_var_op :
+ None
+_loss_op :  None
+_optimizer :  None
+_train_step :  None
+_y_out_op :  Tensor("Eval_root/Reshape:0", shape=(?, 4, 12), dtype=float32)
+_n_inputLayer :  12
+_n_hiddenLayer :  128
+_n_outputLayer :  12
+_n_in_sequence_encoder : 7
+_n_in_sequence_decoder : 4
+_epoches :  100
+_batch_size :  20
+_eval_step :  1
+_X_holder : Tensor("X_holder:0", shape=(?, 7, 12), dtype=float32)
+_t_holder : Tensor("t_holder:0", shape=(?, 4, 12), dtype=float32)
+_dropout_holder : Tensor("dropout_holder:0", dtype=float32)
+_batch_size_holder : Tensor("batch_size_holder:0", shape=(), dtype=int32)
+_bTraing_holder : Tensor("bTraining_holder:0", dtype=bool)
+_rnn_cells_encoder : 
+ [<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_11:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_14:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_17:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>]
+_rnn_states_encoder : 
+ [LSTMStateTuple(c=<tf.Tensor 'LSTMCellZeroState/zeros:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'LSTMCellZeroState/zeros_1:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_1:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_3:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_5:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_7:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_11:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_9:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_14:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_11:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_17:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_13:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>)]
+_rnn_cells_decoder : 
+ [<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>]
+_rnn_states_decoder : 
+ [LSTMStateTuple(c=<tf.Tensor 'Encoder/Encoder/lstm_cell/add_13:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Encoder/Encoder/lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/add_1:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/add_3:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>), LSTMStateTuple(c=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/add_5:0' shape=(?, 128) dtype=float32>, h=<tf.Tensor 'Decoder/Eval_root/Decoder/lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>)]
+_weights : 
+ [<tf.Variable 'init_weight_var:0' shape=(128, 12) dtype=float32_ref>]
+_biases : 
+ [<tf.Variable 'init_bias_var:0' shape=(12,) dtype=float32_ref>]
+----------------------------------
+
+```
