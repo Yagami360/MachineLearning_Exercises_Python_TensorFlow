@@ -262,9 +262,6 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
     ```
     - 出力層への入力と、最終的な出力層からの出力 `self._y_out_op` を構築する。
         - 最終的なモデルの出力は、隠れ層から出力層への入力を softmax して出力する。
-<!--
-        - `tf.reshape(...)` で、デコーダーからの出力を shape = 
--->
     ```python
     [RecurrectNNEncoderDecoderLSTM.py]
     def model():
@@ -323,6 +320,10 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
         return self._y_out_op
     ```
+<!--
+        - `tf.reshape(...)` で、デコーダーからの出力を shape = 
+-->
+
 - 損失関数として、ソフトマックス・エントロピー関数を使用する。
     ```python
     [main1.py]
