@@ -58,7 +58,7 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    X_features, y_labels = MLPreProcess.generate_add_uint_operation_dataset( n_samples = 100, digits = 3, seed = 12 )
+    X_features, y_labels = MLPreProcess.generate_add_uint_operation_dataset( n_samples = 20000, digits = 3, seed = 12 )
     print( "X_features.shape :", X_features.shape )
     print( "y_labels :", y_labels.shape )
 
@@ -91,8 +91,8 @@ def main():
                n_outputLayer = 12,                  # 12 : "0123456789+ " の 12 文字
                n_in_sequence_encoder = 7,           # エンコーダー側のシーケンス長 / 足し算の式のシーケンス長 : "123 " "+" "456 " の計 4+1+4=7 文字
                n_in_sequence_decoder = 4,           # デコーダー側のシーケンス長 / 足し算の式の結果のシーケンス長 : "1000" 計 4 文字
-               epochs = 4000,
-               batch_size = 200,
+               epochs = 20000,
+               batch_size = 100,
                eval_step = 1
            )
     rnn1.print( "after __init__()" )
@@ -146,7 +146,7 @@ def main():
     #     session.run(…)
     #======================================================================
     # TensorBoard 用のファイル（フォルダ）を作成
-    rnn1.write_tensorboard_graph()
+    #rnn1.write_tensorboard_graph()
 
     # fitting 処理を行う
     rnn1.fit( X_train, y_train )
@@ -164,7 +164,7 @@ def main():
         range( rnn1._epochs ), rnn1._losses_train,
         label = 'RNN Encoder-Decoder - %s = [%d - %d - %d], learning_rate = %0.3f' % ( type(rnn1) , rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
         linestyle = '-',
-        linewidth = 1.0,
+        linewidth = 0.1,
         color = 'red'
     )
     plt.title( "loss / cross-entropy" )
@@ -185,10 +185,12 @@ def main():
     print( "predicts1 :", predicts1 )
     
     # 正解率を取得
+    accuracy_total1 = rnn1.accuracy( X_features, y_labels )
     accuracy_train1 = rnn1.accuracy( X_train, y_train )
     accuracy_test1 = rnn1.accuracy( X_test, y_test )
-    print( "accuracy_train1 :", accuracy_train1 )
-    print( "accuracy_test1 :", accuracy_test1 )
+    print( "accuracy_total1 : {} / n_sample : {}".format( accuracy_total1,  len(X_features[:,0,0]) ) )
+    print( "accuracy_train1 : {} / n_sample : {}".format( accuracy_train1,  len(X_train[:,0,0]) ) )
+    print( "accuracy_test1 : {} / n_sample : {}".format( accuracy_test1,  len(X_test[:,0,0]) ) )
 
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
