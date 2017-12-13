@@ -541,6 +541,7 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
                )
         #print( "prob :", prob )
 
+        # one-hot encoding 要素方向で argmax して、文字の数値インデックス取得
         # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
         # axis : 最大値を読み取る軸の方向 (-1 : 最後の次元数、この場合 i,j,k の k)
         predicts = numpy.argmax( prob, axis = -1 )
@@ -576,14 +577,54 @@ class RecurrectNNEncoderDecoderLSTM( NeuralNetworkBase ):
         # 予想ラベルを算出する。
         predicts = self.predict( X_test )
 
-        # y_test の one-hot encode された箇所を数値インデックスに変換
+        # y_test の one-hot encode された箇所を argmax し、文字に対応した数値インデックスに変換
         y_labels = numpy.argmax( y_test, axis = -1 )
-        print( "y_labels :", y_labels )
+        #print( "y_labels :", y_labels )
 
+        # 正解数
+        n_corrects = 0
+        resluts = numpy.equal( predicts, y_labels )     # shape = (n_sample, n_in_sequence_decoder )
+        
+        for i in range( len(X_test[:,0,0]) ):
+            # 各サンプルのシーケンス内で全てで True : [True, True, True, True] なら 正解数を +1 カウント
+            if ( all( resluts[i] ) == True ):
+                n_corrects = n_corrects + 1
+
+        print( "n_corrects : {}".format (n_corrects) )
+ 
         # 正解率
-        accuracy = numpy.mean( numpy.equal( predicts, y_labels ).astype( numpy.float ) )
-        print( "numpy.equal( predicts, y_labels ) :", numpy.equal( predicts, y_labels ) )
-        print( "numpy.equal( predicts, y_labels ).astype( numpy.float ) :", numpy.equal( predicts, y_labels ).astype( numpy.float ) )
+        #accuracy = numpy.mean( numpy.equal( predicts, y_labels ).astype( numpy.float ) )
+        accuracy = n_corrects / len( X_test[:,0,0] )
 
         return accuracy
 
+
+    def question_answer_responce( self, question, dict_idx_to_str ):
+        """
+        学習済みモデルで、指定された質問文に対する応答文を返す。
+
+        """
+        if ( question.ndim == 2):
+            # 3 次元に reshape / (7,12) → (1,7,12)
+            #question = numpy.reshape( question, (1, question[:,0], question[0,:]) )
+            question = [ question ]
+            #print( "question :", question )
+
+        # question に対する予想値
+        prob = self._y_out_op.eval(
+                   session = self._session,
+                   feed_dict = {
+                       self._X_holder: question,
+                       self._batch_size_holder: 1,
+                       self._bTraining_holder: False
+                   }
+               )
+
+        # one-hot encoding 要素方向で argmax して、文字の数値インデックス取得
+        answer = numpy.argmax( prob, axis = -1 )
+        #print( "answer :", answer )
+        
+        # ディクショナリにもとづき、数値インデックスを文字の変換
+        answer = "".join( dict_idx_to_str[i] for i in answer[0] )
+
+        return answer

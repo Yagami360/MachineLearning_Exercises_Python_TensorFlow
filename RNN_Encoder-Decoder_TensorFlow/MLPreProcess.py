@@ -301,6 +301,12 @@ class MLPreProcess( object ):
                 加算されたデータセットからなる 3 次元 Numpy 配列 ( padding 処理 & one-hot encode 済み )
                 n_sequence : padding 処理されたシーケンス長で、digits + 1 (ex: 1000(=500+500) のような桁上りケースの対応)
                 one-hot encoded vector size : 12 "0123456789+" の 12文字に対応
+
+            dict_str_to_idx : ディクショナリ
+                one-hot encoding する際に参照する文字から数値インデックスへの map
+            dict_idx_to_str : ディクショナリ
+                one-hot encoding する際に参照する数値インデックスから文字への map
+
         """
         numpy.random.seed( seed )
         
@@ -373,7 +379,7 @@ class MLPreProcess( object ):
             for (j, str) in enumerate( dat_y[i] ):
                 y_labels[ i, j, dict_str_to_idx[str] ] = 1     # one-hot encode の 1 の部分
 
-        return X_features, y_labels
+        return X_features, y_labels, dict_str_to_idx, dict_idx_to_str
 
 
     #---------------------------------------------------------

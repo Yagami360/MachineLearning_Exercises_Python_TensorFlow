@@ -58,9 +58,11 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    X_features, y_labels = MLPreProcess.generate_add_uint_operation_dataset( n_samples = 20000, digits = 3, seed = 12 )
+    X_features, y_labels, dict_str_to_idx, dict_idx_to_str = MLPreProcess.generate_add_uint_operation_dataset( n_samples = 20000, digits = 3, seed = 12 )
     print( "X_features.shape :", X_features.shape )
     print( "y_labels :", y_labels.shape )
+    print( "dict_str_to_idx :", dict_str_to_idx )
+    print( "dict_idx_to_str :", dict_idx_to_str )
 
     #======================================================================
     # データを変換、正規化
@@ -175,7 +177,7 @@ def main():
     plt.tight_layout()
     
     MLPlot.saveFigure( fileName = "RNN_Encoder-Decoder_1-1.png" )
-    plt.show()
+    #plt.show()
     
     #---------------------------------------------------------
     # 予想値
@@ -191,6 +193,35 @@ def main():
     print( "accuracy_total1 : {} / n_sample : {}".format( accuracy_total1,  len(X_features[:,0,0]) ) )
     print( "accuracy_train1 : {} / n_sample : {}".format( accuracy_train1,  len(X_train[:,0,0]) ) )
     print( "accuracy_test1 : {} / n_sample : {}".format( accuracy_test1,  len(X_test[:,0,0]) ) )
+
+    #---------------------------------------------------------
+    # 予想値
+    #---------------------------------------------------------
+    #print( "numpy.argmax( X_test[0,:,:], axis = -1 ) :", numpy.argmax( X_test[0,:,:], axis = -1 ) )
+    n_questions = min( 100, len(X_test[:,0,0]) )
+
+    for q in range( n_questions ):
+        answer = rnn1.question_answer_responce( question = X_test[q,:,:], dict_idx_to_str = dict_idx_to_str )
+        
+        # one-hot encoding → 対応する数値インデックス → 対応する文字に変換
+        question = numpy.argmax( X_test[q,:,:], axis = -1 )
+        question = "".join( dict_idx_to_str[i] for i in question )
+
+        print( "-------------------------------" )
+        print( "n_questions = {}".format( q ) )
+        print( "Q : {}".format( question ) )
+        print( "A : {}".format( answer ) )
+
+        # 正解データ（教師データ）をone-hot encoding → 対応する数値インデックス → 対応する文字に変換
+        target = numpy.argmax( y_test[q,:,:], axis = -1 )
+        target = "".join( dict_idx_to_str[i] for i in target )
+
+        if ( answer == target ):
+            print( "T/F : T" )
+        else:
+            print( "T/F : F" )
+        print( "-------------------------------" )
+
 
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
