@@ -195,9 +195,10 @@ def main():
     print( "accuracy_test1 : {} / n_sample : {}".format( accuracy_test1,  len(X_test[:,0,0]) ) )
 
     #---------------------------------------------------------
-    # 予想値
+    # 質問＆応答処理
     #---------------------------------------------------------
     #print( "numpy.argmax( X_test[0,:,:], axis = -1 ) :", numpy.argmax( X_test[0,:,:], axis = -1 ) )
+    # 質問文の数
     n_questions = min( 100, len(X_test[:,0,0]) )
 
     for q in range( n_questions ):

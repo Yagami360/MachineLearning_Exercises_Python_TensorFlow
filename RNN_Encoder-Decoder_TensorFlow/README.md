@@ -366,6 +366,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
     ```
 - fitting 処理 `fit(...)` 後のモデル（学習済みモデル）で、予想を行い、正解率を算出する。
     - 正解率の算出は `accuracy(...)` メソッドを使用して行う。
+    - この際、one-hot encoding 要素方向 ( axis=2 ) で `numpy.argmax(...)` して、文字の数値インデックス取得する。（シーケンス長の dimension が追加されたため）
     ```python
     [main1.py]
     # 正解率を取得
@@ -376,8 +377,105 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
     print( "accuracy_train1 : {} / n_sample : {}".format( accuracy_train1,  len(X_train[:,0,0]) ) )
     print( "accuracy_test1 : {} / n_sample : {}".format( accuracy_test1,  len(X_test[:,0,0]) ) )
     ```
+    ```python
+    [RecurrectNNEncoderDecoderLSTM.py]
+    def accuracy( ... ):
+        # 予想ラベルを算出する。
+        predicts = self.predict( X_test )
+
+        # y_test の one-hot encode された箇所を argmax し、文字に対応した数値インデックスに変換
+        y_labels = numpy.argmax( y_test, axis = -1 )
+
+        # 正解数
+        n_corrects = 0
+        resluts = numpy.equal( predicts, y_labels )     # shape = (n_sample, n_in_sequence_decoder )
+        
+        for i in range( len(X_test[:,0,0]) ):
+            # 各サンプルのシーケンス内で全てで True : [True, True, True, True] なら 正解数を +1 カウント
+            if ( all( resluts[i] ) == True ):
+                n_corrects = n_corrects + 1
+ 
+        # 正解率
+        accuracy = n_corrects / len( X_test[:,0,0] )
+
+        return accuracy
+    ```
+    ```python
+    [RecurrectNNEncoderDecoderLSTM.py]
+    def predict( ... ):
+        prob = self._session.run(
+                   self._y_out_op,
+                   feed_dict = { 
+                       self._X_holder: X_test,
+                       self._batch_size_holder: len( X_test[:,0,0] ),
+                       self._bTraining_holder: False
+                   }
+               )
+
+        # one-hot encoding 要素方向で argmax して、文字の数値インデックス取得
+        # numpy.argmax(...) : 多次元配列の中の最大値の要素を持つインデックスを返す
+        # axis : 最大値を読み取る軸の方向 (-1 : 最後の次元数、この場合 i,j,k の k)
+        predicts = numpy.argmax( prob, axis = -1 )
+
+        return predicts
+    ```
 - fitting 処理 `fit(...)` 後のモデル（学習済みモデル）で、幾つかの指定された質問文に対する応答文の予想値を確かめてみる。
     - この質問文に対する応答文の予想は `question_answer_responce(...)` メソッドを使用して行う。
+    ```python
+    [main1.py]
+    #---------------------------------------------------------
+    # 質問＆応答処理
+    #---------------------------------------------------------
+    # 質問文の数
+    n_questions = min( 100, len(X_test[:,0,0]) )
+
+    for q in range( n_questions ):
+        answer = rnn1.question_answer_responce( question = X_test[q,:,:], dict_idx_to_str = dict_idx_to_str )
+        
+        # one-hot encoding → 対応する数値インデックス → 対応する文字に変換
+        question = numpy.argmax( X_test[q,:,:], axis = -1 )
+        question = "".join( dict_idx_to_str[i] for i in question )
+
+        print( "-------------------------------" )
+        print( "n_questions = {}".format( q ) )
+        print( "Q : {}".format( question ) )
+        print( "A : {}".format( answer ) )
+
+        # 正解データ（教師データ）をone-hot encoding → 対応する数値インデックス → 対応する文字に変換
+        target = numpy.argmax( y_test[q,:,:], axis = -1 )
+        target = "".join( dict_idx_to_str[i] for i in target )
+
+        if ( answer == target ):
+            print( "T/F : T" )
+        else:
+            print( "T/F : F" )
+        print( "-------------------------------" )
+    ```
+    ```python
+    [RecurrectNNEncoderDecoderLSTM.py]
+    def question_answer_responce( ... ):
+        if ( question.ndim == 2):
+            # 3 次元に reshape / (7,12) → (1,7,12)
+            question = [ question ]
+
+        # question に対する予想値
+        prob = self._y_out_op.eval(
+                   session = self._session,
+                   feed_dict = {
+                       self._X_holder: question,
+                       self._batch_size_holder: 1,
+                       self._bTraining_holder: False
+                   }
+               )
+
+        # one-hot encoding 要素方向で argmax して、文字の数値インデックス取得
+        answer = numpy.argmax( prob, axis = -1 )
+                
+        # ディクショナリにもとづき、数値インデックスを文字の変換
+        answer = "".join( dict_idx_to_str[i] for i in answer[0] )
+
+        return answer
+    ```
 - 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。（純粋なモデルの構築時の計算グラフ。損失関数等のモデルに関連付けられた評価指数の計算時の計算グラフではない）
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/33880754-feae2346-df75-11e7-982a-28f4f805da71.png)
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/33880755-fed72192-df75-11e7-9fab-4bfc5b9459fb.png)
