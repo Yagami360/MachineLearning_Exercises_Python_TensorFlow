@@ -179,6 +179,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 ![image](https://user-images.githubusercontent.com/25688193/33949198-48d7a32e-e06c-11e7-944d-d83478af53e1.png)<br>
     - この処理は、`RecurrectNNEncoderDecoderLSTM` クラスの `model()` メソッドにて行う。
     - まず、Encoder 側のモデルを RNN の再帰構造に従って構築していく。
+    - Encoder 側の最終的な出力は、次の Decoder の初期入力となる。
     ```python
     [RecurrectNNEncoderDecoderLSTM.py]
     def model():
@@ -260,8 +261,10 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
                 self._rnn_states_decoder.append( state_decoder_tsr )
 
     ```
-    - 出力層への入力と、最終的な出力層からの出力 `self._y_out_op` を構築する。
-        - 最終的なモデルの出力は、隠れ層から出力層への入力を softmax して出力する。
+    - 最終的な出力層からの出力 `self._y_out_op` を構築する。
+        - まず、Decoder の出力を `tf.concat(...)` で結合し、`tf.reshape(...)` で適切な形状に reshape する。
+        - そして、reshape した Tensor に対し、`tf.einsum(...)` or `tf.matmul(...)` を用いてテンソル積 or 行列積をとる。
+        - 最終的なモデルの出力は、この線形和を softmax して出力する。
     ```python
     [RecurrectNNEncoderDecoderLSTM.py]
     def model():
