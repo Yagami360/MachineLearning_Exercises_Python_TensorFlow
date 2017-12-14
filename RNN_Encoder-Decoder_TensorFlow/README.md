@@ -10,16 +10,18 @@ TensorFlow を用いた、RNN Encoder-Decoder / Sequence-to-Seqence による自
 1. [使用するライブラリ](#ID_1)
 1. [使用するデータセット](#ID_2)
 1. [コードの説明＆実行結果](#ID_3)
-    1. [RNN Encoder-Decoder（LSTM 使用） による簡単な質問応答（足し算）処理 : `main1.py`](#ID_3-1)
+    1. [RNN Encoder-Decoder（単層の LSTM 層）による簡単な質問応答（足し算）処理 : `main1.py`](#ID_3-1)
         1. [コードの内容説明](#ID_3-1-1)
         1. [コードの実行結果](#ID_3-1-2)
-    1. [RNN Encoder-Decoder（LSTM 使用） による英文学作品のワード予想処理 : `main2.py`](#ID_3-2)
+    1. [RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main2.py`](#ID_3-2)
         1. [コードの内容説明](#ID_3-2-1)
         1. [コードの実行結果](#ID_3-2-2)
-    1. RNN Encoder-Decoder（複数の LSTM 層使用） による英文学作品のワード予想処理 : `main3.py`
+    1. RNN Encoder-Decoder（多層の LSTM 層）による英文学作品のワード予想処理 : `main3.py`
 1. [背景理論](#ID_4)
     1. [リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞](#ID_5)
         1. [RNN Encoder-Decoder (Seqenence-to-sequence models)](#ID_5-5)
+1. [参考サイト](#ID_0)
+
 
 <a id="ID_1"></a>
 
@@ -30,6 +32,9 @@ TensorFlow を用いた、RNN Encoder-Decoder / Sequence-to-Seqence による自
 >> 時系列に沿った LSTM 構造を提供するクラス `LSTMCell` の `cell` を返す。<br>
 >> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
+
+>> `tf.contrib.legacy_seq2seq.rnn_decoder(...)` : RNN decoder for the sequence-to-sequence model.<br>
+>>> https://www.tensorflow.org/api_docs/python/tf/contrib/legacy_seq2seq/rnn_decoder<br>
 
 >> `tf.einsum(...)` : Tensor 積等の Tensor 間演算をアインシュタイン縮約記法で指定する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/einsum<br>
@@ -58,7 +63,7 @@ TensorFlow を用いた、RNN Encoder-Decoder / Sequence-to-Seqence による自
 
 <a id="ID_3-1"></a>
 
-## RNN Encoder-Decoder（LSTM 使用） による簡単な質問応答（足し算）処理 : `main1.py`
+## RNN Encoder-Decoder（単層の LSTM 層）による簡単な質問応答（足し算）処理 : `main1.py`
 
 RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例として、質問応答（QA）があるが、ここでは、この質問応答（QA）の簡単な例として、指定された数字の足し算を答える応答問題を考える。
 
@@ -470,7 +475,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
         # one-hot encoding 要素方向で argmax して、文字の数値インデックス取得
         answer = numpy.argmax( prob, axis = -1 )
-                
+
         # ディクショナリにもとづき、数値インデックスを文字の変換
         answer = "".join( dict_idx_to_str[i] for i in answer[0] )
 
@@ -525,7 +530,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
 <a id="ID_3-2"></a>
 
-## RNN Encoder-Decoder（LSTM 使用） による英文学作品のワード予想処理 : `main2.py`
+## RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main2.py`
 > 実装中...
 
 RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英文学作品のシェイクスピア作品のテキストデータ ( http://www.gutenberg.org/cache/epub/100/pg100.txt ) を用いて、RNN Encoder-Decoder （LSTM 使用）モデルで学習し、特定のワード（"thus"（それ故）, "more"（更には） 等）の後に続くワードを予想する処理を実装する。
@@ -683,7 +688,7 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
             n_vocab = len( dict_idx_to_vocab ) + 1
         ```
 - この自然言語処理（NLP）に対応した、RNN Encoder-Decoder モデルの各種パラメーターの設定を行う。
-    - この設定は、`RecurrectNNEncoderDecoderLSTM` クラスのインスタンス作成時の引数にて行う。
+    - この設定は、`RecurrectNNEncoderDecoderEmbeddingLSTM` クラスのインスタンス作成時の引数にて行う。
     - xxx
 - xxx
 
@@ -719,6 +724,26 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 
 
 <br>
+
+---
+
+<a id="ID_0"></a>
+
+## 参考サイト
+- Neural Machine Translation (seq2seq)
+    - https://github.com/tensorflow/nmt/blob/master/README.md
+- Seq2Seq まとめ
+    - http://d.hatena.ne.jp/higepon/20171210/1512887715
+- もちもちしている
+    - http://olanleed.hatenablog.com/entry/2015/12/07/233307
+    - http://olanleed.hatenablog.com/entry/2015/12/10/222333
+
+
+
+
+<br>
+
+---
 
 ## デバッグメモ
 
