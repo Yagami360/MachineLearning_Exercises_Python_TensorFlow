@@ -63,7 +63,7 @@ def main():
 
     # The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み＆抽出処理
     text_data = MLPreProcess.load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path = path_text, n_DeleteParagraph = 182, bCleaning = True )
-    print( "text_data :\n", text_data )
+    #print( "text_data :\n", text_data )
 
     # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
     # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。

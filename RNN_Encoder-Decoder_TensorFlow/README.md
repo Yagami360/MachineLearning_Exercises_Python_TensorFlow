@@ -33,9 +33,6 @@ TensorFlow を用いた、RNN Encoder-Decoder / Sequence-to-Seqence による自
 >> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
 
->> `tf.contrib.legacy_seq2seq.rnn_decoder(...)` : RNN decoder for the sequence-to-sequence model.<br>
->>> https://www.tensorflow.org/api_docs/python/tf/contrib/legacy_seq2seq/rnn_decoder<br>
-
 >> `tf.einsum(...)` : Tensor 積等の Tensor 間演算をアインシュタイン縮約記法で指定する。<br>
 >>> https://www.tensorflow.org/api_docs/python/tf/einsum<br>
 
@@ -531,11 +528,23 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 <a id="ID_3-2"></a>
 
 ## RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main2.py`
-> 実装中...
+> 実装中...<br>
+> ./RNN_Attention_TensorFlow フォルダに移行予定
 
 RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英文学作品のシェイクスピア作品のテキストデータ ( http://www.gutenberg.org/cache/epub/100/pg100.txt ) を用いて、RNN Encoder-Decoder （LSTM 使用）モデルで学習し、特定のワード（"thus"（それ故）, "more"（更には） 等）の後に続くワードを予想する処理を実装する。
 
+
+### 使用するライブラリ
+> `tf.contrib.legacy_seq2seq.rnn_decoder(...)` : RNN decoder for the sequence-to-sequence model.<br>
+>> https://www.tensorflow.org/api_docs/python/tf/contrib/legacy_seq2seq/rnn_decoder<br>
+
+> `tf.stop_gradient(...)` :<br>
+>> https://stackoverflow.com/questions/33727935/how-to-use-stop-gradient-in-tensorflow<br>
+
+
 <a id="ID_3-2-1"></a>
+
+### コードの内容説明
 
 以下、コードの説明
 
@@ -689,6 +698,67 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
         ```
 - この自然言語処理（NLP）に対応した、RNN Encoder-Decoder モデルの各種パラメーターの設定を行う。
     - この設定は、`RecurrectNNEncoderDecoderEmbeddingLSTM` クラスのインスタンス作成時の引数にて行う。
+    - 入力層のノード数 `n_inputLayer` は 1 ノード。隠れ層のノード数 `n_hiddenLayer` は 128 ノード。
+    - xxx
+    ```python
+    [main2.py]
+    rnn1 = RecurrectNNEncoderDecoderEmbeddingLSTM(
+               session = tf.Session(),
+               n_inputLayer = 1,
+               n_hiddenLayer = 128,                 # rnn_size
+               n_outputLayer = 1,
+               n_in_sequence_encoder = 50,          # エンコーダー側のシーケンス長 / 
+               n_in_sequence_decoder = 50,          # デコーダー側のシーケンス長 / 
+               n_vocab = n_vocab,                   # 7511
+               epochs = 1000,
+               batch_size = 100,
+               eval_step = 1,
+               save_step = 500               
+           )
+    ```
+- RNN Encoder-Decoder（単層の LSTM）モデルの構造を定義する。 
+    - この処理は、`RecurrectNNEncoderDecoderEmbeddingLSTM` クラスの `model()` メソッドにて行う。
+    - まず、埋め込み層の構造を構築していく。
+        - 埋め込み行列（単語ベクトルの集合）の Variable `self._embedding_matrix_var` と 埋め込み探索演算の Operator `self.embedding_lookup_op` を作成する。
+        ```python
+        [RecurrectNNEncoderDecoderEmbeddingLSTM.py]
+        def model():
+            #--------------------------------------------------------------
+            # 埋め込み行列（単語ベクトルの集合）と埋め込み探索演算を作成
+            #--------------------------------------------------------------
+            # 埋め込み行列を表す Variable
+            self._embedding_matrix_var = tf.Variable( 
+                                             tf.random_uniform( [self._n_vocab, self._n_in_sequence_encoder], -1.0, 1.0 ),
+                                             name = "embedding_matrix_var"
+                                         )
+
+            # tf.nn.embedding_lookup(...) : バッチ内の各ソース単語について、ベクトルをルックアップ（検索）
+            # self._embedding_lookup_op / shape = [None, self._n_in_sequence_encoder, self._n_in_sequence_encoder]
+            self._embedding_lookup_op = tf.nn.embedding_lookup( self._embedding_matrix_var, self._X_holder )
+
+        ```
+        - この埋め込みを 1 次元 Tensor 配列状に reshape する。（各 Tensor は、１次元 Tensor）
+        ```python
+        [RecurrectNNEncoderDecoderEmbeddingLSTM.py]
+        def model():
+            ...
+            # 埋め込みを 1 次元 Tensor 状に reshape
+            # tf.split(...) : Tensorを指定した次元方向に分割
+            # shape = [None, self._n_in_sequence_encoder, self._n_in_sequence_encoder] → shape = [self._n_in_sequence_encoder]
+            # 各 Tensor の shape は、rnn_inputs[i] / shape = [None, 1, self._n_in_sequence_encoder] 
+            rnn_inputs = tf.split( 
+                             value = self._embedding_lookup_op,                 # 分割する Tensor
+                             num_or_size_splits = self._n_in_sequence_encoder,  # 分割する数
+                             axis=1                                             # 分割する次元方向
+                        )
+
+            # shape = 1 の次元を trimmed（トリミング）
+            # tf.squeeze(...) : 指定された size 数に該当する次元を削除する。
+            # shape = [None, 1, self._n_in_sequence_encoder] → shape = [None, self._n_in_sequence_encoder]
+            # 各 Tensor の shape は、rnn_inputs_trimmed[i] / shape = [None, self._n_in_sequence_encoder]
+            rnn_inputs_trimmed = [ tf.squeeze( tsr, [1] ) for tsr in rnn_inputs ]
+        ```
+    - 次に、Decoder 側の層の構造を、再帰構造に従って、構築していく。
     - xxx
 - xxx
 
@@ -746,4 +816,33 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 ---
 
 ## デバッグメモ
+[17/12/16]
 
+```python
+self._embedding_lookup_op : 
+Tensor("embedding_lookup:0", shape=(?, 50, 50), dtype=float32)
+
+rnn_inputs : 
+[
+    <tf.Tensor 'split:0' shape=(?, 1, 50) dtype=float32>, 
+    <tf.Tensor 'split:1' shape=(?, 1, 50) dtype=float32>, 
+    <tf.Tensor 'split:2' shape=(?, 1, 50) dtype=float32>, 
+    <tf.Tensor 'split:3' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:4' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:5' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:6' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:7' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:8' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:9' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:10' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:11' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:12' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:13' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:14' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:15' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:16' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:17' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:18' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:19' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:20' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:21' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:22' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:23' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:24' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:25' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:26' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:27' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:28' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:29' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:30' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:31' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:32' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:33' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:34' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:35' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:36' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:37' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:38' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:39' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:40' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:41' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:42' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:43' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:44' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:45' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:46' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:47' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:48' shape=(?, 1, 50) dtype=float32>, <tf.Tensor 'split:49' shape=(?, 1, 50) dtype=float32>
+]
+
+rnn_inputs_trimmed : 
+[
+    <tf.Tensor 'Squeeze:0' shape=(?, 50) dtype=float32>, 
+    <tf.Tensor 'Squeeze_1:0' shape=(?, 50) dtype=float32>, 
+    <tf.Tensor 'Squeeze_2:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_3:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_4:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_5:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_6:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_7:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_8:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_9:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_10:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_11:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_12:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_13:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_14:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_15:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_16:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_17:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_18:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_19:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_20:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_21:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_22:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_23:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_24:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_25:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_26:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_27:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_28:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_29:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_30:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_31:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_32:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_33:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_34:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_35:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_36:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_37:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_38:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_39:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_40:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_41:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_42:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_43:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_44:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_45:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_46:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_47:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_48:0' shape=(?, 50) dtype=float32>, <tf.Tensor 'Squeeze_49:0' shape=(?, 50) dtype=float32>
+]
+
+outputs_decoder :
+ [
+     <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_2:0' shape=(?, 128) dtype=float32>, 
+     <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_5:0' shape=(?, 128) dtype=float32>, 
+     <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_8:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_11:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_14:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_17:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_20:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_23:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_26:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_29:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_32:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_35:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_38:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_41:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_44:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_47:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_50:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_53:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_56:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_59:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_62:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_65:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_68:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_71:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_74:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_77:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_80:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_83:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_86:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_89:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_92:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_95:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_98:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_101:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_104:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_107:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_110:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_113:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_116:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_119:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_122:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_125:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_128:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_131:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_134:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_137:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_140:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_143:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_146:0' shape=(?, 128) dtype=float32>, <tf.Tensor 'rnn_decoder/rnn_decoder/basic_lstm_cell/mul_149:0' shape=(?, 128) dtype=float32>]
+
+output :
+ Tensor("Reshape:0", shape=(?, 128), dtype=float32)
+```
