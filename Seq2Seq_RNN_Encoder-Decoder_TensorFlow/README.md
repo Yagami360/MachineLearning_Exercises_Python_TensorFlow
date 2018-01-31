@@ -530,7 +530,10 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
 ## RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main2.py`
 > 実装中...<br>
+
+<!--
 > ./RNN_Attention_TensorFlow フォルダに移行予定
+-->
 
 RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英文学作品のシェイクスピア作品のテキストデータ ( http://www.gutenberg.org/cache/epub/100/pg100.txt ) を用いて、RNN Encoder-Decoder （LSTM 使用）モデルで学習し、特定のワード（"thus"（それ故）, "more"（更には） 等）の後に続くワードを予想する処理を実装する。
 
@@ -698,12 +701,12 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
             n_vocab = len( dict_idx_to_vocab ) + 1
         ```
 - この自然言語処理（NLP）に対応した、RNN Encoder-Decoder モデルの各種パラメーターの設定を行う。
-    - この設定は、`RecurrectNNEncoderDecoderEmbeddingLSTM` クラスのインスタンス作成時の引数にて行う。
+    - この設定は、`Seq2SeqRNNEncoderDecoderLSTM` クラスのインスタンス作成時の引数にて行う。
     - 入力層のノード数 `n_inputLayer` は 1 ノード。隠れ層のノード数 `n_hiddenLayer` は 128 ノード。
     - xxx
     ```python
     [main2.py]
-    rnn1 = RecurrectNNEncoderDecoderEmbeddingLSTM(
+    rnn1 = Seq2SeqRNNEncoderDecoderLSTM(
                session = tf.Session(),
                n_inputLayer = 1,
                n_hiddenLayer = 128,                 # rnn_size
@@ -718,11 +721,11 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
            )
     ```
 - RNN Encoder-Decoder（単層の LSTM）モデルの構造を定義する。 
-    - この処理は、`RecurrectNNEncoderDecoderEmbeddingLSTM` クラスの `model()` メソッドにて行う。
+    - この処理は、`Seq2SeqRNNEncoderDecoderLSTM` クラスの `model()` メソッドにて行う。
     - まず、埋め込み層の構造を構築していく。
         - 埋め込み行列（単語ベクトルの集合）の Variable `self._embedding_matrix_var` と 埋め込み探索演算の Operator `self.embedding_lookup_op` を作成する。
         ```python
-        [RecurrectNNEncoderDecoderEmbeddingLSTM.py]
+        [Seq2SeqRNNEncoderDecoderLSTM.py]
         def model():
             #--------------------------------------------------------------
             # 埋め込み行列（単語ベクトルの集合）と埋め込み探索演算を作成
@@ -740,7 +743,7 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
         ```
         - この埋め込みを 1 次元 Tensor 配列状に reshape する。（各 Tensor は、１次元 Tensor）
         ```python
-        [RecurrectNNEncoderDecoderEmbeddingLSTM.py]
+        [Seq2SeqRNNEncoderDecoderLSTM.py]
         def model():
             ...
             # 埋め込みを 1 次元 Tensor 状に reshape
@@ -772,29 +775,6 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 
 ---
 
-
-<a id="ID_4"></a>
-
-## 背景理論
-
-<a id="ID_5"></a>
-
-## リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞の概要
-![image](https://user-images.githubusercontent.com/25688193/30980712-f06a0906-a4bc-11e7-9b15-4c46834dd6d2.png)
-![image](https://user-images.githubusercontent.com/25688193/30981066-22f53124-a4be-11e7-9111-9514f04aed7c.png)
-
-<a id="ID_5-5"></a>
-
-### RNN Encoder-Decoder (Seqenence-to-sequence models)
-![image](https://user-images.githubusercontent.com/25688193/31340555-7cd2efac-ad41-11e7-85f0-d70f0f9c7bee.png)
-![image](https://user-images.githubusercontent.com/25688193/31370123-203bf512-adc4-11e7-8bc1-d65df760a43f.png)
-![image](https://user-images.githubusercontent.com/25688193/31370130-2c510356-adc4-11e7-9a59-d2b93cfa4698.png)
-![image](https://user-images.githubusercontent.com/25688193/31370139-372bbfd2-adc4-11e7-965c-96bc88661505.png)
-![image](https://user-images.githubusercontent.com/25688193/31371878-45210ec6-adce-11e7-9096-3bbd77dee065.png)
-![image](https://user-images.githubusercontent.com/25688193/31376678-b29f4ff0-ade0-11e7-9988-88602f28b32c.png)
-
-
-<br>
 
 ---
 

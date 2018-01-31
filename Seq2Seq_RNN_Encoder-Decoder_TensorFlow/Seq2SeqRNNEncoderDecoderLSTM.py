@@ -324,7 +324,7 @@ class Seq2SeqRNNEncoderDecoderLSTM( NeuralNetworkBase ):
 
         #--------------------------------------------------------------
         # Encoder
-        # 埋め込み層を使用しているので Encoder は不要？
+        # Encoder は不要？
         #--------------------------------------------------------------
         # 忘却ゲートなしの LSTM
         cell_encoder = tf.contrib.rnn.BasicLSTMCell( self._n_hiddenLayer )
