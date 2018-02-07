@@ -42,3 +42,4 @@ https://www.tensorflow.org/versions/r0.12/api_docs/python/nn/</br>
 1. [./RNN_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_TensorFlow)
 1. [./RNN_LSTM_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/RNN_LSTM_TensorFlow)
 1. [./Seq2Seq_RNN_Encoder-Decoder_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/Seq2Seq_RNN_Encoder-Decoder_TensorFlow)
+1. [./GAN_DCGAN_TensorFlow](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/tree/master/GAN_DCGAN_TensorFlow)
