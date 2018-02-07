@@ -78,10 +78,12 @@ class Seq2SeqRNNEncoderDecoderLSTM( NeuralNetworkBase ):
         _losses_train : list <float32>
             トレーニングデータでの損失関数の値の list
 
-        _X_holder : placeholder
-            入力層にデータを供給するための placeholder
+        _encoder_input_holder : placeholder
+            Encoder の入力層にデータを供給するための placeholder
+        _decoder_input_holder : placeholder
+            Decoder の入力層にデータを供給するための placeholder
         _t_holder : placeholder
-            出力層に教師データを供給するための placeholder
+            Decoder の出力層に教師データを供給するための placeholder
         _dropout_holder : placeholder
             ドロップアウトしない確率 (1-p) にデータを供給するための placeholder
         _batch_size_holder : placeholder
@@ -155,20 +157,29 @@ class Seq2SeqRNNEncoderDecoderLSTM( NeuralNetworkBase ):
         # placeholder の初期化
         # shape の列（横方向）は、各層の次元（ユニット数）に対応させる。
         # shape の行は、None にして汎用性を確保
-        self._X_holder = tf.placeholder( 
+        self._encoder_input_holder = tf.placeholder( 
                              tf.int32, 
-                             shape = [ None, self._n_in_sequence_encoder ],
-                             name = "X_holder"
+                             #shape = [ None, self._n_in_sequence_encoder, self._n_vocab ],
+                             shape = [ self._n_in_sequence_encoder, self._batch_size ],
+                             name = "encoder_input_holder"
+                         )
+
+        self._decoder_input_holder = tf.placeholder( 
+                             tf.int32, 
+                             #shape = [ None, self._n_in_sequence_decoder, self._n_vocab ],
+                             shape = [ self._n_in_sequence_decoder, self._batch_size ],
+                             name = "decoder_input_holder"
                          )
 
         self._t_holder = tf.placeholder( 
                              tf.int32, 
-                             shape = [ None, self._n_in_sequence_decoder ],
+                             #shape = [ None, self._n_in_sequence_decoder, self._n_vocab ],
+                             shape = [ self._n_in_sequence_decoder, self._batch_size ],
                              name = "t_holder"
                          )
 
         self._dropout_holder = tf.placeholder( tf.float32, name = "dropout_holder" )
-        self._batch_size_holder = tf.placeholder( tf.int32, shape=[], name = "batch_size_holder" )
+        self._batch_size_holder = tf.placeholder( tf.int32, shape=[ batch_size ], name = "batch_size_holder" )
         self._bTraining_holder = tf.placeholder( tf.bool, name = "bTraining_holder" )
 
         return
@@ -205,7 +216,8 @@ class Seq2SeqRNNEncoderDecoderLSTM( NeuralNetworkBase ):
         print( "_embedding_matrix_var : {}".format( self._embedding_matrix_var ) )
         print( "_embedding_lookup_op : {}".format( self._embedding_lookup_op ) )
 
-        print( "_X_holder :", self._X_holder )
+        print( "_encoder_input_holder :", self._encoder_input_holder )
+        print( "_decoder_input_holder :", self._decoder_input_holder )
         print( "_t_holder :", self._t_holder )
         print( "_dropout_holder :", self._dropout_holder )
         print( "_batch_size_holder :", self._batch_size_holder )
@@ -288,139 +300,121 @@ class Seq2SeqRNNEncoderDecoderLSTM( NeuralNetworkBase ):
                 モデルの出力のオペレーター
         """
         #--------------------------------------------------------------
-        # 埋め込み行列（単語ベクトルの集合）と埋め込み探索演算を作成
+        # Encoder 側の埋め込み層
         #--------------------------------------------------------------
-        # with tf.name_scope( "embedding_layer" ):
+        with tf.name_scope( 'EmbeddingLayer' ):
+            # 埋め込み行列を表す Variable
+            self._embedding_matrix_var = tf.Variable( 
+                                             tf.random_uniform( [self._n_vocab, self._n_in_sequence_encoder], -1.0, 1.0 ),
+                                             name = "embedding_matrix_var"
+                                         )
 
-        # 埋め込み行列を表す Variable
-        self._embedding_matrix_var = tf.Variable( 
-                                         tf.random_uniform( [self._n_vocab, self._n_in_sequence_encoder], -1.0, 1.0 ),
-                                         name = "embedding_matrix_var"
-                                     )
-
-        # tf.nn.embedding_lookup(...) : バッチ内の各ソース単語について、ベクトルをルックアップ（検索）
-        # self._embedding_lookup_op / shape = [None, self._n_in_sequence_encoder, self._n_in_sequence_encoder]
-        self._embedding_lookup_op = tf.nn.embedding_lookup( self._embedding_matrix_var, self._X_holder )
-        #embedding_expanded_op = tf.expand_dims( self._embedding_lookup_op, -1 )
-        print( "self._embedding_lookup_op :", self._embedding_lookup_op )
-
-        # 埋め込みを 1 次元 Tensor 状に reshape
-        # tf.split(...) : Tensorを指定した次元方向に分割
-        # shape = [None, self._n_in_sequence_encoder, self._n_in_sequence_encoder] → shape = [self._n_in_sequence_encoder]
-        # 各 Tensor の shape は、rnn_inputs[i] / shape = [None, 1, self._n_in_sequence_encoder] 
-        rnn_inputs = tf.split( 
-                         value = self._embedding_lookup_op,                 # 分割する Tensor
-                         num_or_size_splits = self._n_in_sequence_encoder,  # 分割する数
-                         axis=1                                             # 分割する次元方向
-                     )
-        print( "rnn_inputs :", rnn_inputs )
+            # tf.nn.embedding_lookup(...) : バッチ内の各ソース単語について、ベクトルをルックアップ（検索）
+            self._embedding_lookup_op = tf.nn.embedding_lookup( self._embedding_matrix_var, self._encoder_input_holder )
+            print( "self._embedding_lookup_op :", self._embedding_lookup_op )
         
-        # shape = 1 の次元を trimmed（トリミング）
-        # tf.squeeze(...) : 指定された size 数に該当する次元を削除する。
-        # shape = [None, 1, self._n_in_sequence_encoder] → shape = [None, self._n_in_sequence_encoder]
-        # 各 Tensor の shape は、rnn_inputs_trimmed[i] / shape = [None, self._n_in_sequence_encoder] 
-        rnn_inputs_trimmed = [ tf.squeeze( tsr, [1] ) for tsr in rnn_inputs ]
-        print( "rnn_inputs_trimmed :", rnn_inputs_trimmed )
+            """
+            embedding_lookup_op_list = []
+            for idx in range( self._n_in_sequence_encoder ):
+                embedding_lookup_op_list.append( tf.nn.embedding_lookup( self._embedding_matrix_var, self._encoder_input_holder[:,idx] ) )
+
+            self._embedding_lookup_op = tf.convert_to_tensor( embedding_lookup_op_list, dtype=tf.float32 )
+            """
 
         #--------------------------------------------------------------
         # Encoder
-        # Encoder は不要？
         #--------------------------------------------------------------
-        # 忘却ゲートなしの LSTM
-        cell_encoder = tf.contrib.rnn.BasicLSTMCell( self._n_hiddenLayer )
-        init_state_encoder = cell_encoder.zero_state( self._batch_size_holder, tf.float32 )
-        self._rnn_cells_encoder.append( cell_encoder )
-        self._rnn_states_encoder.append( init_state_encoder )
-        
+        with tf.name_scope( 'Encoder' ):
+            # 時系列に沿った RNN 構造を提供するクラス BasicLSTMCell の cell を取得する。
+            # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
+            # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+            cell_encoder = tf.contrib.rnn.BasicLSTMCell( 
+                               num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
+                           )
+
+            self._rnn_cells_encoder.append( cell_encoder )
+
+            # 最初の時間 t0 では、過去の隠れ層がないので、cell.zero_state(...) でゼロの状態を初期設定する。
+            init_state_encoder = cell_encoder.zero_state( batch_size = self._batch_size, dtype = tf.float32 )
+            #print( "init_state_encoder", init_state_encoder )   # Tuple, 
+
+            # 可変長な RNN シーケンス を作成
+            # [Returns]
+            #   outputs_tsr: The RNN output Tensor
+            #   state_tsr : The final state
+            # [args]
+            #   sequence_length : (optional) An int32/int64 vector sized [batch_size].
+            #                     Used to copy-through state and zero-out outputs when past a batch element's sequence length. 
+            #                     So it's more for correctness than performance.
+            #   initial_state :  (optional) An initial state for the RNN.
+            #                    If cell.state_size is an integer, this must be a Tensor of appropriate type and shape [batch_size, cell.state_size].
+            #                    If cell.state_size is a tuple, this should be a tuple of tensors having shapes [batch_size, s] for s in cell.state_size.
+            #   time_major == False ⇒ shape = [batch_size, max_time, ...]
+            outputs_encoder_tsr, state_encoder_tsr = \
+            tf.nn.dynamic_rnn(  
+                cell_encoder, 
+                self._embedding_lookup_op, 
+                initial_state = init_state_encoder,
+                time_major = True,
+                dtype=tf.float32 
+            )
+
+            self._rnn_states_encoder.append( state_encoder_tsr )    # final state を push
+
+            print( "outputs_encoder_tsr :", outputs_encoder_tsr )   # shape = [ None, _n_in_sequence_encoder, _n_hiddenLayer ]
+            print( "state_encoder_tsr :", state_encoder_tsr )       # shape = [ None, _n_hiddenLayer ]
+
         #--------------------------------------------------------------
         # Decoder
         #--------------------------------------------------------------
-        # 隠れ層 → 出力層への重み
-        self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_vocab] ) )
-        self._biases.append( self.init_bias_variable( input_shape = [self._n_vocab] ) )
+        with tf.name_scope( 'Decoder' ):
+            cell_decoder = tf.contrib.rnn.BasicLSTMCell( 
+                               num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
+                           )
 
-        # ? 損失関数等の評価指数の計算時の RNN の再帰処理（ループ処理）を行う関数
-        # i 番目の出力から、i+1 番目の入力（埋め込みベクトル）を取得する。
-        # 後の、tf.contrib.legacy_seq2seq.rnn_decoder の call 関数の引数 loop_function で指定
-        def eval_rnn_loop( prev_output_op, count ):
-            # prev_output_op : i 番目の出力
-            # matmul 計算時、直前の出力 self._rnn_cells_decoder[-1] を入力に用いる
-            prev_trans_output_op = tf.matmul( prev_output_op, self._weights[-1] ) + self._biases[-1]
+            self._rnn_cells_decoder.append( cell_decoder )
 
-            # ? 出力インデックスを取得
-            # tf.stop_gradient(...) : https://stackoverflow.com/questions/33727935/how-to-use-stop-gradient-in-tensorflow
-            #   an operation that acts as the identity function in the forward direction,
-            #   but stops the accumulated gradient from flowing through that operator in the backward direction. 
-            #    It does not prevent backpropagation altogether, but instead prevents an individual tensor from contributing to the gradients that are computed for an expression. 
-            prev_op_symbol = tf.stop_gradient( tf.arg_max( prev_trans_output_op, 1 ) )
+            print( "cell_decoder :", cell_decoder )
 
-            # 埋め込みベクトルを取得
-            output = tf.nn.embedding_lookup( self._embedding_matrix_var, prev_op_symbol )
-            
-            return output
+            # ? Helper
+            # この Helper を入れ替えることで Beam search とかにできる
+            helper = tf.contrib.seq2seq.TrainingHelper(
+                        self._decoder_input_holder,
+                        sequence_length = tf.cast( [self._n_in_sequence_decoder * self._batch_size], tf.int32 ),
+                        time_major = True,
+                     )
 
-        # ? Decoder からの再帰処理に基づく、出力リストと最終的な state を取得する。
-        # tf.contrib.legacy_seq2seq.rnn_decoder : RNN decoder for the sequence-to-sequence model.
-        # [Args:]
-        #   decoder_inputs : A list of 2D Tensors [batch_size x input_size].
-        #   initial_state: 2D Tensor with shape [batch_size x cell.state_size].
-        #   cell: rnn_cell.RNNCell defining the cell function and size.
-        #   loop_function:
-        #       If not None, this function will be applied to the i-th output in order to generate the i+1-st input, 
-        #       and decoder_inputs will be ignored, except for the first element ("GO" symbol). 
-        #       This can be used for decoding, but also for training to emulate http://arxiv.org/abs/1506.03099. Signature -- loop_function(prev, i) = next
-        #
-        #  f.contrib.legacy_seq2seq.rnn_decoder : <function rnn_decoder at 0x00000206908E0158>
-        decoder = tf.contrib.legacy_seq2seq.rnn_decoder
-        print( "tf.contrib.legacy_seq2seq.rnn_decoder :", decoder ) 
-        
-        """
-        # トレーニング処理中の場合のルート
-        if ( self._bTraining_holder == True ):
-            # tf.contrib.legacy_seq2seq.rnn_decoder の __call__() 関数を呼び出し、
-            # Decoder からの再帰処理に基づく、出力リストと最終的な state を取得する。
-            # shape = [self._n_in_sequence_decoder] 個の Tensor 配列 / 各 Tensor の shape = [None, self._n_hidden_Layer]
-            outputs_decoder, last_state_decoder = decoder(
-                                                      decoder_inputs = rnn_inputs_trimmed,  # 埋め込み層からの入力
-                                                      initial_state = self._rnn_states_encoder[-1],
-                                                      cell = self._rnn_cells_encoder[-1],
-                                                      loop_function = None
-                                                  )
+            print( "helper :", helper )
+            print( "helper.batch_size :", helper.batch_size )
 
-        # loss 値などの評価用の値の計算時のルート
-        else:
-            # tf.contrib.legacy_seq2seq.rnn_decoder の __call__() 関数を呼び出し、
-            # Decoder からの再帰処理に基づく、出力リストと最終的な state を取得する。
-            outputs_decoder, last_state_decoder = decoder(
-                                                      decoder_inputs = rnn_inputs_trimmed,  # 埋め込み層からの入力
-                                                      initial_state = self._rnn_states_encoder[-1],
-                                                      cell = self._rnn_cells_encoder[-1],
-                                                      loop_function = eval_rnn_loop
-                                                  )
+            # ? Decoder
+            # Basic sampling decoder.
+            decoder = tf.contrib.seq2seq.BasicDecoder(
+                          cell = cell_decoder,
+                          helper = helper,
+                          initial_state = self._rnn_states_encoder[-1]  # Encoder の最終状態
+                      )
 
-        """
+            print( "decoder :", decoder )
+            print( "decoder.batch_size :", decoder.batch_size )
 
-        # tf.contrib.legacy_seq2seq.rnn_decoder の __call__() 関数を呼び出し、
-        # Decoder からの再帰処理に基づく、出力リストと最終的な state を取得する。
-        # shape = [self._n_in_sequence_decoder] 個の Tensor 配列 / 各 Tensor の shape = [None, self._n_hidden_Layer]
-        outputs_decoder, last_state_decoder = decoder(
-                                                  decoder_inputs = rnn_inputs_trimmed,  # 埋め込み層からの入力
-                                                  initial_state = self._rnn_states_encoder[-1],
-                                                  cell = self._rnn_cells_encoder[-1],
-                                                  loop_function = None
-                                              )
+            # ? Dynamic decoding
+            # Perform dynamic decoding with decoder
+            # Calls initialize() once and step() repeatedly on the Decoder object.
+            decoder_outputs, decoder_final_state, decoder_final_sequence_lengths = \
+            tf.contrib.seq2seq.dynamic_decode( decoder = decoder )
 
-        print( "outputs_decoder :\n", outputs_decoder )
-        
-        # Decoder の出力を `tf.concat(...)` で結合し、`tf.reshape(...)` で適切な形状に reshape する。 
-        # self.outputs_decoder の形状を shape = ( データ数, 隠れ層のノード数 ) に reshape 
-        # tf.concat(...) : Tensorを結合する。引数 axis で結合する dimension を決定
-        output = tf.reshape( 
-                     tf.concat( outputs_decoder, axis = 1 ),
-                     shape = [ -1, self._n_hiddenLayer ]
-                 )
-        
-        print( "output :\n", output )
+            print( "decoder_outputs", decoder_outputs )
+
+            #------------------------------
+            # Decoder の出力層
+            #------------------------------
+            # 隠れ層 → 出力層への重み
+            self._weights.append( self.init_weight_variable( input_shape = [self._n_hiddenLayer, self._n_vocab] ) )
+            self._biases.append( self.init_bias_variable( input_shape = [self._n_vocab] ) )
+
+            # 
+
 
         #--------------------------------------------------------------
         # 出力層

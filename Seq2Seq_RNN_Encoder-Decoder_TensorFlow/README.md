@@ -539,11 +539,31 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 
 
 ### 使用するライブラリ
+
+<!--
 > `tf.contrib.legacy_seq2seq.rnn_decoder(...)` : RNN decoder for the sequence-to-sequence model.<br>
 >> https://www.tensorflow.org/api_docs/python/tf/contrib/legacy_seq2seq/rnn_decoder<br>
 
 > `tf.stop_gradient(...)` :<br>
 >> https://stackoverflow.com/questions/33727935/how-to-use-stop-gradient-in-tensorflow<br>
+-->
+
+> `tf.contrib.rnn.BasicLSTMCell(...)` : LSTM セル
+>> 
+
+> `tf.nn.dynamic_rnn(...)` : 可変長サイズの動的な RNN 
+>> https://www.tensorflow.org/api_docs/python/tf/nn/dynamic_rnn
+
+> `tf.contrib.seq2seq.TrainingHelper(...)` : seq2seq モデルの Decoder に対する Beam-Serach ?
+>> https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/TrainingHelper
+
+> `tf.contrib.seq2seq.BasicDecoder(...)` :
+>> https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/BasicDecoder
+
+> `tf.contrib.seq2seq.dynamic_decode(...)` :
+>> https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/dynamic_decode
+
+
 
 
 <a id="ID_3-2-1"></a>
@@ -722,7 +742,7 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
     ```
 - RNN Encoder-Decoder（単層の LSTM）モデルの構造を定義する。 
     - この処理は、`Seq2SeqRNNEncoderDecoderLSTM` クラスの `model()` メソッドにて行う。
-    - まず、埋め込み層の構造を構築していく。
+    - まず、Encoder 側の埋め込み層の構造を構築していく。
         - 埋め込み行列（単語ベクトルの集合）の Variable `self._embedding_matrix_var` と 埋め込み探索演算の Operator `self.embedding_lookup_op` を作成する。
         ```python
         [Seq2SeqRNNEncoderDecoderLSTM.py]
@@ -741,29 +761,28 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
             self._embedding_lookup_op = tf.nn.embedding_lookup( self._embedding_matrix_var, self._X_holder )
 
         ```
-        - この埋め込みを 1 次元 Tensor 配列状に reshape する。（各 Tensor は、１次元 Tensor）
+    - 次に、Encoder 側の層の構造を、再帰構造に従って、構築していく。
+        - そのために、`tf.contrib.rnn.BasicLSTMCell(...)` を用いて、時系列に沿った RNN 構造を提供するクラス `BasicLSTMCell` の cell を取得する。
+        - この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
+        これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
         ```python
         [Seq2SeqRNNEncoderDecoderLSTM.py]
         def model():
             ...
-            # 埋め込みを 1 次元 Tensor 状に reshape
-            # tf.split(...) : Tensorを指定した次元方向に分割
-            # shape = [None, self._n_in_sequence_encoder, self._n_in_sequence_encoder] → shape = [self._n_in_sequence_encoder]
-            # 各 Tensor の shape は、rnn_inputs[i] / shape = [None, 1, self._n_in_sequence_encoder] 
-            rnn_inputs = tf.split( 
-                             value = self._embedding_lookup_op,                 # 分割する Tensor
-                             num_or_size_splits = self._n_in_sequence_encoder,  # 分割する数
-                             axis=1                                             # 分割する次元方向
-                        )
-
-            # shape = 1 の次元を trimmed（トリミング）
-            # tf.squeeze(...) : 指定された size 数に該当する次元を削除する。
-            # shape = [None, 1, self._n_in_sequence_encoder] → shape = [None, self._n_in_sequence_encoder]
-            # 各 Tensor の shape は、rnn_inputs_trimmed[i] / shape = [None, self._n_in_sequence_encoder]
-            rnn_inputs_trimmed = [ tf.squeeze( tsr, [1] ) for tsr in rnn_inputs ]
+            #--------------------------------------------------------------
+            # Encoder
+            #--------------------------------------------------------------
+            with tf.variable_scope( 'Encoder' ):
+                # 時系列に沿った RNN 構造を提供するクラス BasicLSTMCell の cell を取得する。
+                # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
+                # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+                cell_encoder = tf.contrib.rnn.BasicLSTMCell( 
+                                   num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
+                               )
         ```
-    - 次に、Decoder 側の層の構造を、再帰構造に従って、構築していく。
-    - xxx
+        - 最初の時間 t0 では、過去の隠れ層がないので、`cell.zero_state(...)` でゼロの状態を初期設定する。
+        - `tf.nn.dynamic_rnn(...)` を用いて、可変長な RNN シーケンスを作成する。
+        -  
 - xxx
 
 
@@ -783,6 +802,9 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 ## 参考サイト
 - 星の本棚 : 自然言語処理（NLP）
     - http://yagami12.hatenablog.com/entry/2017/12/30/175113
+- TensorFlow（公式）
+    - https://www.tensorflow.org/tutorials/seq2seq
+
 - Neural Machine Translation (seq2seq)
     - https://github.com/tensorflow/nmt/blob/master/README.md
 - Seq2Seq まとめ
@@ -828,4 +850,26 @@ outputs_decoder :
 
 output :
  Tensor("Reshape:0", shape=(?, 128), dtype=float32)
+```
+
+[18/02/03]
+```python
+init_state_encoder LSTMStateTuple(
+    c=<tf.Tensor 'Encoder/BasicLSTMCellZeroState/zeros:0' shape=(100, 128) dtype=float32>, 
+    h=<tf.Tensor 'Encoder/BasicLSTMCellZeroState/zeros_1:0' shape=(100, 128) dtype=float32>)
+
+outputs_encoder_tsr : Tensor("Encoder/rnn/transpose:0", shape=(100, 50, 128), dtype=float32)
+
+state_encoder_tsr : LSTMStateTuple(
+c=<tf.Tensor 'Encoder/rnn/while/Exit_2:0' shape=(100, 128) dtype=float32>, 
+h=<tf.Tensor 'Encoder/rnn/while/Exit_3:0' shape=(100, 128) dtype=float32>)
+
+helper : <tensorflow.contrib.seq2seq.python.ops.helper.TrainingHelper object at 0x0000027834E7B630>
+helper.batch_size : Tensor("Decoder/TrainingHelper/Size:0", shape=(), dtype=int32)
+
+decoder : <tensorflow.contrib.seq2seq.python.ops.basic_decoder.BasicDecoder object at 0x0000027834E97EB8>
+decoder.batch_size : Tensor("Decoder/TrainingHelper/Size:0", shape=(), dtype=int32)
+
+ValueError: linear is expecting 2D arguments: [TensorShape([Dimension(100)]), TensorShape([Dimension(100), Dimension(128)])]
+
 ```

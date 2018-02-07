@@ -96,7 +96,7 @@ def main():
     rnn1 = Seq2SeqRNNEncoderDecoderLSTM(
                session = tf.Session(),
                n_inputLayer = 1,
-               n_hiddenLayer = 128,                 # rnn_size
+               n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
                n_outputLayer = 1,
                n_in_sequence_encoder = 50,          # エンコーダー側のシーケンス長 / 
                n_in_sequence_decoder = 50,          # デコーダー側のシーケンス長 / 
@@ -134,7 +134,7 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    #rnn1.loss( L2Norm() )
+    rnn1.loss( L2Norm() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
