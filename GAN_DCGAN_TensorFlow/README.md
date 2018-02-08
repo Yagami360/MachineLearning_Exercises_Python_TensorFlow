@@ -19,7 +19,7 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
         1. VAE [Variational Autoencoder]
 
 
-<a id="#ID_1"></a>
+<a id="ID_1"></a>
 
 ### 使用するライブラリ
 
@@ -48,7 +48,7 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
     - `pickle` :
 
 
-<a id="#ID_2"></a>
+<a id="ID_2"></a>
 
 ### 使用するデータセット
 - [MNIST データセット](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#mnist手書き数字文字画像データ)
@@ -56,11 +56,11 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
 - [CIFAR-10 データセット](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#cifar-10-データセット)
 
 
-<a id="#ID_3"></a>
+<a id="ID_3"></a>
 
 ## コードの実行結果
 
-<a id="#ID_3-1"></a>
+<a id="ID_3-1"></a>
 
 ### DCGAN による手書き数字画像データ MNIST の自動生成 : `main1.py`
 DCGAN モデルに対し MNIST データセットで学習し、手書き数字画像を自動生成する。
@@ -98,7 +98,7 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 
 ---
 
-<a id="#ID_4"></a>
+<a id="ID_4"></a>
 
 ## 背景理論
 
