@@ -129,6 +129,8 @@ def main():
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
     learning_rate = 0.0001
+    beta1 = 0.9
+    beta2 = 0.99
 
     #======================================================================
     # 変数とプレースホルダを設定
@@ -153,7 +155,7 @@ def main():
                 n_channels = 1,                         # グレースケール
                 n_G_deconv_featuresMap = [128, 64, 1],  # 
                 n_D_conv_featuresMap = [1, 64, 128],    #
-                n_labels = 10
+                n_labels = 2
            )
 
     dcgan.print( "after init" )
@@ -171,7 +173,8 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    
+    dcgan.loss( SparseSoftmaxCrossEntropy() )
+    dcgan.optimizer( Adam( learning_rate = learning_rate, beta1 = beta1, beta2 = beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -187,7 +190,7 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
-
+    #dcgan.fit()
 
     #======================================================================
     # モデルの評価

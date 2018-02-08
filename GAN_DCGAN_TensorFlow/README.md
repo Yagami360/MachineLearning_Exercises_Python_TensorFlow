@@ -23,13 +23,29 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
 
 ### 使用するライブラリ
 
-> TensorFlow ライブラリ </br>
->> `tf.nn.conv2d(...)` : ２次元の画像の畳み込み処理のオペレーター<br>
->> https://www.tensorflow.org/api_docs/python/tf/nn/conv2d<br>
+- TensorFlow ライブラリ
+    - `tf.get_varible(...)`, `tf.variable_scope(...)` : 名前空間と変数のスコープ
+        - https://qiita.com/TomokIshii/items/ffe999b3e1a506c396c8
+        - https://deepage.net/tensorflow/2017/06/02/tensorflow-variable.html
+    - `tf.nn.moments(...)` : 平均と分散を計算（batch normalization で使用）
+        - https://www.tensorflow.org/api_docs/python/tf/nn/moments
+    - `tf.nn.batch_normalization(...)` : batch normalization
+        - https://www.tensorflow.org/api_docs/python/tf/nn/batch_normalization
+        - https://tyfkda.github.io/blog/2016/09/14/batch-norm-mnist.html
+    - `tf.nn.conv2d(...)` : ２次元の画像の畳み込み処理のオペレーター
+        - https://www.tensorflow.org/api_docs/python/tf/nn/conv2d
+    - `tf.nn.conv2d_transpose(...)` : 逆畳み込み層 deconvolution layers
+        - xxx
+    - `tf.train.Saver` : Variable の save/restore
+    - `tf.trainable_variables(...)` : trainable フラグを付けた変数
+        - https://qiita.com/TomokIshii/items/84ee55a1c2d335dcab6f
+    - `tf.control_dependencies(...)` : sess.run で実行する際の Operator の依存関係（順序）を定義
+    - `tf.no_op(...)` : 何もしない Operator を返す。（Operator の依存関係を定義するのに使用）
+        - xxx
 
-
-> その他ライブラリ
->> `argparse` : コマンドライン引数用ライブラリ
+- その他ライブラリ
+    - `argparse` : コマンドライン引数用ライブラリ
+    - `pickle` :
 
 
 <a id="#ID_2"></a>
@@ -125,3 +141,48 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 ![image](https://user-images.githubusercontent.com/25688193/35549398-b4a58dce-05c8-11e8-9bd5-883c03aa4564.png)
 
 > 記載中...
+
+
+### デバッグメモ
+
+[18/02/08]
+```python
+
+_D_y_out_op_0 Tensor("Generator/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
+
+_weights_1 <tf.Variable 'Descriminator/ConvLayer_0/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>
+_biases_1 <tf.Variable 'Descriminator/ConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>
+_D_y_out_op_1 Tensor("Descriminator/ConvLayer_0/Maximum:0", shape=(32, 14, 14, 64), dtype=float32)
+
+_weights_2 <tf.Variable 'Descriminator/ConvLayer_1/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>
+_biases_2 <tf.Variable 'Descriminator/ConvLayer_1/bias_var:0' shape=(128,) dtype=float32_ref>
+_D_y_out_op_2 Tensor("Descriminator/ConvLayer_1/Maximum:0", shape=(32, 7, 7, 128), dtype=float32)
+
+---
+
+_t_holder : Tensor("Placeholder_3:0", shape=(?, 2), dtype=int32)
+_image_holder : Tensor("Placeholder_2:0", shape=(?, 28, 28, 1), dtype=float32)
+_G_y_out_op : Tensor("Generator/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
+_D_y_out_op : Tensor("Descriminator/flatten/fully/add:0", shape=(32, 2), dtype=float32)
+
+
+```
+
+```python
+[main1_1.py]
+
+outputs_0 : Tensor("Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
+
+w_1 : <tf.Variable 'descriminator/conv0/weights:0' shape=(5, 5, 1, 64) dtype=float32_ref>
+b_1 : <tf.Variable 'descriminator/conv0/biases:0' shape=(64,) dtype=float32_ref>
+outputs_1 : Tensor("descriminator/conv0/Maximum:0", shape=(32, 14, 14, 64), dtype=float32)
+
+w_2 : <tf.Variable 'descriminator/conv1/weights:0' shape=(5, 5, 64, 128) dtype=float32_ref>
+b_2 : <tf.Variable 'descriminator/conv1/biases:0' shape=(128,) dtype=float32_ref>
+outputs_2 : Tensor("descriminator/conv1/Maximum:0", shape=(32, 7, 7, 128), dtype=float32)
+
+---
+
+logits_from_g : Tensor("descriminator/classify/add:0", shape=(32, 2), dtype=float32)
+logits_from_i : Tensor("descriminator_1/classify/add:0", shape=(?, 2), dtype=float32)
+```
