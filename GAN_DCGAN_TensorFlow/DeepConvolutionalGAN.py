@@ -7,8 +7,8 @@
     [18/xx/xx] : 
                : 
 """
-
-import numpy
+import scipy.misc
+import numpy as np
 
 # TensorFlow ライブラリ
 import tensorflow as tf
@@ -178,18 +178,21 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         # shape の行は、None にして汎用性を確保
         self._input_noize_holder = tf.placeholder( 
                                        tf.float32, 
-                                       shape = [ None, image_height * image_width * n_channels ] 
+                                       shape = [ None, image_height * image_width * n_channels ],
+                                       name = "input_noizer_holder"
                                    )
 
         self._image_holder = tf.placeholder( 
                              tf.float32, 
-                             shape = [ None, image_height, image_width, n_channels ]
+                             shape = [ None, image_height, image_width, n_channels ],
+                             name = "image_holder"
                          )
 
         self._t_holder = tf.placeholder( 
                              tf.int32, 
-                             shape = [ None ]
-                             #shape = [ self._batch_size, n_labels ]
+                             shape = [ None ],
+                             #shape = [ self._batch_size, n_labels ],
+                             name = "t_holder"
                          )
 
         self._dropout_holder = tf.placeholder( tf.float32, name = "dropout_holder" )
@@ -495,7 +498,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             #----------------------------------------
             # reshape & fully connected layer
             #----------------------------------------
-            with tf.variable_scope( "flatten/fully" ):
+            with tf.variable_scope( "flatten_fully" ):
                 shape = out_D_op.get_shape().as_list()
                 dim = shape[1]*shape[2]*shape[3]
                 print( "shape :", shape )
@@ -590,7 +593,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                     )
         """
         loss_D_op0 = nnLoss.loss( t_holder = self._t_holder, y_out_op = self._D_y_out_op1 )
-        loss_D_op1 = nnLoss.loss( t_holder = self._t_holder, y_out_op = self._D_y_out_op2 )    # Error
+        loss_D_op1 = nnLoss.loss( t_holder = self._t_holder, y_out_op = self._D_y_out_op2 )
         self._D_loss_op =  loss_D_op0 + loss_D_op1
 
         # 仮値を設定
@@ -607,7 +610,114 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         [Output]
             optimizer の train_step
         """
-        self._optimizer = nnOptimizer._optimizer
-        self._train_step = nnOptimizer.train_step( self._loss_op )
+        # Generator, Discriminator の Variable の抽出
+        g_vars = [ var for var in tf.trainable_variables() if var.name.startswith('G') ]
+        d_vars = [ var for var in tf.trainable_variables() if var.name.startswith('D') ]
+        print( "g_vars :", g_vars )
+        print( "d_vars :", d_vars )
+
+        # Optimizer の設定
+        self._G_optimizer = nnOptimizer._optimizer
+        self._D_optimizer = nnOptimizer._optimizer
         
+        # トレーニングステップの設定
+        self._G_train_step = nnOptimizer.train_step( self._G_loss_op )
+        self._D_train_step = nnOptimizer.train_step( self._D_loss_op )
+
+        # tf.control_dependencies(...) : sess.run で実行する際のトレーニングステップの依存関係（順序）を定義
+        with tf.control_dependencies( [self._G_train_step, self._D_train_step] ):
+            # tf.no_op(...) : 何もしない Operator を返す。（トレーニングの依存関係を定義するのに使用）
+            self._train_step = tf.no_op( name = 'train' )
+        
+
         return self._train_step
+
+
+    def fit( self, X_train, y_train ):
+        """
+        指定されたトレーニングデータで、モデルの fitting 処理を行う。
+        [Input]
+            X_train : np.ndarray ( shape = [n_samples, n_features] )
+                トレーニングデータ（特徴行列）
+            
+            y_train : np.ndarray ( shape = [n_samples] )
+                トレーニングデータ用のクラスラベル（教師データ）のリスト
+        [Output]
+            self : 自身のオブジェクト
+        """
+        """
+        # 学習経過表示用の途中生成画像
+        sample_images = []
+        sample_image_data = np.random.rand( 8, z_dim ) * 2.0 - 1.0
+        """
+
+        # 入力データの shape にチェンネルデータがない場合
+        # shape = [image_height, image_width]
+        if( X_train.ndim == 3 ):
+            # shape を [image_height, image_width] → [image_height, image_width, n_channel=1] に reshape
+            X_train = np.expand_dims( X_train, axis = 3 )
+
+        #----------------------------
+        # 学習開始処理
+        #----------------------------
+        # Variable の初期化オペレーター
+        self._init_var_op = tf.global_variables_initializer()
+
+        # Session の run（初期化オペレーター）
+        self._session.run( self._init_var_op )
+
+        #--------------------------------------------------------
+        # 学習処理
+        #--------------------------------------------------------
+        # for ループでエポック数分トレーニング
+        for epoch in range( self._epochs ):
+            # ミニバッチ学習処理のためランダムサンプリング
+            idx_shuffled = np.random.choice( len(X_train), size = self._batch_size )
+            X_train_shuffled = X_train[ idx_shuffled ]
+            y_train_shuffled = y_train[ idx_shuffled ]
+            #print( "X_train_shuffled.shape", X_train_shuffled.shape )  # shape = [32, 28, 28, 1]
+
+            # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
+            self._session.run(
+                self._train_step,
+                feed_dict = {
+                    self._image_holder: X_train_shuffled
+                    #self._t_holder: y_train_shuffled
+                }
+            )
+            
+            # 評価処理を行う loop か否か
+            # % : 割り算の余りが 0 で判断
+            if ( ( (epoch+1) % self._eval_step ) == 0 ):
+                # 損失関数値の算出
+                loss_total, loss_G, loss_D = \
+                self._session.run(
+                    [ self._loss_op, self._G_loss_op, self._D_loss_op ],
+                    feed_dict = {
+                        self._image_holder: X_train_shuffled
+                        #self._t_holder: y_train_shuffled
+                    }
+                )
+
+                self._losses_train.append( loss_total )
+                self._losses_G_train.append( loss_G )
+                self._losses_D_train.append( loss_D )
+                print( "epoch %d / loss_total = %0.1f / loss_G = %0.1f / loss_D = %0.1f" % ( epoch + 1, loss_total, loss_G, loss_D ) )
+
+                """
+                # 途中生成画像の保存
+                image_eval = self.generate_samples()
+                output_file = "output_image/temp_output_image{}.jpg".format( epoch + 1 )
+                scipy.misc.imsave( output_file, image_eval )
+                """
+
+        return self._y_out_op
+
+
+    def generate_samples( self, n_samples ):
+        """
+        トレーニング経過可視化のための、サンプル画像データを生成する。
+
+        """
+
+        return

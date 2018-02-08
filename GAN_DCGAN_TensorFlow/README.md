@@ -39,8 +39,8 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
     - `tf.train.Saver` : Variable の save/restore
     - `tf.trainable_variables(...)` : trainable フラグを付けた変数
         - https://qiita.com/TomokIshii/items/84ee55a1c2d335dcab6f
-    - `tf.control_dependencies(...)` : sess.run で実行する際の Operator の依存関係（順序）を定義
-    - `tf.no_op(...)` : 何もしない Operator を返す。（Operator の依存関係を定義するのに使用）
+    - `tf.control_dependencies(...)` : sess.run で実行する際のトレーニングステップの依存関係（順序）を定義
+    - `tf.no_op(...)` : 何もしない Operator を返す。（トレーニングステップの依存関係を定義するのに使用）
         - xxx
 
 - その他ライブラリ
@@ -147,6 +147,14 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 
 [18/02/08]
 
+[main1.py]
+
+> `input_noize_holder` がモデルに関連付けられていない問題
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 3](https://user-images.githubusercontent.com/25688193/35985713-9945101c-0d3a-11e8-8086-8127969c2ec4.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 4](https://user-images.githubusercontent.com/25688193/35985718-9cb06544-0d3a-11e8-85bc-ba08cc993752.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 5](https://user-images.githubusercontent.com/25688193/35985720-9cdd04aa-0d3a-11e8-807f-d5ffe05ef0e4.png)
+
+[main1_1.py]
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/35968027-07a70a4a-0d06-11e8-8cf2-271db602be33.png)
 
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/35968028-07d2084e-0d06-11e8-9392-48ff5137a6e6.png)
@@ -172,6 +180,18 @@ _G_y_out_op : Tensor("Generator/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32
 _D_y_out_op : Tensor("Descriminator/flatten/fully/add:0", shape=(32, 2), dtype=float32)
 
 
+g_vars : [
+    <tf.Variable 'Generator/weight_var:0' shape=(64, 6272) dtype=float32_ref>, 
+    <tf.Variable 'Generator/bias_var:0' shape=(128,) dtype=float32_ref>, 
+    <tf.Variable 'Generator/DeConvLayer_0/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>, 
+    <tf.Variable 'Generator/DeConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>, 
+    <tf.Variable 'Generator/DeConvLayer_1/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>, 
+    <tf.Variable 'Generator/DeConvLayer_1/bias_var:0' shape=(1,) dtype=float32_ref>
+]
+
+d_vars : [<tf.Variable 'Descriminator/ConvLayer_0/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_1/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_1/bias_var:0' shape=(128,) dtype=float32_ref>, <tf.Variable 'Descriminator/flatten/fully/weight_var:0' shape=(6272, 2) dtype=float32_ref>, <tf.Variable 'Descriminator/flatten/fully/bias_var:0' shape=(2,) dtype=float32_ref>]
+
+
 ```
 
 ```python
@@ -191,4 +211,12 @@ outputs_2 : Tensor("descriminator/conv1/Maximum:0", shape=(32, 7, 7, 128), dtype
 
 logits_from_g : Tensor("descriminator/classify/add:0", shape=(32, 2), dtype=float32)
 logits_from_i : Tensor("descriminator_1/classify/add:0", shape=(?, 2), dtype=float32)
+
+C:\Users\y0341\Anaconda3\lib\site-packages\matplotlib\cbook\deprecation.py:106: MatplotlibDeprecationWarning: Adding an axes using the same arguments as a previous axes currently reuses the earlier instance.  In a future version, a new instance will always be created and returned.  Meanwhile, this warning can be suppressed, and the future behavior ensured, by passing a unique label to each axes instance.
+  warnings.warn(message, mplDeprecation, stacklevel=1)
+C:\Users\y0341\Anaconda3\lib\site-packages\matplotlib\animation.py:1218: UserWarning: MovieWriter imagemagick unavailable
+  warnings.warn("MovieWriter %s unavailable" % writer)
+ValueError: outfile must be *.htm or *.html
+
 ```
+

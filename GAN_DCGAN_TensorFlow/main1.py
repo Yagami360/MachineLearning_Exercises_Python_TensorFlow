@@ -176,6 +176,9 @@ def main():
     dcgan.loss( SparseSoftmaxCrossEntropy() )
     dcgan.optimizer( Adam( learning_rate = learning_rate, beta1 = beta1, beta2 = beta2 ) )
 
+    # TensorBoard
+    dcgan.write_tensorboard_graph()
+
     #======================================================================
     # モデルの初期化と学習（トレーニング）
     # ここまでの準備で, 実際に, 計算グラフ（有向グラフ）のオブジェクトを作成し,
@@ -190,13 +193,46 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
-    #dcgan.fit()
+    # トレーニングデータで fitting 処理
+    dcgan.fit( X_train, y_train_encoded )
 
     #======================================================================
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-
+    #-------------------------------------------------------------------
+    # トレーニング回数に対する loss 値の plot
+    #-------------------------------------------------------------------
+    plt.clf()
+    plt.plot(
+        range( 0, len(dcgan._losses_train) ), dcgan._losses_train,
+        label = ' loss (total) : train data',
+        linestyle = '-',
+        #linewidth = 2,
+        color = 'black'
+    )
+    plt.plot(
+        range( 0, len(dcgan._losses_G_train) ), dcgan._losses_G_train,
+        label = ' loss (generator) : train data',
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'red'
+    )
+    plt.plot(
+        range( 0, len(dcgan._losses_D_train) ), dcgan._losses_D_train,
+        label = ' loss (discriminator) : train data',
+        linestyle = '--',
+        #linewidth = 2,
+        color = 'blue'
+    )
+    plt.title( "loss" )
+    plt.legend( loc = 'best' )
+    #plt.ylim( [0, 1.05] )
+    plt.xlabel( "Epocs" )
+    plt.tight_layout()
+   
+    #MLPlot.saveFigure( fileName = "GAN_DCGAN_1-1.png" )
+    plt.show()
 
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
