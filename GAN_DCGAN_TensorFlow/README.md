@@ -146,6 +146,12 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 ### デバッグメモ
 
 [18/02/08]
+
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/35968027-07a70a4a-0d06-11e8-8cf2-271db602be33.png)
+
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/35968028-07d2084e-0d06-11e8-9392-48ff5137a6e6.png)
+
+
 ```python
 
 _D_y_out_op_0 Tensor("Generator/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
