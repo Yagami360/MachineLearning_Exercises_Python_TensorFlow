@@ -9,22 +9,27 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
 
 1. [使用するライブラリ](#ID_1)
 1. [使用するデータセット](#ID_2)
-1. [コード説明＆実行結果](#ID_3)
+1. [コード実行結果＆内容説明](#ID_3)
     1. [DCGAN による手書き数字画像データ MNIST の自動生成 : `main1.py`](#ID_3-1)
-    1. [](#)
+        1. [コードの実行結果](#ID_3-1-1)
+        1. [コードの内容説明](#ID_3-1-2)
+    1. xxx : `main2.py`
+        1. コードの実行結果
+        1. コードの内容説明
 1. [背景理論](#ID_4)
     1. [生成モデル [generative model]](#ID_10)
         1. [GAN [Generative Adversarial Network]（敵対的ネットワーク）](#ID_10-1)
             1. [DCGAN [Deep Convolutional GAN]](#ID_10-1-1)
         1. VAE [Variational Autoencoder]
 
+---
 
 <a id="ID_1"></a>
 
 ### 使用するライブラリ
 
 - TensorFlow ライブラリ
-    - `tf.get_varible(...)`, `tf.variable_scope(...)` : 名前空間と変数のスコープ
+    - `tf.get_varible(...)`, `tf.variable_scope(...)` : 名前空間と変数のスコープ（重み共有で使用）
         - https://qiita.com/TomokIshii/items/ffe999b3e1a506c396c8
         - https://deepage.net/tensorflow/2017/06/02/tensorflow-variable.html
     - `tf.nn.moments(...)` : 平均と分散を計算（batch normalization で使用）
@@ -36,15 +41,12 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
         - https://www.tensorflow.org/api_docs/python/tf/nn/conv2d
     - `tf.nn.conv2d_transpose(...)` : 逆畳み込み層 deconvolution layers
         - xxx
-    - `tf.train.Saver` : Variable の save/restore
     - `tf.trainable_variables(...)` : trainable フラグを付けた変数
         - https://qiita.com/TomokIshii/items/84ee55a1c2d335dcab6f
     - `tf.control_dependencies(...)` : sess.run で実行する際のトレーニングステップの依存関係（順序）を定義
-    - `tf.no_op(...)` : 何もしない Operator を返す。（トレーニングステップの依存関係を定義するのに使用）
+        - `tf.no_op(...)` : 何もしない Operator を返す。（トレーニングステップの依存関係を定義するのに使用）
         - xxx
-
 - その他ライブラリ
-    - `argparse` : コマンドライン引数用ライブラリ
     - `pickle` :
 
 
@@ -55,17 +57,83 @@ TensorFlow での DCGAN [Deep Convolutional GAN] の練習用実装コード集�
     - `main1.py` で使用
 - [CIFAR-10 データセット](https://github.com/Yagami360/MachineLearning_Exercises_Python_TensorFlow/blob/master/dataset.md#cifar-10-データセット)
 
+---
 
 <a id="ID_3"></a>
 
-## コードの実行結果
+## コード実行結果＆内容説明
 
 <a id="ID_3-1"></a>
 
 ### DCGAN による手書き数字画像データ MNIST の自動生成 : `main1.py`
 DCGAN モデルに対し MNIST データセットで学習し、手書き数字画像を自動生成する。
 
-#### コードの説明
+<a id="ID_3-1-1"></a>
+
+#### コードの実行結果
+
+#### 損失関数のグラフ
+
+|パラメータ名|値（実行条件１）|
+|---|---|
+|最適化アルゴリズム|Adam|
+|学習率<br>`learning_rate`|0.0001|
+|学習率の減衰項１<br>`beta1`|0.5|
+|学習率の減衰項２<br>`beta2`|0.999|
+|ミニバッチサイズ<br>`batch_size`|32|
+
+![gan_dcgan_1-1_1](https://user-images.githubusercontent.com/25688193/36030883-3aeb8e08-0dec-11e8-8ec4-4966754a12ea.png)
+> 損失関数として、疎なソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。
+赤線が Generator の損失関数の値。青線が Descriminator の損失関数の値。黒線が、Generator と Descriminator の損失関数の総和。<br>
+損失関数のグラフより、Generator の損失関数の値が 0 に収束できておらず、又上下に不安定となっていることが分かる。これは GAN に見られる特性である。<br>
+つまり、GAN はゲーム理論的に言えば、Generator と Descriminator の２プレイヤーのゼロサムゲームとみなすことが出来るので、相互に干渉しあって動作が不安定になる。
+
+<br>
+
+#### Generator から出力された自動生成画像（学習時の途中経過込み）
+- 入力ノイズデータ : 32 × 64 pixel<br>
+![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
+
+|パラメータ名|値（実行条件１）|
+|---|---|
+|最適化アルゴリズム|Adam|
+|学習率<br>`learning_rate`|0.0001|
+|学習率の減衰項１<br>`beta1`|0.5|
+|学習率の減衰項２<br>`beta2`|0.999|
+|ミニバッチサイズ<br>`batch_size`|32|
+
+- epoch 数 : 1 ~ 1000（途中経過）, ステップ間隔 : `eval_step = 25`
+![temp_output_vhstack_image1000](https://user-images.githubusercontent.com/25688193/36032203-99fddb40-0df0-11e8-989a-cfa1df321dbb.jpg)    
+- epoch 数 : 1000（途中経過）
+![temp_output_hstack_image1000](https://user-images.githubusercontent.com/25688193/36034674-27e93772-0df8-11e8-9339-c1139203bd17.jpg)
+- epoch 数 : 20000（最終結果）
+
+> 縦列が、epoch 数を増加して（学習を進めていった）ときの、Generator から出力された自動生成画像。<br>
+> 横列は、Generator に入力した入力ノイズデータの違いによる自動生成画像の違い。
+
+<br>
+
+#### 入力ノイズのパラメータを球の表面上に沿って動かしたときの Generator から出力された自動生成画像
+
+|パラメータ名|値（実行条件１）|
+|---|---|
+|最適化アルゴリズム|Adam|
+|学習率<br>`learning_rate`|0.0001|
+|学習率の減衰項１<br>`beta1`|0.5|
+|学習率の減衰項２<br>`beta2`|0.999|
+|ミニバッチサイズ<br>`batch_size`|32|
+
+- epoch 数 : 700<br>
+![dcgan_morphing_epoch700](https://user-images.githubusercontent.com/25688193/36034248-cf562de6-0df6-11e8-9704-9648c2ce1a2c.gif)
+- epoch 数 : 1000<br>
+![dcgan_morphing_epoch1000](https://user-images.githubusercontent.com/25688193/36030902-4f680e74-0dec-11e8-9c1b-3ec62ca5e089.gif)
+
+
+<br>
+
+<a id="ID_3-1-2"></a>
+
+#### コードの内容説明
 - DCGAN の Discriminator に入力する学習用データセットとして、MNIST データセットを使用。
     - データは shape = [n_sample, image_width=28, image_height=28] の形状に reshape
     - 尚、この処理で取得できる MNIST データの教師データ `y_train`, `y_test` は、
@@ -105,7 +173,7 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 ![image](https://user-images.githubusercontent.com/25688193/35545437-72ebb95a-05b2-11e8-9219-e723ee344d54.png)
 ![image](https://user-images.githubusercontent.com/25688193/35545467-93e540c2-05b2-11e8-846f-ccd86273a85f.png)
     - まず、Generator に入力する、入力ノイズデータを生成する。
-        - このノイズデータは、`tf.random_uniform(...)` を用いて生成した -1.0f ~ 1.0f の間のランダム値をとる Tensor とする。 <br>
+        - このノイズデータは、`tf.random_uniform(...)` を用いて生成した `-1.0f` ~ `1.0f` の間のランダム値をとる Tensor とする。 <br>
         ```python
         [DeepConvolutionalGAN.py]
         def model( self ):
@@ -126,7 +194,7 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
                                   minval = -1.0, maxval = 1.0
                               )
         ```
-        - 尚、このノイズデータを画像表示したものは、以下の画像のようになる。<br>
+        - 尚、このノイズデータを画像表示したものは、以下の画像のようになる。( 32×64 pixel )<br>
         ![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
         - そして、このノイズデータを Generator に入力する。
         ```python
@@ -242,67 +310,6 @@ Generator, Descriminator 双方とも Adam アルゴリズム を使用する。
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 9](https://user-images.githubusercontent.com/25688193/36034906-dba14b88-0df8-11e8-9016-f846c3289401.png)
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 10](https://user-images.githubusercontent.com/25688193/36034907-dbcdf1c4-0df8-11e8-8ae5-86c64f2f649c.png)
 ![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 11](https://user-images.githubusercontent.com/25688193/36034909-dbf6a966-0df8-11e8-916c-eeb0dff6c436.png)
-
-<br>
-
-#### コードの実行結果
-
-#### 損失関数のグラフ
-
-|パラメータ名|値（実行条件１）|
-|---|---|
-|最適化アルゴリズム|Adam|
-|学習率<br>`learning_rate`|0.0001|
-|学習率の減衰項１<br>`beta1`|0.5|
-|学習率の減衰項２<br>`beta2`|0.999|
-|ミニバッチサイズ<br>`batch_size`|32|
-
-![gan_dcgan_1-1_1](https://user-images.githubusercontent.com/25688193/36030883-3aeb8e08-0dec-11e8-8ec4-4966754a12ea.png)
-> 損失関数として、疎なソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。
-赤線が Generator の損失関数の値。青線が Descriminator の損失関数の値。黒線が、Generator と Descriminator の損失関数の総和。<br>
-損失関数のグラフより、Generator の損失関数の値が 0 に収束できておらず、又上下に不安定となっていることが分かる。これは GAN に見られる特性である。<br>
-つまり、GAN はゲーム理論的に言えば、Generator と Descriminator の２プレイヤーのゼロサムゲームとみなすことが出来るので、相互に干渉しあって動作が不安定になる。
-
-<br>
-
-#### Generator から出力された自動生成画像（学習時の途中経過込み）
-- 入力ノイズデータ : 32 × 64 pixel<br>
-![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
-
-|パラメータ名|値（実行条件１）|
-|---|---|
-|最適化アルゴリズム|Adam|
-|学習率<br>`learning_rate`|0.0001|
-|学習率の減衰項１<br>`beta1`|0.5|
-|学習率の減衰項２<br>`beta2`|0.999|
-|ミニバッチサイズ<br>`batch_size`|32|
-
-- epoch 数 : 1 ~ 1000（途中経過）, ステップ間隔 : `eval_step = 25`
-![temp_output_vhstack_image1000](https://user-images.githubusercontent.com/25688193/36032203-99fddb40-0df0-11e8-989a-cfa1df321dbb.jpg)    
-- epoch 数 : 1000（途中経過）
-![temp_output_hstack_image1000](https://user-images.githubusercontent.com/25688193/36034674-27e93772-0df8-11e8-9339-c1139203bd17.jpg)
-- epoch 数 : 20000（最終結果）
-
-> 縦列が、epoch 数を増加して（学習を進めていった）ときの、Generator から出力された自動生成画像。<br>
-> 横列は、Generator に入力した入力ノイズデータの違いによる自動生成画像の違い。
-
-<br>
-
-#### 入力ノイズのパラメータを球の表面上に沿って動かしたときの Generator から出力された自動生成画像
-
-|パラメータ名|値（実行条件１）|
-|---|---|
-|最適化アルゴリズム|Adam|
-|学習率<br>`learning_rate`|0.0001|
-|学習率の減衰項１<br>`beta1`|0.5|
-|学習率の減衰項２<br>`beta2`|0.999|
-|ミニバッチサイズ<br>`batch_size`|32|
-
-- epoch 数 : 700<br>
-![dcgan_morphing_epoch700](https://user-images.githubusercontent.com/25688193/36034248-cf562de6-0df6-11e8-9704-9648c2ce1a2c.gif)
-- epoch 数 : 1000<br>
-![dcgan_morphing_epoch1000](https://user-images.githubusercontent.com/25688193/36030902-4f680e74-0dec-11e8-9c1b-3ec62ca5e089.gif)
-
 
 <br>
 
