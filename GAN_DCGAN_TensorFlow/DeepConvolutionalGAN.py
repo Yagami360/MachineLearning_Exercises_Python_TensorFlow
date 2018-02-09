@@ -7,6 +7,7 @@
     [18/xx/xx] : 
                : 
 """
+import os
 import scipy.misc
 import numpy as np
 
@@ -90,13 +91,14 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
         _n_G_dconv_featuresMap : list <int>
             Generator の逆畳み込み層で変換される特徴マップの枚数
-            conv1 : _n_G_dconv_featuresMap[0]
-            conv2 : _n_G_dconv_featuresMap[1]
+            dconv1 : _n_G_dconv_featuresMap[0]
+            dconv2 : _n_G_dconv_featuresMap[1]
+            ...
         _n_D_conv_featuresMap : list <int>
             Descriminator の畳み込み層で変換される特徴マップの枚数
             conv1 : _n_D_conv_featuresMap[0]
             conv2 : _n_D_conv_featuresMap[1]
-
+            ...
 
         _n_labels : int
             出力ラベル数（= Descriminator の出力層の出力側のノード数）
@@ -141,9 +143,6 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         tf.set_random_seed(12)
 
         # メンバ変数の初期化
-        self._session = session
-        self._init_var_op = None
-
         # Genarator 関連
         self._G_loss_op = None
         self._G_optimizer = None
@@ -176,12 +175,13 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         # placeholder の初期化
         # shape の列（横方向）は、各層の次元（ユニット数）に対応させる。
         # shape の行は、None にして汎用性を確保
+        """
         self._input_noize_holder = tf.placeholder( 
                                        tf.float32, 
                                        shape = [ None, image_height * image_width * n_channels ],
                                        name = "input_noizer_holder"
                                    )
-
+        """
         self._image_holder = tf.placeholder( 
                              tf.float32, 
                              shape = [ None, image_height, image_width, n_channels ],
@@ -217,10 +217,9 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
         print( "_n_G_deconv_featuresMap : " , self._n_G_deconv_featuresMap )
         print( "_n_D_conv_featuresMap : " , self._n_D_conv_featuresMap )
-
         print( "_n_labels : " , self._n_labels )
 
-        print( "_input_noize_holder : ", self._input_noize_holder )
+        #print( "_input_noize_holder : ", self._input_noize_holder )
         print( "_image_holder : ", self._image_holder )
         print( "_dropout_holder :", self._dropout_holder )
         
@@ -234,6 +233,11 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         print( "_D_train_step : \n", self._D_train_step )
         print( "_D_y_out_op1 : \n", self._D_y_out_op1 )
         print( "_D_y_out_op2 : \n", self._D_y_out_op2 )
+
+        print( "_loss_op : \n", self._loss_op )
+        print( "_optimizer : \n", self._optimizer )
+        print( "_train_step : \n", self._train_step )
+        print( "_y_out_op : \n", self._y_out_op )
 
         print( "_weights : \n", self._weights )
         if( (self._session != None) and (self._init_var_op != None) ):
@@ -304,7 +308,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         return bias_var
 
 
-    def generator( self, input = None, reuse = False ):
+    def generator( self, input, reuse = False ):
         """
         GAN の Generator 側のモデルを構築する。
 
@@ -348,25 +352,23 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         with tf.variable_scope( "Generator", reuse = reuse ):
             # 入力データ → Generator の deconv 層 への重み
             # ? shape = [z_dim, i_depth[0] * f_size * f_size]
-            self._weights.append(
-                self.init_weight_variable( 
-                    input_shape = [
-                        z_dim, 
-                        i_depth[0] * f_size * f_size
-                    ]
-                )
-            )
+            weight0 = self.init_weight_variable( 
+                          input_shape = [ z_dim, i_depth[0] * f_size * f_size] 
+                      )
 
             # 入力データ → Generator の deconv 層 へのバイアス項
-            self._biases.append( 
-                self.init_bias_variable( input_shape = [ i_depth[0] ] ) 
-            )
+            bias0 = self.init_bias_variable( input_shape = [ i_depth[0] ] )
 
-            tmp_op = tf.matmul( input, self._weights[-1] )
-            dc0_op = tf.reshape( tmp_op, [-1, f_size, f_size, i_depth[0]] ) + self._biases[-1]
+            # weight, bias を list にpush
+            if( reuse == False):
+                self._weights.append( weight0 )
+                self._biases.append( bias0 )
+
+            tmp_op = tf.matmul( input, weight0 )
+            dc0_op = tf.reshape( tmp_op, [-1, f_size, f_size, i_depth[0]] ) + bias0
         
-            #print( "tmp_op :", tmp_op )     # Tensor("MatMul:0", shape=(32, 6272), dtype=float32)
-            #print( "dc0_op :", dc0_op )     # Tensor("add:0", shape=(32, 7, 7, 128), dtype=float32)
+            print( "tmp_op :", tmp_op )     # Tensor("MatMul:0", shape=(32, 6272), dtype=float32)
+            print( "dc0_op :", dc0_op )     # Tensor("add:0", shape=(32, 7, 7, 128), dtype=float32)
 
             # batch normarization（ミニバッチごとに平均が0,分散が1）
             # tf.nn.moments(...) : 平均と分散を計算
@@ -375,39 +377,40 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             bn0_op = tf.nn.batch_normalization( dc0_op, mean0_op, variance0_op, None, None, 1e-5 )
             out_G_op = tf.nn.relu( bn0_op )
 
-            #print( "bn0_op :", bn0_op )         # Tensor("batchnorm/add_1:0", shape=(32, 7, 7, 128), dtype=float32)
-            #print( "out_G_op :", out_G_op )     # Tensor("Relu:0", shape=(32, 7, 7, 128), dtype=float32)
+            print( "bn0_op :", bn0_op )         # Tensor("batchnorm/add_1:0", shape=(32, 7, 7, 128), dtype=float32)
+            print( "out_G_op :", out_G_op )     # Tensor("Relu:0", shape=(32, 7, 7, 128), dtype=float32)
 
             #---------------------------------------------------------------------
             # DeConvolution layers
             #---------------------------------------------------------------------
             for layer in range( len(self._n_G_deconv_featuresMap)-1 ):
                 with tf.variable_scope( "DeConvLayer_{}".format(layer) ):
-                   # 重みの Variable の list に、layer 番目の畳み込み層の重み（カーネル）を追加
+                    # layer 番目の畳み込み層の重み（カーネル）
                     # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
-                    self._weights.append( 
-                        self.init_weight_variable( 
-                            input_shape = [ 
-                                5, 5,                           # kernel 行列（フィルタ行列のサイズ） 
-                                o_depth[layer], i_depth[layer]  # tf.nn.conv2d_transpose(...) の filter なので、Output, Input の形状
-                            ]
-                        ) 
-                    )
-        
-                    # バイアス項の Variable の list に、畳み込み層のバイアス項を追加
-                    self._biases.append( 
-                        self.init_bias_variable( input_shape = [ o_depth[layer] ] ) 
-                    )
+                    weight = self.init_weight_variable(
+                                 input_shape = [ 
+                                     5, 5,                              # kernel 行列（フィルタ行列のサイズ） 
+                                     o_depth[layer], i_depth[layer]     # tf.nn.conv2d_transpose(...) の filter なので、Output, Input の形状
+                                 ]
+                             )
+
+                    # 畳み込み層のバイアス
+                    bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
+
+                    # weight, bias を list にpush
+                    if( reuse == False):
+                        self._weights.append( weight )
+                        self._biases.append( bias )
 
                     # deconv
                     dc_op = tf.nn.conv2d_transpose(
                                 value = out_G_op,
-                                filter = self._weights[-1], # 畳込み処理で value で指定した Tensor との積和に使用する filter 行列（カーネル）
+                                filter = weight,            # 畳込み処理で value で指定した Tensor との積和に使用する filter 行列（カーネル）
                                 output_shape = [self._batch_size, f_size*2**(layer+1), f_size*2**(layer+1), o_depth[layer]],    # ?
                                 strides = [1, 2, 2, 1]      # strides[0] = strides[3] = 1. とする必要がある
                             )
 
-                    out_G_op = tf.nn.bias_add( dc_op, self._biases[-1] )
+                    out_G_op = tf.nn.bias_add( dc_op, bias )
 
                     # batch normarization
                     if( layer < ( len(self._n_G_deconv_featuresMap) - 2 ) ):
@@ -421,7 +424,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         return out_G_op
 
 
-    def discriminator( self, input = None, reuse = False ):
+    def discriminator( self, input, reuse = False ):
         """
         GAN の Discriminator 側のモデルを構築する。
 
@@ -441,38 +444,39 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
         with tf.variable_scope( "Descriminator", reuse = reuse ):
             out_D_op = input            # 最初の入力は、Generator の出力
-            print( "out_D_op_0", out_D_op )
+            #print( "out_D_op_0", out_D_op )
 
             #----------------------------------------
             # conv layer
             #----------------------------------------
             for layer in range( len(depths) - 1 ):
                 with tf.variable_scope( "ConvLayer_{}".format(layer) ):
-                    # 重みの Variable の list に、layer 番目の畳み込み層の重み（カーネル）を追加
+                    # layer 番目の畳み込み層の重み（カーネル）
                     # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
-                    self._weights.append( 
-                        self.init_weight_variable( 
-                            input_shape = [ 
-                                5, 5,                           # kernel 行列（フィルタ行列のサイズ） 
-                                i_depth[layer], o_depth[layer]  # tf.nn.conv2d(...) の filter なので、Input, Output の形状
-                            ]
-                        ) 
-                    )
+                    weight = self.init_weight_variable(
+                                 input_shape = [ 
+                                     5, 5,                              # kernel 行列（フィルタ行列のサイズ） 
+                                     i_depth[layer], o_depth[layer]     # tf.nn.conv2d(...) の filter なので、Input, Output の形状
+                                 ]
+                             )
         
-                    # バイアス項の Variable の list に、畳み込み層のバイアス項を追加
-                    self._biases.append( 
-                        self.init_bias_variable( input_shape = [ o_depth[layer] ] ) 
-                    )
+                    # 畳み込み層のバイアス項
+                    bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
+
+                    # weight, bias を list にpush
+                    if( reuse == False):
+                        self._weights.append( weight )
+                        self._biases.append( bias )
 
                     # conv
                     conv_op = tf.nn.conv2d(
-                                  input = out_D_op,             # layer = 0 : Generator の出力 or 入力画像データ, layer = 1~ : 前回の出力
-                                  filter = self._weights[-1],   # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
-                                  strides = [1, 2, 2, 1],       # strides[0] = strides[3] = 1. とする必要がある
-                                  padding='SAME'                # ゼロパディングを利用する場合はSAMEを指定
+                                  input = out_D_op,         # layer = 0 : Generator の出力 or 入力画像データ, layer = 1~ : 前回の出力
+                                  filter = weight,          # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
+                                  strides = [1, 2, 2, 1],   # strides[0] = strides[3] = 1. とする必要がある
+                                  padding='SAME'            # ゼロパディングを利用する場合はSAMEを指定
                             )
 
-                    out_D_op = tf.nn.bias_add( conv_op, bias = self._biases[-1] )
+                    out_D_op = tf.nn.bias_add( conv_op, bias = bias )
 
                     # batch normalization
                     mean_op, variance_op = tf.nn.moments( out_D_op, [0, 1, 2] )
@@ -481,9 +485,9 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                     # Leaky ReLu
                     out_D_op = tf.maximum( 0.2 * bn_op, bn_op )
 
-                    print( "_weights_{}".format(layer+1), self._weights[-1] )
-                    print( "_biases_{}".format(layer+1), self._biases[-1] )
-                    print( "out_D_op_{}".format(layer+1), out_D_op )
+                    #print( "_weights_{}".format(layer+1), self._weights[-1] )
+                    #print( "_biases_{}".format(layer+1), self._biases[-1] )
+                    #print( "out_D_op_{}".format(layer+1), out_D_op )
 
             #----------------------------------------
             # reshape & fully connected layer
@@ -499,16 +503,17 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
                 # 出力ノード
                 # flatten layer → outout layer への重み
-                self._weights.append(
-                    self.init_weight_variable( input_shape = [ dim, self._n_labels ] )
-                )
+                weight = self.init_weight_variable( input_shape = [ dim, self._n_labels ] )
 
                 # flatten layer → outout layer へのバイアス項
-                self._biases.append( 
-                    self.init_bias_variable( input_shape = [ self._n_labels ] ) 
-                )
+                bias = self.init_bias_variable( input_shape = [ self._n_labels ] ) 
+                
+                # weight, bias を list にpush
+                if( reuse == False):
+                    self._weights.append( weight )
+                    self._biases.append( bias )
 
-                out_D_op = tf.matmul( out_flatten, self._weights[-1] ) + self._biases[-1]
+                out_D_op = tf.matmul( out_flatten, weight ) + bias
 
         return out_D_op
 
@@ -524,7 +529,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         """
         # 入力データ（ノイズデータ）
         i_depth = self._n_G_deconv_featuresMap[:-1]   # 入力 [Input] 側の layer の特徴マップ数
-        z_dim = i_depth[-1]                           # ? ノイズデータの shape
+        z_dim = i_depth[-1]                           # ノイズデータの次数
 
         input_noize_tsr = tf.random_uniform(
                               shape = [self._batch_size, z_dim],
@@ -540,66 +545,78 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         # Descriminator : 入力データは, 画像データ
         self._D_y_out_op2 = self.discriminator( input = self._image_holder, reuse = True )
 
-        # モデルの最終的な出力
+        # モデルの最終的な出力（仮値）
         self._y_out_op = self._D_y_out_op2
 
         return self._y_out_op
 
 
-    def loss( self, nnLoss ):
+    def loss( self ):
         """
         損失関数の定義を行う。
         
         [Input]
-            nnLoss : NNLoss クラスのオブジェクト
             
         [Output]
             self._loss_op : Operator
                 損失関数を表すオペレーター
         """
-        # Generator の損失関数
-        self._G_loss_op = nnLoss.loss( 
-                              t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),   # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
-                              y_out_op = self._D_y_out_op1                                  # generator が出力する fake data を入力したときの discriminator の出力
-                          )
-
         # Descriminator の損失関数
-        """
-        tmp_D_op0 = tf.reduce_mean(
-                        tf.nn.sparse_softmax_cross_entropy_with_logits(
-                            logits = self._D_y_out_op1, 
-                            labels = tf.zeros( [self._batch_size], dtype=tf.int64 )
-                        )
-                    )
-
-        tmp_D_op1 = tf.reduce_mean(
-                        tf.nn.sparse_softmax_cross_entropy_with_logits(
-                            logits = self._D_y_out_op1, 
-                            labels = tf.ones( [self._batch_size], dtype=tf.int64 ) 
-                        )
-                    )
-        """
-        loss_D_op0 = nnLoss.loss( 
+        loss_D_op1 = SparseSoftmaxCrossEntropy().loss(
                          t_holder = tf.zeros( [self._batch_size], dtype=tf.int64 ),      # log{ D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
                          y_out_op = self._D_y_out_op1                                    # generator が出力する fake data を入力したときの discriminator の出力
                      )
-        loss_D_op1 = nnLoss.loss( 
+        loss_D_op2 = SparseSoftmaxCrossEntropy().loss( 
                          t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),     # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率) 
                          y_out_op = self._D_y_out_op2                                    # generator が出力する fake data を入力したときの discriminator の出力
                      )
-        self._D_loss_op =  loss_D_op0 + loss_D_op1
+        
+        """
+        loss_D_op1 = tf.reduce_mean(
+                         tf.nn.sparse_softmax_cross_entropy_with_logits(
+                             logits = self._D_y_out_op1,
+                             labels = tf.zeros( [self._batch_size], dtype=tf.int64 )
+                         )
+                     )
+        loss_D_op2 = tf.reduce_mean(
+                         tf.nn.sparse_softmax_cross_entropy_with_logits(
+                             logits = self._D_y_out_op2,
+                             labels = tf.ones( [self._batch_size], dtype=tf.int64 )
+                         )
+                     )
+        """
+        self._D_loss_op =  loss_D_op1 + loss_D_op2
 
-        # 仮値を設定
-        self._loss_op = self._D_loss_op
+        # Generator の損失関数
+        self._G_loss_op = SparseSoftmaxCrossEntropy().loss( 
+                              t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),   # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
+                              y_out_op = self._D_y_out_op1                                  # generator が出力する fake data を入力したときの discriminator の出力
+                          )
+        
+        """
+        self._G_loss_op = tf.reduce_mean(
+                              tf.nn.sparse_softmax_cross_entropy_with_logits(
+                                  logits = self._D_y_out_op1,
+                                  labels = tf.ones( [self._batch_size], dtype=tf.int64 )
+                              )
+                          )
+        """
+        # Genrator と Descriminater の合計を設定
+        #self._loss_op = self._G_loss_op + self._D_loss_op
         
         return self._loss_op
 
 
-    def optimizer( self, nnOptimizer ):
+    def optimizer( self, nnOptimizerG, nnOptimizerD ):
         """
         モデルの最適化アルゴリズムの設定を行う。
         [Input]
-            nnOptimizer : NNOptimizer のクラスのオブジェクト
+            nnOptimizerG : NNOptimizer のクラスのオブジェクト
+                Generator 側の Optimizer
+
+            nnOptimizerD : NNOptimizer のクラスのオブジェクト
+                Descriminator 側の Optimizer
+
         [Output]
             optimizer の train_step
         """
@@ -610,19 +627,19 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         print( "d_vars :", d_vars )
 
         # Optimizer の設定
-        self._G_optimizer = nnOptimizer._optimizer
-        self._D_optimizer = nnOptimizer._optimizer
+        self._G_optimizer = nnOptimizerG._optimizer
+        self._D_optimizer = nnOptimizerD._optimizer
         
         # トレーニングステップの設定
-        self._G_train_step = nnOptimizer.train_step( self._G_loss_op )
-        self._D_train_step = nnOptimizer.train_step( self._D_loss_op )
+        self._G_train_step = self._G_optimizer.minimize( self._G_loss_op, var_list = g_vars )
+        self._D_train_step = self._D_optimizer.minimize( self._D_loss_op, var_list = d_vars )
 
         # tf.control_dependencies(...) : sess.run で実行する際のトレーニングステップの依存関係（順序）を定義
         with tf.control_dependencies( [self._G_train_step, self._D_train_step] ):
             # tf.no_op(...) : 何もしない Operator を返す。（トレーニングの依存関係を定義するのに使用）
             self._train_step = tf.no_op( name = 'train' )
+            print( "_train_step", self._train_step )
         
-
         return self._train_step
 
 
@@ -635,15 +652,11 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             
             y_train : np.ndarray ( shape = [n_samples] )
                 トレーニングデータ用のクラスラベル（教師データ）のリスト
+                この引数は使用しないが、インターフェイスの整合性のために存在する。
+
         [Output]
             self : 自身のオブジェクト
         """
-        """
-        # 学習経過表示用の途中生成画像
-        sample_images = []
-        sample_image_data = np.random.rand( 8, z_dim ) * 2.0 - 1.0
-        """
-
         # 入力データの shape にチェンネルデータがない場合
         # shape = [image_height, image_width]
         if( X_train.ndim == 3 ):
@@ -659,6 +672,25 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         # Session の run（初期化オペレーター）
         self._session.run( self._init_var_op )
 
+        #---------------------------------------------------------------
+        # 学習経過表示用の途中生成画像
+        #---------------------------------------------------------------
+        self._images_evals = []
+        n_samples = self._batch_size              # 途中生成画像の枚数
+        z_dim = self._n_G_deconv_featuresMap[1]   # ノイズデータの次数
+        
+        sample_noize_data = np.random.rand( n_samples, z_dim ) * 2.0 - 1.0
+        #print( "sample_noize_data.shape :", sample_noize_data.shape )
+        self._images_evals.append( sample_noize_data )
+
+        # 合成画像保存用ディレクトリの作成
+        if ( os.path.isdir( "output_image" ) == False):
+            os.makedirs( "output_image" )
+        
+        # 入力ノイズデータ画像の保存
+        output_file = "output_image/temp_output_image{}.jpg".format( 0 )
+        scipy.misc.imsave( output_file, self._images_evals[-1] )
+        
         #--------------------------------------------------------
         # 学習処理
         #--------------------------------------------------------
@@ -667,7 +699,6 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             # ミニバッチ学習処理のためランダムサンプリング
             idx_shuffled = np.random.choice( len(X_train), size = self._batch_size )
             X_train_shuffled = X_train[ idx_shuffled ]
-            y_train_shuffled = y_train[ idx_shuffled ]
             #print( "X_train_shuffled.shape", X_train_shuffled.shape )  # shape = [32, 28, 28, 1]
 
             # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
@@ -675,7 +706,6 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                 self._train_step,
                 feed_dict = {
                     self._image_holder: X_train_shuffled
-                    #self._t_holder: y_train_shuffled
                 }
             )
             
@@ -683,34 +713,66 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             # % : 割り算の余りが 0 で判断
             if ( ( (epoch+1) % self._eval_step ) == 0 ):
                 # 損失関数値の算出
-                loss_total, loss_G, loss_D = \
+                loss_G, loss_D = \
                 self._session.run(
-                    [ self._loss_op, self._G_loss_op, self._D_loss_op ],
+                    [ self._G_loss_op, self._D_loss_op ],
                     feed_dict = {
                         self._image_holder: X_train_shuffled
-                        #self._t_holder: y_train_shuffled
                     }
                 )
+                loss_total = loss_G + loss_D
 
                 self._losses_train.append( loss_total )
                 self._losses_G_train.append( loss_G )
                 self._losses_D_train.append( loss_D )
                 print( "epoch %d / loss_total = %0.3f / loss_G = %0.3f / loss_D = %0.3f" % ( epoch + 1, loss_total, loss_G, loss_D ) )
 
-                """
-                # 途中生成画像の保存
-                image_eval = self.generate_samples()
+                # 学習中の DCGAN の Generator から途中生成画像を生成し、保存
+                _, image_eval = self.generate_images( input_noize = sample_noize_data )
+                self._images_evals.append( image_eval )
                 output_file = "output_image/temp_output_image{}.jpg".format( epoch + 1 )
-                scipy.misc.imsave( output_file, image_eval )
-                """
+                #scipy.misc.imsave( output_file, np.array( [ img for img in self._images_evals ] ) )
+                scipy.misc.imsave( output_file, image_eval[0] )
 
         return self._y_out_op
 
 
-    def generate_samples( self, n_samples ):
+    def generate_images( self, input_noize ):
         """
-        トレーニング経過可視化のための、サンプル画像データを生成する。
+        DCGAN の Generator から、画像データを自動生成する。
 
+        [Input]
+            input_noize : ndarry / shape = [n_samples, z_dim] / z_dim = ノイズデータの次数
+                Generator に入力するノイズデータ
+        
+        [Output]
+            images : list / shape = [n_samples, z_dim]
+                生成された画像データのリスト
+                行成分は生成する画像の数 n_samples
         """
+        images_0_to_1 = []     # 生成された画像データのリスト / 行成分は生成する画像の数 n_samples
+        images_m1_to_p1 = []
 
-        return
+        # input_noize を Tensor に変換
+        inputs_noize_tsr = tf.constant( input_noize, dtype = tf.float32 )
+
+        # 入力ノイズデータを入力として、Generator を駆動する。
+        out_G_op = self.generator( input = inputs_noize_tsr, reuse = True )
+        print( "generate_images(...) / out_G_op :", out_G_op )  # shape=(32, 28, 28, 1)
+        
+        result = self._session.run( out_G_op )  # n_samles != batch_size で batch_size のコンパチブルエラー
+        #print( "result :", result )    # shape = (32, 28, 28, 1)
+
+        #images = input_noize    # Error 回避のための応急処置
+
+        # 出力結果 result の画像部分を push
+        for i in range( input_noize.shape[0] ):
+            image = result[i,:,:,0]     # shape = (28, 28) / 0.0 ~ 1.0
+            images_0_to_1.append( image )
+
+        # 0.0 ~ 1.0 → -1.0 ~ 1.0 に変換
+        for image in images_0_to_1:
+            image = ( image + 1. ) / 2
+            images_m1_to_p1.append( image )
+
+        return images_0_to_1, images_m1_to_p1

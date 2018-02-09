@@ -111,7 +111,7 @@ def main():
     # One -hot encoding
     #y_train_encoded = numpy.eye(10)[ y_train.astype(int) ]
     #y_test_encoded = numpy.eye(10)[ y_test.astype(int) ]
-
+    """
     session = tf.Session()
     encode_holder = tf.placeholder(tf.int64, [None])
     y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=10, dtype=tf.float32 ) # depth が 出力層のノード数に対応
@@ -122,6 +122,7 @@ def main():
     print( "y_train_encoded.dtype : ", y_train_encoded.dtype )
     print( "y_test_encoded.shape : ", y_test_encoded.shape )
     session.close()
+    """
 
     #======================================================================
     # アルゴリズム（モデル）のパラメータを設定
@@ -129,7 +130,7 @@ def main():
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
     learning_rate = 0.0001
-    beta1 = 0.9
+    beta1 = 0.5
     beta2 = 0.99
 
     #======================================================================
@@ -147,9 +148,9 @@ def main():
     # DCGAN クラスのオブジェクト生成
     dcgan = DeepConvolutionalGAN(
                 session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-                epochs = 20000,
+                epochs = 10000,
                 batch_size = 32,
-                eval_step = 100,
+                eval_step = 50,
                 image_height = 28,                      # 28 pixel
                 image_width = 28,                       # 28 pixel
                 n_channels = 1,                         # グレースケール
@@ -167,18 +168,22 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     dcgan.model()
-    dcgan.print( "after building model" )
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    dcgan.loss( SparseSoftmaxCrossEntropy() )
-    dcgan.optimizer( Adam( learning_rate = learning_rate, beta1 = beta1, beta2 = beta2 ) )
+    dcgan.loss()
+    dcgan.optimizer( 
+        nnOptimizerG = Adam( learning_rate = learning_rate, beta1 = beta1, beta2 = beta2 ),
+        nnOptimizerD = Adam( learning_rate = learning_rate, beta1 = beta1, beta2 = beta2 )
+    )
+
+    dcgan.print( "after building model & loss & optimizer" )
 
     # TensorBoard
-    dcgan.write_tensorboard_graph()
-
+    #dcgan.write_tensorboard_graph()
+    
     #======================================================================
     # モデルの初期化と学習（トレーニング）
     # ここまでの準備で, 実際に, 計算グラフ（有向グラフ）のオブジェクトを作成し,
@@ -194,7 +199,7 @@ def main():
     #     session.run(…)
     #======================================================================
     # トレーニングデータで fitting 処理
-    dcgan.fit( X_train, y_train_encoded )
+    dcgan.fit( X_train, y_train = None )
 
     #======================================================================
     # モデルの評価
@@ -229,9 +234,11 @@ def main():
     plt.legend( loc = 'best' )
     #plt.ylim( [0, 1.05] )
     plt.xlabel( "Epocs" )
+    plt.grid()
     plt.tight_layout()
    
     #MLPlot.saveFigure( fileName = "GAN_DCGAN_1-1.png" )
+    plt.savefig( "GAN_DCGAN_1-1.png", dpi = 300, bbox_inches = "tight" )
     plt.show()
 
     #======================================================================

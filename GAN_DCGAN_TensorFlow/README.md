@@ -70,6 +70,8 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 #### コードの説明
 - DCGAN に対する学習用データセットとして、MNIST データセットを使用。
     - データは shape = [n_sample, image_width=28, image_height=28] の形状に reshape
+    - 尚、この処理で取得できる MNIST データの教師データ `y_train`, `y_test` は、
+    DCGAN の学習時には使用しない。（教師なしの強化学習のため）
     ```python
     def main():
         ...
@@ -79,24 +81,12 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
         X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )
         X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )
     ```
-    - `tf.one_hot(...)` を用いて、one-hot encode 処理を行う。
-    ```python
-    def main():
-        ...
-        session = tf.Session()
-        encode_holder = tf.placeholder(tf.int64, [None])
-        y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=10, dtype=tf.float32 ) # depth が 出力層のノード数に対応
-        session.run( tf.global_variables_initializer() )
-        y_train_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_train } )
-        y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
-        session.close()
-    ```
 - xxx
 - 損失関数を定義する。
     - 損失関数を、以下の DCGAN での損失関数の更新アルゴリズムに従って、定義する。
     ![image](https://user-images.githubusercontent.com/25688193/36006479-89695612-0d80-11e8-8937-6c4c9d8ef14f.png)
     ![image](https://user-images.githubusercontent.com/25688193/36006524-cbc8eeaa-0d80-11e8-872c-2f5927e121b2.png)
-    - 
+    - まず、
 
 
 <br>
@@ -167,24 +157,8 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 
 ```python
 
-_D_y_out_op_0 Tensor("Generator/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
 
-_weights_1 <tf.Variable 'Descriminator/ConvLayer_0/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>
-_biases_1 <tf.Variable 'Descriminator/ConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>
-_D_y_out_op_1 Tensor("Descriminator/ConvLayer_0/Maximum:0", shape=(32, 14, 14, 64), dtype=float32)
-
-_weights_2 <tf.Variable 'Descriminator/ConvLayer_1/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>
-_biases_2 <tf.Variable 'Descriminator/ConvLayer_1/bias_var:0' shape=(128,) dtype=float32_ref>
-_D_y_out_op_2 Tensor("Descriminator/ConvLayer_1/Maximum:0", shape=(32, 7, 7, 128), dtype=float32)
-
----
-
-_t_holder : Tensor("Placeholder_3:0", shape=(?, 2), dtype=int32)
-_image_holder : Tensor("Placeholder_2:0", shape=(?, 28, 28, 1), dtype=float32)
-_G_y_out_op : Tensor("Generator/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
-_D_y_out_op : Tensor("Descriminator/flatten/fully/add:0", shape=(32, 2), dtype=float32)
-
-
+-----------------------------------------
 g_vars : [
     <tf.Variable 'Generator/weight_var:0' shape=(64, 6272) dtype=float32_ref>, 
     <tf.Variable 'Generator/bias_var:0' shape=(128,) dtype=float32_ref>, 
@@ -192,15 +166,112 @@ g_vars : [
     <tf.Variable 'Generator/DeConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>, 
     <tf.Variable 'Generator/DeConvLayer_1/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>, 
     <tf.Variable 'Generator/DeConvLayer_1/bias_var:0' shape=(1,) dtype=float32_ref>
-]
+    ]
 
-d_vars : [<tf.Variable 'Descriminator/ConvLayer_0/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_1/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_1/bias_var:0' shape=(128,) dtype=float32_ref>, <tf.Variable 'Descriminator/flatten/fully/weight_var:0' shape=(6272, 2) dtype=float32_ref>, <tf.Variable 'Descriminator/flatten/fully/bias_var:0' shape=(2,) dtype=float32_ref>]
+d_vars : [
+    <tf.Variable 'Descriminator/ConvLayer_0/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>, 
+    <tf.Variable 'Descriminator/ConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>, 
+    <tf.Variable 'Descriminator/ConvLayer_1/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>, 
+    <tf.Variable 'Descriminator/ConvLayer_1/bias_var:0' shape=(128,) dtype=float32_ref>, 
+    <tf.Variable 'Descriminator/flatten_fully/weight_var:0' shape=(6272, 2) dtype=float32_ref>, 
+    <tf.Variable 'Descriminator/flatten_fully/bias_var:0' shape=(2,) dtype=float32_ref>]
+
+
+generate_images(...) / out_G_op : Tensor("Generator_1/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
+
+InvalidArgumentError (see above for traceback): Conv2DCustomBackpropInput: input and out_backprop must have the same batch sizeinput batch: 32outbackprop batch: 8 batch_dim: 0
+	 [[Node: Generator_1/DeConvLayer_0/conv2d_transpose = Conv2DBackpropInput[T=DT_FLOAT, data_format="NHWC", padding="SAME", strides=[1, 2, 2, 1], use_cudnn_on_gpu=true, _device="/job:localhost/replica:0/task:0/device:CPU:0"](Generator_1/DeConvLayer_0/conv2d_transpose/output_shape, Generator/DeConvLayer_0/weight_var/read, Generator_1/Relu)]]
+
+
+-----------------------------------------
+DeepConvolutionalGAN
+DeepConvolutionalGAN(batch_size=None, epochs=None, eval_step=None,
+           image_height=None, image_width=None, n_D_conv_featuresMap=None,
+           n_G_deconv_featuresMap=None, n_channels=None, n_labels=None,
+           session=None)
+after building model & loss & optimizer
+_session : 
+ <tensorflow.python.client.session.Session object at 0x0000023F76E14BE0>
+_init_var_op : 
+ None
+_epoches :  2000
+_batch_size :  32
+_eval_step :  100
+_image_height :  28
+_image_width :  28
+_n_channels :  1
+_n_G_deconv_featuresMap :  [128, 64, 1]
+_n_D_conv_featuresMap :  [1, 64, 128]
+_n_labels :  2
+_image_holder :  Tensor("image_holder:0", shape=(?, 28, 28, 1), dtype=float32)
+_dropout_holder : Tensor("dropout_holder:0", dtype=float32)
+_G_loss_op : 
+ Tensor("Mean_2:0", shape=(), dtype=float32)
+_G_optimizer : 
+ <tensorflow.python.training.adam.AdamOptimizer object at 0x0000023F77A22CF8>
+_G_train_step : 
+ name: "Adam"
+op: "NoOp"
+input: "^Adam/update_Generator/weight_var/ApplyAdam"
+input: "^Adam/update_Generator/bias_var/ApplyAdam"
+input: "^Adam/update_Generator/DeConvLayer_0/weight_var/ApplyAdam"
+input: "^Adam/update_Generator/DeConvLayer_0/bias_var/ApplyAdam"
+input: "^Adam/update_Generator/DeConvLayer_1/weight_var/ApplyAdam"
+input: "^Adam/update_Generator/DeConvLayer_1/bias_var/ApplyAdam"
+input: "^Adam/Assign"
+input: "^Adam/Assign_1"
+
+_G_y_out_op : 
+ Tensor("Generator/Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
+_D_loss_op : 
+ Tensor("add:0", shape=(), dtype=float32)
+_D_optimizer : 
+ <tensorflow.python.training.adam.AdamOptimizer object at 0x0000023F77A22D30>
+_D_train_step : 
+ name: "Adam_1"
+op: "NoOp"
+input: "^Adam_1/update_Descriminator/ConvLayer_0/weight_var/ApplyAdam"
+input: "^Adam_1/update_Descriminator/ConvLayer_0/bias_var/ApplyAdam"
+input: "^Adam_1/update_Descriminator/ConvLayer_1/weight_var/ApplyAdam"
+input: "^Adam_1/update_Descriminator/ConvLayer_1/bias_var/ApplyAdam"
+input: "^Adam_1/update_Descriminator/flatten_fully/weight_var/ApplyAdam"
+input: "^Adam_1/update_Descriminator/flatten_fully/bias_var/ApplyAdam"
+input: "^Adam_1/Assign"
+input: "^Adam_1/Assign_1"
+
+_D_y_out_op1 : 
+ Tensor("Descriminator/flatten_fully/add:0", shape=(32, 2), dtype=float32)
+_D_y_out_op2 : 
+ Tensor("Descriminator_1/flatten_fully/add:0", shape=(?, 2), dtype=float32)
+_weights : 
+ [<tf.Variable 'Generator/weight_var:0' shape=(64, 6272) dtype=float32_ref>, <tf.Variable 'Generator/DeConvLayer_0/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>, <tf.Variable 'Generator/DeConvLayer_1/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_0/weight_var:0' shape=(5, 5, 1, 64) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_1/weight_var:0' shape=(5, 5, 64, 128) dtype=float32_ref>, <tf.Variable 'Descriminator/flatten_fully/weight_var:0' shape=(6272, 2) dtype=float32_ref>]
+_biases : 
+ [<tf.Variable 'Generator/bias_var:0' shape=(128,) dtype=float32_ref>, <tf.Variable 'Generator/DeConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>, <tf.Variable 'Generator/DeConvLayer_1/bias_var:0' shape=(1,) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_0/bias_var:0' shape=(64,) dtype=float32_ref>, <tf.Variable 'Descriminator/ConvLayer_1/bias_var:0' shape=(128,) dtype=float32_ref>, <tf.Variable 'Descriminator/flatten_fully/bias_var:0' shape=(2,) dtype=float32_ref>]
+-----------------------------------------
 
 
 ```
 
 ```python
 [main1_1.py]
+
+
+g_vars :
+ [
+     <tf.Variable 'generator/reshape/weights:0' shape=(64, 6272) dtype=float32_ref>, 
+     <tf.Variable 'generator/reshape/biases:0' shape=(128,) dtype=float32_ref>, 
+     <tf.Variable 'generator/conv0/weights:0' shape=(5, 5, 64, 128) dtype=float32_ref>, 
+     <tf.Variable 'generator/conv0/biases:0' shape=(64,) dtype=float32_ref>, 
+     <tf.Variable 'generator/conv1/weights:0' shape=(5, 5, 1, 64) dtype=float32_ref>, 
+     <tf.Variable 'generator/conv1/biases:0' shape=(1,) dtype=float32_ref>]
+d_vars :
+ [
+     <tf.Variable 'descriminator/conv0/weights:0' shape=(5, 5, 1, 64) dtype=float32_ref>, 
+     <tf.Variable 'descriminator/conv0/biases:0' shape=(64,) dtype=float32_ref>, 
+     <tf.Variable 'descriminator/conv1/weights:0' shape=(5, 5, 64, 128) dtype=float32_ref>, <tf.Variable 'descriminator/conv1/biases:0' shape=(128,) dtype=float32_ref>, 
+     <tf.Variable 'descriminator/classify/weights:0' shape=(6272, 2) dtype=float32_ref>, 
+     <tf.Variable 'descriminator/classify/biases:0' shape=(2,) dtype=float32_ref>]
+
 
 outputs_0 : Tensor("Sigmoid:0", shape=(32, 28, 28, 1), dtype=float32)
 
@@ -216,6 +287,14 @@ outputs_2 : Tensor("descriminator/conv1/Maximum:0", shape=(32, 7, 7, 128), dtype
 
 logits_from_g : Tensor("descriminator/classify/add:0", shape=(32, 2), dtype=float32)
 logits_from_i : Tensor("descriminator_1/classify/add:0", shape=(?, 2), dtype=float32)
+
+train_op
+    node_def
+        name: "train"op: "NoOp"input: "^Adam"input: "^Adam_1"
+name: "train"
+op: "NoOp"
+input: "^Adam"
+input: "^Adam_1"
 
 C:\Users\y0341\Anaconda3\lib\site-packages\matplotlib\cbook\deprecation.py:106: MatplotlibDeprecationWarning: Adding an axes using the same arguments as a previous axes currently reuses the earlier instance.  In a future version, a new instance will always be created and returned.  Meanwhile, this warning can be suppressed, and the future behavior ensured, by passing a unique label to each axes instance.
   warnings.warn(message, mplDeprecation, stacklevel=1)
