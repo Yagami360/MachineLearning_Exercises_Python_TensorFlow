@@ -187,16 +187,8 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                              shape = [ None, image_height, image_width, n_channels ],
                              name = "image_holder"
                          )
-
-        self._t_holder = tf.placeholder( 
-                             tf.int32, 
-                             shape = [ None ],
-                             #shape = [ self._batch_size, n_labels ],
-                             name = "t_holder"
-                         )
-
+        
         self._dropout_holder = tf.placeholder( tf.float32, name = "dropout_holder" )
-        self._batch_size_holder = tf.placeholder( tf.int32, shape=[ batch_size ], name = "batch_size_holder" )
         
         # evaluate 関連の初期化
         self._losses_train = []
@@ -230,10 +222,8 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
         print( "_input_noize_holder : ", self._input_noize_holder )
         print( "_image_holder : ", self._image_holder )
-        print( "_t_holder : ", self._t_holder )
         print( "_dropout_holder :", self._dropout_holder )
-        print( "_batch_size_holder :", self._batch_size_holder )
-
+        
         print( "_G_loss_op : \n", self._G_loss_op )
         print( "_G_optimizer : \n", self._G_optimizer )
         print( "_G_train_step : \n", self._G_train_step )
@@ -567,15 +557,12 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             self._loss_op : Operator
                 損失関数を表すオペレーター
         """
-        print( "_t_holder :" , self._t_holder )
-        print( "_image_holder :" , self._image_holder )
-        print( "_G_y_out_op :" , self._G_y_out_op )
-        print( "_D_y_out_op1 :" , self._D_y_out_op1 )
-        print( "_D_y_out_op2 :" , self._D_y_out_op2 )
-
         # Generator の損失関数
-        self._G_loss_op = nnLoss.loss( t_holder = self._t_holder, y_out_op = self._D_y_out_op1 )
-        
+        self._G_loss_op = nnLoss.loss( 
+                              t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),   # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
+                              y_out_op = self._D_y_out_op1                                  # generator が出力する fake data を入力したときの discriminator の出力
+                          )
+
         # Descriminator の損失関数
         """
         tmp_D_op0 = tf.reduce_mean(
@@ -592,8 +579,14 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                         )
                     )
         """
-        loss_D_op0 = nnLoss.loss( t_holder = self._t_holder, y_out_op = self._D_y_out_op1 )
-        loss_D_op1 = nnLoss.loss( t_holder = self._t_holder, y_out_op = self._D_y_out_op2 )
+        loss_D_op0 = nnLoss.loss( 
+                         t_holder = tf.zeros( [self._batch_size], dtype=tf.int64 ),      # log{ D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
+                         y_out_op = self._D_y_out_op1                                    # generator が出力する fake data を入力したときの discriminator の出力
+                     )
+        loss_D_op1 = nnLoss.loss( 
+                         t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),     # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率) 
+                         y_out_op = self._D_y_out_op2                                    # generator が出力する fake data を入力したときの discriminator の出力
+                     )
         self._D_loss_op =  loss_D_op0 + loss_D_op1
 
         # 仮値を設定
@@ -702,7 +695,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                 self._losses_train.append( loss_total )
                 self._losses_G_train.append( loss_G )
                 self._losses_D_train.append( loss_D )
-                print( "epoch %d / loss_total = %0.1f / loss_G = %0.1f / loss_D = %0.1f" % ( epoch + 1, loss_total, loss_G, loss_D ) )
+                print( "epoch %d / loss_total = %0.3f / loss_G = %0.3f / loss_D = %0.3f" % ( epoch + 1, loss_total, loss_G, loss_D ) )
 
                 """
                 # 途中生成画像の保存

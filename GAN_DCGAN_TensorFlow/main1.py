@@ -149,7 +149,7 @@ def main():
                 session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
                 epochs = 20000,
                 batch_size = 32,
-                eval_step = 1,
+                eval_step = 100,
                 image_height = 28,                      # 28 pixel
                 image_width = 28,                       # 28 pixel
                 n_channels = 1,                         # グレースケール

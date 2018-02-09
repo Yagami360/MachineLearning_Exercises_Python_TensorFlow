@@ -68,7 +68,7 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 > 実装中...
 
 #### コードの説明
-- MNIST データセットを使用。
+- DCGAN に対する学習用データセットとして、MNIST データセットを使用。
     - データは shape = [n_sample, image_width=28, image_height=28] の形状に reshape
     ```python
     def main():
@@ -79,7 +79,7 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
         X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )
         X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )
     ```
-    - one-hot encode 処理を行う。
+    - `tf.one_hot(...)` を用いて、one-hot encode 処理を行う。
     ```python
     def main():
         ...
@@ -92,6 +92,11 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
         session.close()
     ```
 - xxx
+- 損失関数を定義する。
+    - 損失関数を、以下の DCGAN での損失関数の更新アルゴリズムに従って、定義する。
+    ![image](https://user-images.githubusercontent.com/25688193/36006479-89695612-0d80-11e8-8937-6c4c9d8ef14f.png)
+    ![image](https://user-images.githubusercontent.com/25688193/36006524-cbc8eeaa-0d80-11e8-872c-2f5927e121b2.png)
+    - 
 
 
 <br>
