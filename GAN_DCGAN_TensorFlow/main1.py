@@ -132,7 +132,7 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    epochs = 1000
+    epochs = 20000
     eval_step = 50
     batch_size = 32
     learning_rate = 0.0001
@@ -188,7 +188,7 @@ def main():
     dcgan.print( "after building model & loss & optimizer" )
 
     # TensorBoard
-    dcgan.write_tensorboard_graph()
+    #dcgan.write_tensorboard_graph()
     
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -216,7 +216,7 @@ def main():
     #-------------------------------------------------------------------
     # loss 値の list に対応させる x 軸データ用の list
     loss_axis_x = [ (idx+1) * eval_step for idx in range( len(dcgan._losses_train) ) ]
-    print( "loss_axis_x :", loss_axis_x )
+    #print( "loss_axis_x :", loss_axis_x )
 
     plt.clf()
     plt.plot(
@@ -253,8 +253,67 @@ def main():
     #plt.show()
 
     #-------------------------------------------------------------------
+    # 学習過程で生成しておいた画像の animation gif
+    #-------------------------------------------------------------------
+    """
+    fig = plt.figure( figsize = (4,8) )
+    print( "len(dcgan._images_evals[0])", len(dcgan._images_evals[0]) )
+
+    images = []
+    k = 0
+    for i in range(4):
+        for j in range(8):
+            k += 1
+            subplot = fig.add_subplot( 4, 8, k )
+            subplot.set_xticks([])
+            subplot.set_yticks([])
+            image = subplot.imshow(
+                        dcgan._images_evals[k-1][i][j], 
+                        vmin=0, vmax=1,
+                        cmap = plt.cm.gray_r
+                    )
+            images.append( [image] )
+
+    ani = animation.ArtistAnimation( 
+              fig, images, 
+              interval = 10  # ms 単位
+          )
+    
+    ani.save('./output_image/DCGAN_fitting_epoch{}.gif'.format(epochs), writer='imagemagick', fps = 100 )
+    """
+    #-------------------------------------------------------------------
     # 学習済み DCGAN に対し、入力ノイズ自動画像生成
     #-------------------------------------------------------------------
+    # Generator に入力する初期ノイズ
+    input_noize1 = np.random.rand( batch_size, 64 ) * 2.0 - 1.0
+    inputs_noize_tsr1 = tf.constant( 
+                           np.array( input_noize1 ), 
+                           dtype = tf.float32 
+                       )
+
+    # result : 0.0 ~ 1.0    
+    result1 = dcgan._session.run( 
+                 dcgan.generator( input = inputs_noize_tsr1, reuse = True ) 
+             )
+
+    images1 = []
+    for i in range( result1.shape[0] ):
+        images1.append( result1[i,:,:,0] )
+
+    fig = plt.figure( figsize = (4,8) )
+    k = 0
+    for i in range(8):
+        for j in range(4):
+            k += 1
+            subplot = fig.add_subplot( 4, 8, k )
+            subplot.set_xticks([])
+            subplot.set_yticks([])
+            subplot.imshow(
+                images1[k-1], 
+                vmin=0, vmax=1,
+                cmap = plt.cm.gray_r
+            )
+    plt.savefig( "GAN_DCGAN_1-2_epoch{}.png".format(epochs), dpi = 300, bbox_inches = "tight" )
 
     #-------------------------------------------------------------------
     # 学習済み DCGAN に対し、入力ノイズを動かし Animation gif
@@ -302,7 +361,53 @@ def main():
               interval = 10  # ms 単位
           )
     
-    ani.save('./output_image/DCGAN_morphing_epoch{}.gif'.format(epochs), writer='imagemagick', fps = 100 )
+    ani.save('./output_image/DCGAN_morphing1_epoch{}.gif'.format(epochs), writer='imagemagick', fps = 100 )
+    
+    #---------------------------------------
+    # Generator に入力する初期ノイズ
+    input_noize = np.random.rand( 3, 64 ) * 2.0 - 1.0
+    
+    morphing_inputs = []
+
+    # 球の表面上の回転
+    theta1, theta2 = 0, 0
+    for _ in range(32):     # batch_size
+        theta1 += 2*np.pi / 32
+        theta2 += 2*np.pi / 32
+        morphing_inputs.append(
+            np.cos(theta1) * input_noize[0] \
+            + np.sin(theta1)*( np.cos(theta2)*input_noize[1] + np.sin(theta2)*input_noize[2] )
+        )
+
+    inputs_noize_tsr = tf.constant( 
+                           np.array( morphing_inputs ), 
+                           dtype = tf.float32 
+                       )
+
+    # result : 0.0 ~ 1.0    
+    result = dcgan._session.run( 
+                 dcgan.generator( input = inputs_noize_tsr, reuse = True ) 
+             )
+    
+    images = []
+    fig = plt.figure(figsize=(4,8))
+    for i in range( result.shape[0] ):
+        subplot = fig.add_subplot(1,1,1)
+        subplot.set_xticks([])
+        subplot.set_yticks([])
+        image = subplot.imshow(
+                    result[i,:,:,0], 
+                    vmin = 0, vmax = 1, 
+                    cmap = plt.cm.gray_r
+                )
+        images.append( [image] )  # i=63 : ValueError: outfile must be *.htm or *.html
+
+    ani = animation.ArtistAnimation( 
+              fig, images, 
+              interval = 10  # ms 単位
+          )
+    
+    ani.save('./output_image/DCGAN_morphing2_epoch{}.gif'.format(epochs), writer='imagemagick', fps = 100 )
     plt.show()
 
     #======================================================================

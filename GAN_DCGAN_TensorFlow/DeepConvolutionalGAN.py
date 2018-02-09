@@ -266,7 +266,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
         # ゼロで初期化すると、うまく重みの更新が出来ないので、正規分布に基づく乱数で初期化
         # tf.truncated_normal(...) : Tensor を正規分布なランダム値で初期化する
-        init_tsr = tf.truncated_normal( shape = input_shape, stddev = 0.01 )
+        init_tsr = tf.truncated_normal( shape = input_shape, stddev = 0.02 )
 
         # 重みの Variable
         #weight_var = tf.Variable( init_tsr, name = "weight_var" )
@@ -293,8 +293,8 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             session.run(...) はされていない状態。
         """
 
-        #init_tsr = tf.zeros( shape = input_shape )
-        init_tsr = tf.random_normal( shape = input_shape )
+        init_tsr = tf.zeros( shape = input_shape )
+        #init_tsr = tf.random_normal( shape = input_shape )
 
         # バイアス項の Variable
         #bias_var = tf.Variable( init_tsr, name = "bias_var" )
@@ -355,10 +355,10 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             weight0 = self.init_weight_variable( 
                           input_shape = [ z_dim, i_depth[0] * f_size * f_size] 
                       )
-
+            
             # 入力データ → Generator の deconv 層 へのバイアス項
             bias0 = self.init_bias_variable( input_shape = [ i_depth[0] ] )
-
+            
             # weight, bias を list にpush
             if( reuse == False):
                 self._weights.append( weight0 )
@@ -393,9 +393,15 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                                      o_depth[layer], i_depth[layer]     # tf.nn.conv2d_transpose(...) の filter なので、Output, Input の形状
                                  ]
                              )
-
+                    
                     # 畳み込み層のバイアス
-                    bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
+                    #bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
+                    bias = tf.get_variable(
+                               'bias_var',
+                               [ o_depth[layer] ], 
+                               tf.float32, 
+                               tf.zeros_initializer
+                           )
 
                     # weight, bias を list にpush
                     if( reuse == False):
@@ -459,7 +465,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                                      i_depth[layer], o_depth[layer]     # tf.nn.conv2d(...) の filter なので、Input, Output の形状
                                  ]
                              )
-        
+
                     # 畳み込み層のバイアス項
                     bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
 
@@ -495,8 +501,8 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             with tf.variable_scope( "flatten_fully" ):
                 shape = out_D_op.get_shape().as_list()
                 dim = shape[1]*shape[2]*shape[3]
-                print( "shape :", shape )
-                print( "dim :", dim )
+                #print( "shape :", shape )
+                #print( "dim :", dim )
 
                 # 一列に平坦化 
                 out_flatten = tf.reshape( out_D_op, shape = [-1, dim] )
@@ -507,7 +513,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
                 # flatten layer → outout layer へのバイアス項
                 bias = self.init_bias_variable( input_shape = [ self._n_labels ] ) 
-                
+
                 # weight, bias を list にpush
                 if( reuse == False):
                     self._weights.append( weight )
@@ -562,7 +568,6 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                 損失関数を表すオペレーター
         """
         # Descriminator の損失関数
-        """
         loss_D_op1 = SparseSoftmaxCrossEntropy().loss(
                          t_holder = tf.zeros( [self._batch_size], dtype=tf.int64 ),      # log{ D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
                          y_out_op = self._D_y_out_op1                                    # generator が出力する fake data を入力したときの discriminator の出力
@@ -584,11 +589,10 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                              labels = tf.ones( [self._batch_size], dtype=tf.int64 )
                          )
                      )
-        
+        """
         self._D_loss_op =  loss_D_op1 + loss_D_op2
 
         # Generator の損失関数
-        """
         self._G_loss_op = SparseSoftmaxCrossEntropy().loss( 
                               t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),   # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
                               y_out_op = self._D_y_out_op1                                  # generator が出力する fake data を入力したときの discriminator の出力
@@ -600,7 +604,8 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                                   labels = tf.ones( [self._batch_size], dtype=tf.int64 )
                               )
                           )
-        
+        """
+
         # Genrator と Descriminater の合計を設定
         #self._loss_op = self._G_loss_op + self._D_loss_op
         
