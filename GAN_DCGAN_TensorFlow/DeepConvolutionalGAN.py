@@ -367,8 +367,8 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             tmp_op = tf.matmul( input, weight0 )
             dc0_op = tf.reshape( tmp_op, [-1, f_size, f_size, i_depth[0]] ) + bias0
         
-            print( "tmp_op :", tmp_op )     # Tensor("MatMul:0", shape=(32, 6272), dtype=float32)
-            print( "dc0_op :", dc0_op )     # Tensor("add:0", shape=(32, 7, 7, 128), dtype=float32)
+            #print( "tmp_op :", tmp_op )     # Tensor("MatMul:0", shape=(32, 6272), dtype=float32)
+            #print( "dc0_op :", dc0_op )     # Tensor("add:0", shape=(32, 7, 7, 128), dtype=float32)
 
             # batch normarization（ミニバッチごとに平均が0,分散が1）
             # tf.nn.moments(...) : 平均と分散を計算
@@ -377,8 +377,8 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
             bn0_op = tf.nn.batch_normalization( dc0_op, mean0_op, variance0_op, None, None, 1e-5 )
             out_G_op = tf.nn.relu( bn0_op )
 
-            print( "bn0_op :", bn0_op )         # Tensor("batchnorm/add_1:0", shape=(32, 7, 7, 128), dtype=float32)
-            print( "out_G_op :", out_G_op )     # Tensor("Relu:0", shape=(32, 7, 7, 128), dtype=float32)
+            #print( "bn0_op :", bn0_op )         # Tensor("batchnorm/add_1:0", shape=(32, 7, 7, 128), dtype=float32)
+            #print( "out_G_op :", out_G_op )     # Tensor("Relu:0", shape=(32, 7, 7, 128), dtype=float32)
 
             #---------------------------------------------------------------------
             # DeConvolution layers
@@ -681,7 +681,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         
         sample_noize_data = np.random.rand( n_samples, z_dim ) * 2.0 - 1.0
         #print( "sample_noize_data.shape :", sample_noize_data.shape )
-        self._images_evals.append( sample_noize_data )
+        #self._images_evals.append( sample_noize_data )
 
         # 合成画像保存用ディレクトリの作成
         if ( os.path.isdir( "output_image" ) == False):
@@ -689,7 +689,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         
         # 入力ノイズデータ画像の保存
         output_file = "output_image/temp_output_image{}.jpg".format( 0 )
-        scipy.misc.imsave( output_file, self._images_evals[-1] )
+        scipy.misc.imsave( output_file, sample_noize_data )
         
         #--------------------------------------------------------
         # 学習処理
@@ -730,10 +730,26 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                 # 学習中の DCGAN の Generator から途中生成画像を生成し、保存
                 _, image_eval = self.generate_images( input_noize = sample_noize_data )
                 self._images_evals.append( image_eval )
-                output_file = "output_image/temp_output_image{}.jpg".format( epoch + 1 )
-                #scipy.misc.imsave( output_file, np.array( [ img for img in self._images_evals ] ) )
+                
+                # np.hstack(...) : nadaay を横に結合
+                output_file = "output_image/temp_output_[0]_image{}.jpg".format( epoch + 1 )
                 scipy.misc.imsave( output_file, image_eval[0] )
 
+                output_file = "output_image/temp_output_hstack_image{}.jpg".format( epoch + 1 )
+                scipy.misc.imsave( 
+                    output_file, 
+                    np.hstack( self._images_evals[-1] ) 
+                )
+
+                output_file = "output_image/temp_output_vhstack_image{}.jpg".format( epoch + 1 )
+                scipy.misc.imsave( 
+                    output_file, 
+                    np.vstack(
+                        np.array( [ np.hstack(img) for img in self._images_evals ] )
+                    )
+                )
+                
+        
         return self._y_out_op
 
 
@@ -758,7 +774,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
 
         # 入力ノイズデータを入力として、Generator を駆動する。
         out_G_op = self.generator( input = inputs_noize_tsr, reuse = True )
-        print( "generate_images(...) / out_G_op :", out_G_op )  # shape=(32, 28, 28, 1)
+        #print( "generate_images(...) / out_G_op :", out_G_op )  # shape=(32, 28, 28, 1)
         
         result = self._session.run( out_G_op )  # n_samles != batch_size で batch_size のコンパチブルエラー
         #print( "result :", result )    # shape = (32, 28, 28, 1)

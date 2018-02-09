@@ -88,6 +88,17 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
     ![image](https://user-images.githubusercontent.com/25688193/36006524-cbc8eeaa-0d80-11e8-872c-2f5927e121b2.png)
     - まず、
 
+#### コードの実行結果
+- 最適化アルゴリズム Adam
+- `learning_rate = 0.0001`, `beta1 = 0.5`, `beta2 = 0.999`
+    - epoch 数 : 1 ~ 1000（途中経過）
+    ![temp_output_vhstack_image1000](https://user-images.githubusercontent.com/25688193/36024913-967508c0-0dd4-11e8-8734-111418b959cb.jpg)
+    - epoch 数 : 1000（途中経過）
+    ![temp_output_hstack_image1000](https://user-images.githubusercontent.com/25688193/36025245-bab1c466-0dd5-11e8-95f2-1b0de6e30435.jpg)
+    - epoch 数 : 20000（最終結果）
+
+> 縦列が、epoch 数を増加して（学習を進めていった）ときの、Generator から出力された自動生成画像。<br>
+> 横列は、初期の入力ノイズ画像の違い
 
 <br>
 
