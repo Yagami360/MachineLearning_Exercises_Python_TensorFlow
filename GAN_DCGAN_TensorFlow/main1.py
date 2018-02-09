@@ -188,7 +188,7 @@ def main():
     dcgan.print( "after building model & loss & optimizer" )
 
     # TensorBoard
-    #dcgan.write_tensorboard_graph()
+    dcgan.write_tensorboard_graph()
     
     #======================================================================
     # モデルの初期化と学習（トレーニング）

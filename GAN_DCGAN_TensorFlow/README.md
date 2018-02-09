@@ -79,12 +79,69 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
         X_train = np.array( [np.reshape(x, (28,28)) for x in X_train] )
         X_test = np.array( [np.reshape(x, (28,28)) for x in X_test] )
     ```
+- DCGAN モデルの各種パラメーターの設定を行う。
+    - この設定は、`DeepConvolutionalGAN` クラスのインスタンス作成時の引数にて行う。
+    ```python
+    [main1.py]
+    def main():
+        ...
+        # DCGAN クラスのオブジェクト生成
+        dcgan = DeepConvolutionalGAN(
+                    session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
+                    epochs = epochs,
+                    batch_size = batch_size,
+                    eval_step = eval_step,
+                    image_height = 28,                      # 28 pixel
+                    image_width = 28,                       # 28 pixel
+                    n_channels = 1,                         # グレースケール
+                    n_G_deconv_featuresMap = [128, 64, 1],  # Generator の逆畳み込み層で変換される特徴マップの枚数
+                    n_D_conv_featuresMap = [1, 64, 128],    # Descriminator の畳み込み層で変換される特徴マップの枚数
+                    n_labels = 2
+                )
+    ```
 - DCGAN のモデルを構築する。
 この処理は、`DeepConvolutionalGAN.model()` メソッドで行う。
+    - **以下の図が、このプログラムで構築するモデルに対応するように要修正**
+![image](https://user-images.githubusercontent.com/25688193/35545437-72ebb95a-05b2-11e8-9219-e723ee344d54.png)
+![image](https://user-images.githubusercontent.com/25688193/35545467-93e540c2-05b2-11e8-846f-ccd86273a85f.png)
     - まず、Generator に入力する、入力ノイズデータを生成する。
+        - このノイズデータは、`tf.random_uniform(...)` を用いて生成した -1.0f ~ 1.0f の間のランダム値をとる Tensor とする。 <br>
+        ```python
+        [DeepConvolutionalGAN.py]
+        def model( self ):
+            """
+            モデルの定義を行い、
+            最終的なモデルの出力のオペレーターを設定する。
+
+            [Output]
+                self._y_out_op : Operator
+                    モデルの出力のオペレーター
+            """
+            # 入力データ（ノイズデータ）
+            i_depth = self._n_G_deconv_featuresMap[:-1]   # 入力 [Input] 側の layer の特徴マップ数
+            z_dim = i_depth[-1]                           # ノイズデータの次数
+
+            input_noize_tsr = tf.random_uniform(
+                                  shape = [self._batch_size, z_dim],
+                                  minval = -1.0, maxval = 1.0
+                              )
+        ```
+        - 尚、このノイズデータを画像表示したものは、以下の画像のようになる。<br>
+        ![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
+        - そして、このノイズデータを Generator に入力する。
+        ```python
+        def model( self ):
+            ...
+            # Generator : 入力データは, ノイズデータ
+            self._G_y_out_op = self.generator( input = input_noize_tsr, reuse = False )
+        ```
     - 次に、Descriminator 側のモデルを構築する。
     この処理は、`DeepConvolutionalGAN.generator(...)` で行う。
-        - xxx 
+        - xxx
+        ```python
+        ``` 
+        - 次に、逆畳み込み deconv を
+        - 
     - 最後に、Generator 側の損失関数を定義する。
     この処理は、`DeepConvolutionalGAN.discriminator(...)` で行う。
         - xxx
@@ -92,9 +149,99 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
     - 損失関数を、以下の DCGAN での損失関数の更新アルゴリズムに従って、定義する。
     ![image](https://user-images.githubusercontent.com/25688193/36006479-89695612-0d80-11e8-8937-6c4c9d8ef14f.png)
     ![image](https://user-images.githubusercontent.com/25688193/36006524-cbc8eeaa-0d80-11e8-872c-2f5927e121b2.png)
-    - まず、Descriminator 側の損失関数を定義する。
-    - 次に、Generator 側の損失関数を定義する。
-- xxx
+    - まず、Descriminator 側の損失関数を疎なソフトマックスクロスエントロピーで定義する。
+    ```python
+    [DeepConvolutionalGAN.py]
+    def loss( self ):
+        """
+        損失関数の定義を行う。
+        
+        [Input]
+            
+        [Output]
+            self._loss_op : Operator
+                損失関数を表すオペレーター
+        """
+        # Descriminator の損失関数
+        loss_D_op1 = SparseSoftmaxCrossEntropy().loss(
+                         t_holder = tf.zeros( [self._batch_size], dtype=tf.int64 ),      # log{ D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
+                         y_out_op = self._D_y_out_op1                                    # generator が出力する fake data を入力したときの discriminator の出力
+                     )
+        loss_D_op2 = SparseSoftmaxCrossEntropy().loss( 
+                         t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),     # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率) 
+                         y_out_op = self._D_y_out_op2                                    # generator が出力する fake data を入力したときの discriminator の出力
+                     )
+        self._D_loss_op =  loss_D_op1 + loss_D_op2
+    ```
+    - 次に、Generator 側の損失関数を疎なソフトマックスクロスエントロピーで定義する。
+    ```python
+    [DeepConvolutionalGAN.py]
+    def loss( self ):
+        ...
+        # Generator の損失関数
+        self._G_loss_op = SparseSoftmaxCrossEntropy().loss( 
+                              t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),   # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
+                              y_out_op = self._D_y_out_op1                                  # generator が出力する fake data を入力したときの discriminator の出力
+                          )
+    ```
+- 最適化アルゴリズム Optimizer として、
+Generator, Descriminator 双方とも Adam アルゴリズム を使用する。
+    - 学習率 `learning_rate` は、0.001 で検証。減衰項は `beta1 = 0.5`, `beta1 = 0.999`
+    ```python
+    [main1.py]
+    def main():
+        ...
+        dcgan.optimizer( 
+            nnOptimizerG = Adam( learning_rate = learning_rate, beta1 = beta1, beta2 = beta2 ),
+            nnOptimizerD = Adam( learning_rate = learning_rate, beta1 = beta1, beta2 = beta2 )
+        )
+    ```
+    ```python
+    [DeepConvolutionalGAN.py]
+    def optimizer( self, nnOptimizerG, nnOptimizerD ):
+        """
+        モデルの最適化アルゴリズムの設定を行う。
+        [Input]
+            nnOptimizerG : NNOptimizer のクラスのオブジェクト
+                Generator 側の Optimizer
+
+            nnOptimizerD : NNOptimizer のクラスのオブジェクト
+                Descriminator 側の Optimizer
+
+        [Output]
+            optimizer の train_step
+        """
+        # Generator, Discriminator の Variable の抽出
+        g_vars = [ var for var in tf.trainable_variables() if var.name.startswith('G') ]
+        d_vars = [ var for var in tf.trainable_variables() if var.name.startswith('D') ]
+
+        # Optimizer の設定
+        self._G_optimizer = nnOptimizerG._optimizer
+        self._D_optimizer = nnOptimizerD._optimizer
+        
+        # トレーニングステップの設定
+        self._G_train_step = self._G_optimizer.minimize( self._G_loss_op, var_list = g_vars )
+        self._D_train_step = self._D_optimizer.minimize( self._D_loss_op, var_list = d_vars )
+
+        # tf.control_dependencies(...) : sess.run で実行する際のトレーニングステップの依存関係（順序）を定義
+        with tf.control_dependencies( [self._G_train_step, self._D_train_step] ):
+            # tf.no_op(...) : 何もしない Operator を返す。（トレーニングの依存関係を定義するのに使用）
+            self._train_step = tf.no_op( name = 'train' )
+            print( "_train_step", self._train_step )
+        
+        return self._train_step
+    ```
+- トレーニング用データ `X_train` に対し、fitting 処理を行う。
+    ```python
+    [main1.py]
+    def main():
+        ...
+        dcgan.fit( X_train, y_train = None )
+    ```
+- 尚、このモデルの TensorBorad で描写した計算グラフは以下のようになる。
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 9](https://user-images.githubusercontent.com/25688193/36034906-dba14b88-0df8-11e8-9016-f846c3289401.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 10](https://user-images.githubusercontent.com/25688193/36034907-dbcdf1c4-0df8-11e8-8ae5-86c64f2f649c.png)
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 11](https://user-images.githubusercontent.com/25688193/36034909-dbf6a966-0df8-11e8-916c-eeb0dff6c436.png)
 
 <br>
 
@@ -133,6 +280,7 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 - epoch 数 : 1 ~ 1000（途中経過）, ステップ間隔 : `eval_step = 25`
 ![temp_output_vhstack_image1000](https://user-images.githubusercontent.com/25688193/36032203-99fddb40-0df0-11e8-989a-cfa1df321dbb.jpg)    
 - epoch 数 : 1000（途中経過）
+![temp_output_hstack_image1000](https://user-images.githubusercontent.com/25688193/36034674-27e93772-0df8-11e8-9339-c1139203bd17.jpg)
 - epoch 数 : 20000（最終結果）
 
 > 縦列が、epoch 数を増加して（学習を進めていった）ときの、Generator から出力された自動生成画像。<br>
@@ -150,8 +298,9 @@ DCGAN モデルに対し MNIST データセットで学習し、手書き数字�
 |学習率の減衰項２<br>`beta2`|0.999|
 |ミニバッチサイズ<br>`batch_size`|32|
 
-- epoch 数 : 1000
-
+- epoch 数 : 700<br>
+![dcgan_morphing_epoch700](https://user-images.githubusercontent.com/25688193/36034248-cf562de6-0df6-11e8-9704-9648c2ce1a2c.gif)
+- epoch 数 : 1000<br>
 ![dcgan_morphing_epoch1000](https://user-images.githubusercontent.com/25688193/36030902-4f680e74-0dec-11e8-9c1b-3ec62ca5e089.gif)
 
 
