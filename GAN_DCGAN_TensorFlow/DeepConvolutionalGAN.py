@@ -562,6 +562,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                 損失関数を表すオペレーター
         """
         # Descriminator の損失関数
+        """
         loss_D_op1 = SparseSoftmaxCrossEntropy().loss(
                          t_holder = tf.zeros( [self._batch_size], dtype=tf.int64 ),      # log{ D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
                          y_out_op = self._D_y_out_op1                                    # generator が出力する fake data を入力したときの discriminator の出力
@@ -570,7 +571,6 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                          t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),     # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率) 
                          y_out_op = self._D_y_out_op2                                    # generator が出力する fake data を入力したときの discriminator の出力
                      )
-        
         """
         loss_D_op1 = tf.reduce_mean(
                          tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -584,15 +584,15 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                              labels = tf.ones( [self._batch_size], dtype=tf.int64 )
                          )
                      )
-        """
+        
         self._D_loss_op =  loss_D_op1 + loss_D_op2
 
         # Generator の損失関数
+        """
         self._G_loss_op = SparseSoftmaxCrossEntropy().loss( 
                               t_holder = tf.ones( [self._batch_size], dtype = tf.int64 ),   # log{ 1 - D(x) } (D(x) = discriminator が 学習用データ x を生成する確率)
                               y_out_op = self._D_y_out_op1                                  # generator が出力する fake data を入力したときの discriminator の出力
                           )
-        
         """
         self._G_loss_op = tf.reduce_mean(
                               tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -600,7 +600,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                                   labels = tf.ones( [self._batch_size], dtype=tf.int64 )
                               )
                           )
-        """
+        
         # Genrator と Descriminater の合計を設定
         #self._loss_op = self._G_loss_op + self._D_loss_op
         
@@ -728,7 +728,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                 print( "epoch %d / loss_total = %0.3f / loss_G = %0.3f / loss_D = %0.3f" % ( epoch + 1, loss_total, loss_G, loss_D ) )
 
                 # 学習中の DCGAN の Generator から途中生成画像を生成し、保存
-                _, image_eval = self.generate_images( input_noize = sample_noize_data )
+                image_eval, _ = self.generate_images( input_noize = sample_noize_data )
                 self._images_evals.append( image_eval )
                 
                 # np.hstack(...) : nadaay を横に結合

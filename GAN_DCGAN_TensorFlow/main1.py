@@ -6,11 +6,14 @@
 #     pip install --ignore-installed --upgrade tensorflow
 #     pip install --ignore-installed --upgrade tensorflow-gpu
 
-import numpy
+import numpy as np
 import pandas
 import matplotlib.pyplot as plt
 
 import argparse                     # コマンドライン引数の解析モジュール
+
+import matplotlib.animation as animation
+import pickle
 
 # TensorFlow ライブラリ
 import tensorflow as tf
@@ -92,8 +95,8 @@ def main():
     X_test, y_test = MLPreProcess.load_mnist( mnist_path, "t10k" )
 
     # データは shape = [n_sample, image_width=28, image_height=28] の形状に reshape
-    X_train = numpy.array( [numpy.reshape(x, (28,28)) for x in X_train] )
-    X_test = numpy.array( [numpy.reshape(x, (28,28)) for x in X_test] )
+    X_train = np.array( [np.reshape(x, (28,28)) for x in X_train] )
+    X_test = np.array( [np.reshape(x, (28,28)) for x in X_test] )
     
     print( "X_train.shape : ", X_train.shape )
     print( "y_train.shape : ", y_train.shape )
@@ -109,8 +112,8 @@ def main():
     # ex) data = tf.nn.batch_norm_with_global_normalization(...)
     #======================================================================
     # One -hot encoding
-    #y_train_encoded = numpy.eye(10)[ y_train.astype(int) ]
-    #y_test_encoded = numpy.eye(10)[ y_test.astype(int) ]
+    #y_train_encoded = np.eye(10)[ y_train.astype(int) ]
+    #y_test_encoded = np.eye(10)[ y_test.astype(int) ]
     """
     session = tf.Session()
     encode_holder = tf.placeholder(tf.int64, [None])
@@ -129,6 +132,9 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
+    epochs = 1000
+    eval_step = 50
+    batch_size = 32
     learning_rate = 0.0001
     beta1 = 0.5
     beta2 = 0.99
@@ -148,9 +154,9 @@ def main():
     # DCGAN クラスのオブジェクト生成
     dcgan = DeepConvolutionalGAN(
                 session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-                epochs = 10000,
-                batch_size = 32,
-                eval_step = 50,
+                epochs = epochs,
+                batch_size = batch_size,
+                eval_step = eval_step,
                 image_height = 28,                      # 28 pixel
                 image_width = 28,                       # 28 pixel
                 n_channels = 1,                         # グレースケール
@@ -208,37 +214,95 @@ def main():
     #-------------------------------------------------------------------
     # トレーニング回数に対する loss 値の plot
     #-------------------------------------------------------------------
+    # loss 値の list に対応させる x 軸データ用の list
+    loss_axis_x = [ (idx+1) * eval_step for idx in range( len(dcgan._losses_train) ) ]
+    print( "loss_axis_x :", loss_axis_x )
+
     plt.clf()
     plt.plot(
-        range( 0, len(dcgan._losses_train) ), dcgan._losses_train,
+        loss_axis_x, dcgan._losses_train,
         label = ' loss (total) : train data',
         linestyle = '-',
         #linewidth = 2,
         color = 'black'
     )
     plt.plot(
-        range( 0, len(dcgan._losses_G_train) ), dcgan._losses_G_train,
+        loss_axis_x, dcgan._losses_G_train,
         label = ' loss (generator) : train data',
         linestyle = '--',
         #linewidth = 2,
         color = 'red'
     )
     plt.plot(
-        range( 0, len(dcgan._losses_D_train) ), dcgan._losses_D_train,
+        loss_axis_x, dcgan._losses_D_train,
         label = ' loss (discriminator) : train data',
         linestyle = '--',
         #linewidth = 2,
         color = 'blue'
     )
-    plt.title( "loss" )
+    plt.title( "loss / sparse softmax cross-entory" )
     plt.legend( loc = 'best' )
+    plt.xlim( 1, epochs )
     #plt.ylim( [0, 1.05] )
-    plt.xlabel( "Epocs" )
+    plt.xlabel( "Epocs / batch_size = {}".format(batch_size) )
     plt.grid()
     plt.tight_layout()
    
     #MLPlot.saveFigure( fileName = "GAN_DCGAN_1-1.png" )
-    plt.savefig( "GAN_DCGAN_1-1.png", dpi = 300, bbox_inches = "tight" )
+    plt.savefig( "GAN_DCGAN_1-1_epoch{}.png".format(epochs), dpi = 300, bbox_inches = "tight" )
+    #plt.show()
+
+    #-------------------------------------------------------------------
+    # 学習済み DCGAN に対し、入力ノイズ自動画像生成
+    #-------------------------------------------------------------------
+
+    #-------------------------------------------------------------------
+    # 学習済み DCGAN に対し、入力ノイズを動かし Animation gif
+    #-------------------------------------------------------------------
+    # Generator に入力する初期ノイズ
+    input_noize = np.random.rand( 3, 64 ) * 2.0 - 1.0
+    
+    morphing_inputs = []
+
+    # 球の表面上の回転
+    theta1, theta2 = 0, 0
+    for _ in range(32):     # batch_size
+        theta1 += 2*np.pi / 32 * 2
+        theta2 += 2*np.pi / 32
+        morphing_inputs.append(
+            np.cos(theta1) * input_noize[0] \
+            + np.sin(theta1)*( np.cos(theta2)*input_noize[1] + np.sin(theta2)*input_noize[2] )
+        )
+
+    inputs_noize_tsr = tf.constant( 
+                           np.array( morphing_inputs ), 
+                           dtype = tf.float32 
+                       )
+
+    # result : 0.0 ~ 1.0    
+    result = dcgan._session.run( 
+                 dcgan.generator( input = inputs_noize_tsr, reuse = True ) 
+             )
+    
+    images = []
+    fig = plt.figure(figsize=(4,8))
+    for i in range( result.shape[0] ):
+        subplot = fig.add_subplot(1,1,1)
+        subplot.set_xticks([])
+        subplot.set_yticks([])
+        image = subplot.imshow(
+                    result[i,:,:,0], 
+                    vmin = 0, vmax = 1, 
+                    cmap = plt.cm.gray_r
+                )
+        images.append( [image] )  # i=63 : ValueError: outfile must be *.htm or *.html
+
+    ani = animation.ArtistAnimation( 
+              fig, images, 
+              interval = 10  # ms 単位
+          )
+    
+    ani.save('./output_image/DCGAN_morphing_epoch{}.gif'.format(epochs), writer='imagemagick', fps = 100 )
     plt.show()
 
     #======================================================================
