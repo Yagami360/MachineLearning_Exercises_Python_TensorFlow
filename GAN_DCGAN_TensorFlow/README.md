@@ -204,7 +204,7 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
 
 #### コードの内容説明
 - DCGAN の Discriminator に入力する学習用データセットとして、MNIST データセットを使用。
-    - データは shape = [n_sample, image_width=28, image_height=28] の形状に reshape
+    - データは `shape = [n_sample, image_width=28, image_height=28]` の形状に reshape
     - 尚、この処理で取得できる MNIST データの教師データ `y_train`, `y_test` は、
     DCGAN の学習時には使用しない。（教師なしの強化学習のため）
     ```python
@@ -274,7 +274,18 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
         ```
     - 次に、Descriminator 側のモデルを構築する。
     この処理は、`DeepConvolutionalGAN.generator(...)` で行う。
-        - まず、引数 `input` で指定された、入力ノイズデータを deconv 層へ入力するために、データの形状を reshape する。
+        - まず、Generator からの出力 `self._G_y_out_op`、及ぶ、学習用画像データを Descriminator に入力する。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def model( self ):
+            ...
+            # Descriminator : 入力データは, Generator の出力
+            self._D_y_out_op1 = self.discriminator( input = self._G_y_out_op, reuse = False )
+        
+            # Descriminator : 入力データは, 画像データ
+            self._D_y_out_op2 = self.discriminator( input = self._image_holder, reuse = True )
+        ```
+        - `DeepConvolutionalGAN.generator(...)` 内部では、まず、引数 `input` で指定された、入力ノイズデータを deconv 層へ入力するために、データの形状を reshape する。
         ```python
         [DeepConvolutionalGAN.py]
         def generator( self, input, reuse = False ):
