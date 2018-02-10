@@ -184,19 +184,19 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
 |出力層への結合方法|fully connected layer を使用|
 
 - 入力ノイズデータ : 32 × 64 pixel
+
+- epoch 数 : 500<br>
+    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 倍速<br>
+
 - epoch 数 : 2000<br>
     - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 倍速<br>
-![dcgan_morphing1_epoch2000](https://user-images.githubusercontent.com/25688193/36042335-d95816de-0e0e-11e8-9540-5934f155537a.gif)
-    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 等速<br>
-![dcgan_morphing2_epoch2000](https://user-images.githubusercontent.com/25688193/36042341-db94dfea-0e0e-11e8-98b9-d5a066cd9b11.gif)
-    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2 = 0`<br>
-    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2 = 45π`<br>
+![dcgan_morphing1_epoch2000-iloveimg-cropped](https://user-images.githubusercontent.com/25688193/36060296-076a8e5a-0e8a-11e8-9194-ab6fcfd72d80.gif)
 
 - epoch 数 : 5000<br>
     - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 倍速<br>
-![dcgan_morphing1_epoch5000](https://user-images.githubusercontent.com/25688193/36057523-7f4588e0-0e52-11e8-97a0-d3b0e55f270f.gif)
-    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 等速<br>
-![dcgan_morphing2_epoch5000](https://user-images.githubusercontent.com/25688193/36057524-7f75125e-0e52-11e8-9b28-a1f7a1157f20.gif)
+![dcgan_morphing1_epoch5000](https://user-images.githubusercontent.com/25688193/36060267-816361c4-0e89-11e8-9037-ca945b1aa131.gif)
+    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2 = 0`<br>
+    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2 = 45π`<br>
 
 ---
 
