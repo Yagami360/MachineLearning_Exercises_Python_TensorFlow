@@ -116,8 +116,16 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
 - 入力ノイズデータ : 32 × 64 pixel<br>
 ![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
 
-- epoch 数 : 1 ~ 8000, ステップ間隔 : `eval_step = 50`
-![temp_output_vhstack_image8000](https://user-images.githubusercontent.com/25688193/36054121-196a518c-0e38-11e8-8c49-1d64e4dc9845.jpg)
+- epoch 数 : 50 ~ 10000
+
+- epoch 数 : 50
+![temp_output_hstack_image50](https://user-images.githubusercontent.com/25688193/36056472-17722fac-0e48-11e8-92cf-3896928b8504.jpg)
+- epoch 数 : 100
+![temp_output_hstack_image100](https://user-images.githubusercontent.com/25688193/36056475-19635fac-0e48-11e8-9d0c-9e344270297c.jpg)
+- epoch 数 : 200
+![temp_output_hstack_image200](https://user-images.githubusercontent.com/25688193/36056477-1c4fe384-0e48-11e8-8794-d86e08cf16f8.jpg)
+- epoch 数 : 500
+![temp_output_hstack_image500](https://user-images.githubusercontent.com/25688193/36056510-545fef6c-0e48-11e8-9602-4db1ade2cb57.jpg)
 - epoch 数 : 2000
 ![temp_output_hstack_image2000](https://user-images.githubusercontent.com/25688193/36054074-e6d38e5a-0e37-11e8-92aa-eb7945b21d4d.jpg)
 - epoch 数 : 5000
