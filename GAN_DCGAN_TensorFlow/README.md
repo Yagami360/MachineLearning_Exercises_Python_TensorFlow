@@ -81,13 +81,23 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
 |学習率の減衰項１<br>`beta1`|0.5|
 |学習率の減衰項２<br>`beta2`|0.999|
 |ミニバッチサイズ<br>`batch_size`|32|
-|その他|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|batch normalization の有無|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|出力層への結合方法|fully connected layer を使用|
 
+- epoch 数 : 2000
 ![gan_dcgan_1-1_epoch2000](https://user-images.githubusercontent.com/25688193/36040940-5dd1f10a-0e0a-11e8-8d0b-a326009364f6.png)
+- epoch 数 : 5000
+
+- epoch 数 : 20000
+![gan_dcgan_1-1 _epoch20000](https://user-images.githubusercontent.com/25688193/36054381-657c04b6-0e39-11e8-943a-9a72293cf1a5.png)
+
 > 損失関数として、疎なソフトマックス・クロス・エントロピー関数を使用した場合の、損失関数のグラフ。
 赤線が Generator の損失関数の値。青線が Descriminator の損失関数の値。黒線が、Generator と Descriminator の損失関数の総和。<br>
-損失関数のグラフより、Generator の損失関数の値が 0 に収束できておらず、又上下に不安定となっていることが分かる。これは GAN に見られる特性である。<br>
-つまり、GAN はゲーム理論的に言えば、Generator と Descriminator の２プレイヤーのゼロサムゲームとみなすことが出来るので、相互に干渉しあって動作が不安定になっていると考えられる。
+
+> 損失関数のグラフより、Generator の損失関数の値が 0 に収束できておらず、又上下に不安定となっていることが分かる。これは GAN に見られる特性である。<br>
+つまり、GAN はゲーム理論的に言えば、Generator と Descriminator の２プレイヤーのゼロサムゲームとみなすことが出来るので、相互に干渉しあって動作が不安定になっていると考えられる。<br>
+
+> 又、epoch 数 7500 程度で一旦 Generator の損失関数値が減少した後、その後は、損失関数値が増加傾向になっていることも見て取れる。
 
 <br>
 
@@ -100,19 +110,36 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
 |学習率の減衰項１<br>`beta1`|0.5|
 |学習率の減衰項２<br>`beta2`|0.999|
 |ミニバッチサイズ<br>`batch_size`|32|
-|その他|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|batch normalization の有無|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|出力層への結合方法|fully connected layer を使用|
 
 - 入力ノイズデータ : 32 × 64 pixel<br>
 ![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
 
-- epoch 数 : 1 ~ 2000, ステップ間隔 : `eval_step = 50`
-![temp_output_vhstack_image2000](https://user-images.githubusercontent.com/25688193/36040857-16dfbd72-0e0a-11e8-8992-2ed2404ddad3.jpg)
+- epoch 数 : 1 ~ 8000, ステップ間隔 : `eval_step = 50`
+![temp_output_vhstack_image8000](https://user-images.githubusercontent.com/25688193/36054121-196a518c-0e38-11e8-8c49-1d64e4dc9845.jpg)
 - epoch 数 : 2000
-![temp_output_hstack_image2000](https://user-images.githubusercontent.com/25688193/36040916-4ba2db34-0e0a-11e8-84f7-55c9ddb98cfb.jpg)
-- epoch 数 : 20000
+![temp_output_hstack_image2000](https://user-images.githubusercontent.com/25688193/36054074-e6d38e5a-0e37-11e8-92aa-eb7945b21d4d.jpg)
+- epoch 数 : 5000
+![temp_output_hstack_image5000](https://user-images.githubusercontent.com/25688193/36054212-80f8061e-0e38-11e8-88c4-01d2191eef7c.jpg)
+- epoch 数 : 7000
+![temp_output_hstack_image7000](https://user-images.githubusercontent.com/25688193/36054067-d4661d5a-0e37-11e8-9cb1-b8a8dabe26c5.jpg)
+- epoch 数 : 7300
+![temp_output_hstack_image7300](https://user-images.githubusercontent.com/25688193/36054254-af260ad6-0e38-11e8-86c8-8b3b9364aa0d.jpg)
+- epoch 数 : 7400
+![temp_output_hstack_image7400](https://user-images.githubusercontent.com/25688193/36054259-b4cfa5be-0e38-11e8-9feb-215159339a4a.jpg)
+- epoch 数 : 7500
+![temp_output_hstack_image7500](https://user-images.githubusercontent.com/25688193/36054247-abc5ac84-0e38-11e8-8d66-aeeabf314266.jpg)
+- epoch 数 : 10000
+![temp_output_hstack_image10000](https://user-images.githubusercontent.com/25688193/36054169-4a22baa8-0e38-11e8-9d3d-52f628182ca3.jpg)
 
 > 縦列が、epoch 数を増加して（学習を進めていった）ときの、Generator から出力された自動生成画像。<br>
-> 横列は、Generator に入力した入力ノイズデータの違いによる自動生成画像の違い。
+> 横列は、Generator に入力した入力ノイズデータの違いによる自動生成画像の違い。<br>
+
+> epoch 数 : 7300 程度までは、順調に epoch数 が増加するにつれ、よりくっきりとした手書き数字の画像が生成出来ているが、<br>
+epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成出来なくなっていることが分かる。
+これは、先の損失関数のグラフの、ある epoch 数以上からの Generator の損失関数値の増加傾向と合致している。
+
 
 <br>
 
@@ -125,10 +152,12 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
 |学習率の減衰項１<br>`beta1`|0.5|
 |学習率の減衰項２<br>`beta2`|0.999|
 |ミニバッチサイズ<br>`batch_size`|32|
-|その他|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|batch normalization の有無|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|出力層への結合方法|fully connected layer を使用|
 
 - epoch 数 : 2000<br>
 ![gan_dcgan_1-2_epoch2000](https://user-images.githubusercontent.com/25688193/36042589-b68d1bda-0e0f-11e8-84ef-ac8cc049c8be.png)
+- epoch 数 : 5000<br>
 
 <br>
 
@@ -141,7 +170,8 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
 |学習率の減衰項１<br>`beta1`|0.5|
 |学習率の減衰項２<br>`beta2`|0.999|
 |ミニバッチサイズ<br>`batch_size`|32|
-|その他|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|batch normalization の有無|Generator に対し batch normalization を適用（出力層は適用外）<br>Descriminator に batch normalization を適用（入力層は適用外）|
+|出力層への結合方法|fully connected layer を使用|
 
 - 入力ノイズデータ : 32 × 64 pixel
 - epoch 数 : 2000<br>
@@ -152,7 +182,13 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
     - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2 = 0`<br>
     - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2 = 45π`<br>
 
-<br>
+- epoch 数 : 5000<br>
+    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 倍速<br>
+
+    - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 等速<br>
+
+
+---
 
 <a id="ID_3-1-2"></a>
 
