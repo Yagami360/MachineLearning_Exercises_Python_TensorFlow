@@ -87,7 +87,7 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
 - epoch 数 : 2000
 ![gan_dcgan_1-1_epoch2000](https://user-images.githubusercontent.com/25688193/36040940-5dd1f10a-0e0a-11e8-8d0b-a326009364f6.png)
 - epoch 数 : 5000
-
+![gan_dcgan_1-1_epoch5000](https://user-images.githubusercontent.com/25688193/36057482-1be44818-0e52-11e8-8a98-8f09a06fd3b6.png)
 - epoch 数 : 20000
 ![gan_dcgan_1-1 _epoch20000](https://user-images.githubusercontent.com/25688193/36054381-657c04b6-0e39-11e8-943a-9a72293cf1a5.png)
 
@@ -116,7 +116,8 @@ DCGAN モデルに対し MNIST データセットで学習し、MNIST ライク�
 - 入力ノイズデータ : 32 × 64 pixel<br>
 ![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
 
-- epoch 数 : 50 ~ 10000
+- epoch 数 : 50 ~ 5000
+![dcgan_fitting_vstack_epoch5000](https://user-images.githubusercontent.com/25688193/36059966-956f0170-0e82-11e8-854c-3cc413e9354b.gif)
 
 - epoch 数 : 50
 ![temp_output_hstack_image50](https://user-images.githubusercontent.com/25688193/36056472-17722fac-0e48-11e8-92cf-3896928b8504.jpg)
@@ -166,6 +167,7 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
 - epoch 数 : 2000<br>
 ![gan_dcgan_1-2_epoch2000](https://user-images.githubusercontent.com/25688193/36042589-b68d1bda-0e0f-11e8-84ef-ac8cc049c8be.png)
 - epoch 数 : 5000<br>
+![gan_dcgan_1-2_epoch5000](https://user-images.githubusercontent.com/25688193/36057505-504daa86-0e52-11e8-8727-148df8bb0022.png)
 
 <br>
 
@@ -192,9 +194,9 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
 
 - epoch 数 : 5000<br>
     - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 倍速<br>
-
+![dcgan_morphing1_epoch5000](https://user-images.githubusercontent.com/25688193/36057523-7f4588e0-0e52-11e8-97a0-d3b0e55f270f.gif)
     - 極座標系 `(theta1, theta2)` : `theta1` 等速、`theta2` 等速<br>
-
+![dcgan_morphing2_epoch5000](https://user-images.githubusercontent.com/25688193/36057524-7f75125e-0e52-11e8-9b28-a1f7a1157f20.gif)
 
 ---
 
@@ -236,9 +238,8 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
     ```
 - DCGAN のモデルを構築する。
 この処理は、`DeepConvolutionalGAN.model()` メソッドで行う。
-    - **以下の図が、このプログラムで構築するモデルに対応するように要修正**
-![image](https://user-images.githubusercontent.com/25688193/35545437-72ebb95a-05b2-11e8-9219-e723ee344d54.png)
-![image](https://user-images.githubusercontent.com/25688193/35545467-93e540c2-05b2-11e8-846f-ccd86273a85f.png)
+    ![image](https://user-images.githubusercontent.com/25688193/36060078-037a18f6-0e85-11e8-977e-bc46b49bdc40.png)
+    ![image](https://user-images.githubusercontent.com/25688193/36059643-933d4bc6-0e7f-11e8-8cbf-7e52041c8d77.png)
     - まず、Generator に入力する、入力ノイズデータを生成する。
         - このノイズデータは、`tf.random_uniform(...)` を用いて生成した `-1.0f` ~ `1.0f` の間のランダム値をとる Tensor とする。 <br>
         ```python
@@ -265,6 +266,7 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
         ![temp_output_image0](https://user-images.githubusercontent.com/25688193/36032312-ec40f13a-0df0-11e8-8819-68dc1bba41ca.jpg)
         - そして、このノイズデータを Generator に入力する。
         ```python
+        [DeepConvolutionalGAN.py]
         def model( self ):
             ...
             # Generator : 入力データは, ノイズデータ
@@ -272,14 +274,227 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
         ```
     - 次に、Descriminator 側のモデルを構築する。
     この処理は、`DeepConvolutionalGAN.generator(...)` で行う。
-        - xxx
+        - まず、引数 `input` で指定された、入力ノイズデータを deconv 層へ入力するために、データの形状を reshape する。
         ```python
+        [DeepConvolutionalGAN.py]
+        def generator( self, input, reuse = False ):
+            """
+            GAN の Generator 側のモデルを構築する。
+
+            [Input]
+                input : Tensor or placeholder
+                    入力ノイズデータの Tensor or 画像データの placeholder
+                reuse : bool
+                    Variable を共有するか否かのフラグ
+
+            [Output]
+                out_G_op : Operator
+                    Generator の最終的な出力の Operator
+            """
+            depths = self._n_G_deconv_featuresMap   # Generator の畳み込み層の特徴マップ数
+            f_size = int( self._image_height / 2**(len(depths)-1) )
+            i_depth = depths[:-1]                   # 入力 [Input] 側の layer の特徴マップ数
+            o_depth = depths[1:]                    # 出力 [Output] 側の layer の特徴マップ数
+            z_dim = i_depth[-1]                     # ノイズデータの次数
+            
+            #---------------------------------------------------------------------
+            # 入力データ（ノイズデータ）を deconv 層へ入力するための reshape
+            #---------------------------------------------------------------------
+            with tf.variable_scope( "Generator", reuse = reuse ):
+                # 入力データ → Generator の deconv 層 への重み
+                weight0 = self.init_weight_variable( 
+                              input_shape = [ z_dim, i_depth[0] * f_size * f_size] 
+                          )
+            
+                # 入力データ → Generator の deconv 層 へのバイアス項
+                bias0 = self.init_bias_variable( input_shape = [ i_depth[0] ] )
+            
+                # weight, bias を list にpush
+                if( reuse == False):
+                    self._weights.append( weight0 )
+                    self._biases.append( bias0 )
+
+                tmp_op = tf.matmul( input, weight0 )
+                dc0_op = tf.reshape( tmp_op, [-1, f_size, f_size, i_depth[0]] ) + bias0
+        ```
+        - 次に、これを batch normalization で正規化し、Relu 出力する。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def generator( self, input, reuse = False ):
+            ...
+            # batch normarization（ミニバッチごとに平均が0,分散が1）
+            # tf.nn.moments(...) : 平均と分散を計算
+            # axes = [0, 1, 2] でチャンネル毎の平均と分散を計算
+            mean0_op, variance0_op = tf.nn.moments( dc0_op, axes = [0, 1, 2] )
+            bn0_op = tf.nn.batch_normalization( dc0_op, mean0_op, variance0_op, None, None, 1e-5 )
+            out_G_op = tf.nn.relu( bn0_op )
         ``` 
-        - 次に、逆畳み込み deconv を
-        - 
-    - 最後に、Generator 側の損失関数を定義する。
+        - 次に、Generator の特徴マップ数 `self._n_G_deconv_featuresMap` に応じた、
+        逆畳み込み層 deconv を構築する。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def generator( self, input, reuse = False ):
+            ...
+            with tf.variable_scope( "Generator", reuse = reuse ):
+                ...
+                #---------------------------------------------------------------------
+                # DeConvolution layers
+                #---------------------------------------------------------------------
+                for layer in range( len(self._n_G_deconv_featuresMap)-1 ):
+                    with tf.variable_scope( "DeConvLayer_{}".format(layer) ):
+                        # layer 番目の畳み込み層の重み（カーネル）
+                        # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
+                        weight = self.init_weight_variable(
+                                     input_shape = [ 
+                                         5, 5,                              # kernel 行列（フィルタ行列のサイズ） 
+                                         o_depth[layer], i_depth[layer]     # tf.nn.conv2d_transpose(...) の filter なので、Output, Input の形状
+                                    ]
+                                 )
+                    
+                        # 畳み込み層のバイアス
+                        bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
+
+                        # weight, bias を list にpush
+                        if( reuse == False):
+                            self._weights.append( weight )
+                            self._biases.append( bias )
+
+                        # deconv
+                        dc_op = tf.nn.conv2d_transpose(
+                                    value = out_G_op,
+                                    filter = weight,            # 畳込み処理で value で指定した Tensor との積和に使用する filter 行列（カーネル）
+                                    output_shape = [self._batch_size, f_size*2**(layer+1), f_size*2**(layer+1), o_depth[layer]],    # ?
+                                    strides = [1, 2, 2, 1]      # strides[0] = strides[3] = 1. とする必要がある
+                                )
+
+                        out_G_op = tf.nn.bias_add( dc_op, bias )
+
+        ```
+        - 次に、これをミニバッチサイズに対し、batch normalization で正規化し、Relu 出力する。
+        但し、出力層へは batch normalization は適用せず、そのまま線形出力する。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def generator( self, input, reuse = False ):
+            ...
+            # batch normarization
+            # 出力層でない場合 batch normarization を実施
+            if( layer < ( len(self._n_G_deconv_featuresMap) - 2 ) ):
+                mean_op, variance_op = tf.nn.moments( out_G_op, axes = [0, 1, 2] )
+                bn_op = tf.nn.batch_normalization( out_G_op, mean_op, variance_op, None, None, 1e-5 )
+                out_G_op = tf.nn.relu( bn_op )
+        ```
+        - 最後に、シグモイド関数 `tf.nn.sigmoid(...)` で活性化して、Generator の最終的な出力とする。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def generator( self, input, reuse = False ):
+            ...
+            out_G_op = tf.nn.sigmoid( out_G_op )
+        ```
+    - 次に、Descriminator 側のモデルを構築する。
     この処理は、`DeepConvolutionalGAN.discriminator(...)` で行う。
-        - xxx
+        - まず、引数 `input` で指定された、Generator からの出力（フェイク画像データ）、或いは、学習用画像データに対し、Descriminator の特徴マップ数 `self._n_D_deconv_featuresMap` に応じた、逆畳み込み層 deconv を構築する。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def discriminator( self, input, reuse = False ):
+            """
+            GAN の Discriminator 側のモデルを構築する。
+
+            [Input]
+                input : Operator or placeholder
+                    Generator の出力の Operator or 画像データの placeholder
+                reuse : bool
+                    Variable を共有するか否かのフラグ
+
+            [Output]
+                self._D_y_out_op : Operator
+                    Descriminator の最終的な出力の Operator
+            """
+            depths = self._n_D_conv_featuresMap     # Descriminator の畳み込み層の特徴マップ数
+            i_depth = depths[:-1]                   # 入力 [Input] 側の layer の特徴マップ数
+            o_depth = depths[1:]                    # 出力 [Output] 側の layer の特徴マップ数
+
+            with tf.variable_scope( "Descriminator", reuse = reuse ):
+                out_D_op = input            # 最初の入力は、Generator の出力
+
+                #----------------------------------------
+                # conv layer
+                #----------------------------------------
+                for layer in range( len(depths) - 1 ):
+                    with tf.variable_scope( "ConvLayer_{}".format(layer) ):
+                        # layer 番目の畳み込み層の重み（カーネル）
+                        # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
+                        weight = self.init_weight_variable(
+                                     input_shape = [ 
+                                         5, 5,                              # kernel 行列（フィルタ行列のサイズ） 
+                                         i_depth[layer], o_depth[layer]     # tf.nn.conv2d(...) の filter なので、Input, Output の形状
+                                     ]
+                                 )
+
+                        # 畳み込み層のバイアス項
+                        bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
+
+                        # weight, bias を list にpush
+                        if( reuse == False):
+                            self._weights.append( weight )
+                            self._biases.append( bias )
+
+                        # conv
+                        conv_op = tf.nn.conv2d(
+                                      input = out_D_op,         # layer = 0 : Generator の出力 or 入力画像データ, layer = 1~ : 前回の出力
+                                      filter = weight,          # 畳込み処理で input で指定した Tensor との積和に使用する filter 行列（カーネル）
+                                      strides = [1, 2, 2, 1],   # strides[0] = strides[3] = 1. とする必要がある
+                                    padding='SAME'            # ゼロパディングを利用する場合はSAMEを指定
+                            )
+
+                        out_D_op = tf.nn.bias_add( conv_op, bias = bias )
+
+        ```
+        - 次に、最後の conv 層からの出力を、ミニバッチサイズに対し、batch normalization で正規化し、Leaky ReLu で出力する。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def discriminator( self, input, reuse = False ):
+            ...
+            with tf.variable_scope( "Descriminator", reuse = reuse ):
+                ...
+                # batch normalization
+                mean_op, variance_op = tf.nn.moments( out_D_op, [0, 1, 2] )
+                bn_op = tf.nn.batch_normalization( out_D_op, mean_op, variance_op, None, None, 1e-5 )
+
+                # Leaky ReLu
+                out_D_op = tf.maximum( 0.2 * bn_op, bn_op )
+        ```
+        - conv 層からの出力を平坦化し、全結合層 [fully connected layer] として出力層へ結合し、それらを線形活性したものを Descriminator の最終的な出力とする。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def discriminator( self, input, reuse = False ):
+            ...
+            #----------------------------------------
+            # reshape & fully connected layer
+            #----------------------------------------
+            with tf.variable_scope( "flatten_fully" ):
+                shape = out_D_op.get_shape().as_list()
+                dim = shape[1]*shape[2]*shape[3]
+                #print( "shape :", shape )
+                #print( "dim :", dim )
+
+                # 一列に平坦化 
+                out_flatten = tf.reshape( out_D_op, shape = [-1, dim] )
+
+                # 出力ノード
+                # flatten layer → outout layer への重み
+                weight = self.init_weight_variable( input_shape = [ dim, self._n_labels ] )
+
+                # flatten layer → outout layer へのバイアス項
+                bias = self.init_bias_variable( input_shape = [ self._n_labels ] ) 
+
+                # weight, bias を list にpush
+                if( reuse == False):
+                    self._weights.append( weight )
+                    self._biases.append( bias )
+
+                out_D_op = tf.matmul( out_flatten, weight ) + bias
+        ```
+        - 尚、DCGAN では、fully connected layer ではなく、GAP [global average pooling] のほうが汎化性能が良くなるとされているようだが、ここでは通常の fully connected layer で Descriminator を実装している。
 - 損失関数を定義する。
     - 損失関数を、以下の DCGAN での損失関数の更新アルゴリズムに従って、定義する。
     ![image](https://user-images.githubusercontent.com/25688193/36006479-89695612-0d80-11e8-8937-6c4c9d8ef14f.png)
@@ -407,8 +622,6 @@ Generator, Descriminator 双方とも Adam アルゴリズム を使用する。
 ![image](https://user-images.githubusercontent.com/25688193/35481115-7b76b87a-0460-11e8-9f3f-293e6afdba22.png)
 ![image](https://user-images.githubusercontent.com/25688193/35488656-2b95c91c-04cf-11e8-8d06-67ea71c58a72.png)
 
-> 記載中...
-
 
 <a id="ID_10-1-1"></a>
 
@@ -418,13 +631,12 @@ Generator, Descriminator 双方とも Adam アルゴリズム を使用する。
 
 ![image](https://user-images.githubusercontent.com/25688193/35545399-50f2a4bc-05b2-11e8-853e-11d38971630f.png)
 ![image](https://user-images.githubusercontent.com/25688193/35545437-72ebb95a-05b2-11e8-9219-e723ee344d54.png)
-![image](https://user-images.githubusercontent.com/25688193/35545467-93e540c2-05b2-11e8-846f-ccd86273a85f.png)
+![image](https://user-images.githubusercontent.com/25688193/36059567-efac113c-0e7d-11e8-8bdd-329fbc70808a.png)
 ![image](https://user-images.githubusercontent.com/25688193/35549375-93ea4836-05c8-11e8-8279-a8d3d3a659c6.png)
 ![image](https://user-images.githubusercontent.com/25688193/35545532-cd39d9d2-05b2-11e8-9ab9-a3f4123ab8fd.png)
 ![image](https://user-images.githubusercontent.com/25688193/35545809-5d14a248-05b4-11e8-854e-caf830ef2972.png)
 ![image](https://user-images.githubusercontent.com/25688193/35549398-b4a58dce-05c8-11e8-9bd5-883c03aa4564.png)
 
-> 記載中...
 
 
 ### デバッグメモ

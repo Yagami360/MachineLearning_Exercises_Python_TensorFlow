@@ -326,7 +326,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
         f_size = int( self._image_height / 2**(len(depths)-1) )    # ?
         i_depth = depths[:-1]                   # 入力 [Input] 側の layer の特徴マップ数
         o_depth = depths[1:]                    # 出力 [Output] 側の layer の特徴マップ数
-        z_dim = i_depth[-1]                     # ? ノイズデータの shape
+        z_dim = i_depth[-1]                     # ノイズデータの次数
         
         """
         # MNIST データの場合のパラメータ
@@ -395,13 +395,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                              )
                     
                     # 畳み込み層のバイアス
-                    #bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
-                    bias = tf.get_variable(
-                               'bias_var',
-                               [ o_depth[layer] ], 
-                               tf.float32, 
-                               tf.zeros_initializer
-                           )
+                    bias = self.init_bias_variable( input_shape = [ o_depth[layer] ] )
 
                     # weight, bias を list にpush
                     if( reuse == False):
@@ -417,12 +411,17 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                             )
 
                     out_G_op = tf.nn.bias_add( dc_op, bias )
+                    #print( "out_G_op :", out_G_op )    # shape=(32, 14, 14, 64)
 
                     # batch normarization
+                    # 出力層でない場合 batch normarization を実施
                     if( layer < ( len(self._n_G_deconv_featuresMap) - 2 ) ):
                         mean_op, variance_op = tf.nn.moments( out_G_op, axes = [0, 1, 2] )
                         bn_op = tf.nn.batch_normalization( out_G_op, mean_op, variance_op, None, None, 1e-5 )
+                        #print( "bn_op :", bn_op )  # shape=(32, 14, 14, 64)
                         out_G_op = tf.nn.relu( bn_op )
+                        #print( "out_G_op(batch) :", out_G_op ) # shape=(32, 14, 14, 64)
+                        
 
             # tanh
             out_G_op = tf.nn.sigmoid( out_G_op )
@@ -732,20 +731,25 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                 self._losses_D_train.append( loss_D )
                 print( "epoch %d / loss_total = %0.3f / loss_G = %0.3f / loss_D = %0.3f" % ( epoch + 1, loss_total, loss_G, loss_D ) )
 
+                #-----------------------------------------------------------
                 # 学習中の DCGAN の Generator から途中生成画像を生成し、保存
+                #-----------------------------------------------------------
                 image_eval, _ = self.generate_images( input_noize = sample_noize_data )
                 self._images_evals.append( image_eval )
                 
-                # np.hstack(...) : nadaay を横に結合
+                # １つの画像
                 output_file = "output_image/temp_output_[0]_image{}.jpg".format( epoch + 1 )
                 scipy.misc.imsave( output_file, image_eval[0] )
 
+                # 横に結合した画像
+                # np.hstack(...) : nadaay を横に結合
                 output_file = "output_image/temp_output_hstack_image{}.jpg".format( epoch + 1 )
                 scipy.misc.imsave( 
                     output_file, 
                     np.hstack( self._images_evals[-1] ) 
                 )
 
+                # 縦横に結合した画像 : 縦成分はこれまでの途中生成画像
                 output_file = "output_image/temp_output_vhstack_image{}.jpg".format( epoch + 1 )
                 scipy.misc.imsave( 
                     output_file, 
@@ -754,7 +758,7 @@ class DeepConvolutionalGAN( NeuralNetworkBase ):
                     )
                 )
                 
-        
+            
         return self._y_out_op
 
 
