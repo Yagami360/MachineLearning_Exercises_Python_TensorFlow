@@ -132,7 +132,11 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    epochs = 20000
+    epochs = 200
+    #epochs = 5000
+    #epochs = 7000
+    #epochs = 20000
+
     eval_step = 50
     batch_size = 32
     learning_rate = 0.0001
@@ -166,7 +170,7 @@ def main():
            )
 
     dcgan.print( "after init" )
-
+    
 
     #======================================================================
     # モデルの構造を定義する。
@@ -207,6 +211,10 @@ def main():
     # トレーニングデータで fitting 処理
     dcgan.fit( X_train, y_train = None )
 
+    # モデルの保存
+    #dcgan.save_model()
+    #dcgan.load_model()
+
     #======================================================================
     # モデルの評価
     # (Optional) Evaluate the model.
@@ -244,7 +252,7 @@ def main():
     plt.legend( loc = 'best' )
     plt.xlim( 1, epochs )
     #plt.ylim( [0, 1.05] )
-    plt.xlabel( "Epocs / batch_size = {}".format(batch_size) )
+    plt.xlabel( "Epochs / batch_size = {}".format(batch_size) )
     plt.grid()
     plt.tight_layout()
    
@@ -255,24 +263,27 @@ def main():
     #-------------------------------------------------------------------
     # 学習過程で生成しておいた画像の animation gif
     #-------------------------------------------------------------------
-    """
-    fig = plt.figure( figsize = (4,8) )
+    fig = plt.figure( figsize = (4,6) )
     print( "len(dcgan._images_evals[0])", len(dcgan._images_evals[0]) )
 
     images = []
-    k = 0
-    for i in range(4):
-        for j in range(8):
-            k += 1
-            subplot = fig.add_subplot( 4, 8, k )
-            subplot.set_xticks([])
-            subplot.set_yticks([])
-            image = subplot.imshow(
-                        dcgan._images_evals[k-1][i][j], 
-                        vmin=0, vmax=1,
-                        cmap = plt.cm.gray_r
-                    )
-            images.append( [image] )
+    for imgs in dcgan._images_evals:
+        # row : 1
+        subplot = fig.add_subplot( 1, 1, 1 )
+        subplot.set_xticks([])
+        subplot.set_yticks([])
+
+        image = np.hstack( 
+                    np.array( imgs ) 
+                )
+        image = np.reshape( image, (28*4, 28*8) )
+
+        image = subplot.imshow(
+                    image, 
+                    vmin = 0, vmax = 1,
+                    cmap = plt.cm.gray_r
+                )
+        images.append( [image] )
 
     ani = animation.ArtistAnimation( 
               fig, images, 
@@ -280,7 +291,7 @@ def main():
           )
     
     ani.save('./output_image/DCGAN_fitting_epoch{}.gif'.format(epochs), writer='imagemagick', fps = 100 )
-    """
+    plt.show()
     #-------------------------------------------------------------------
     # 学習済み DCGAN に対し、入力ノイズ自動画像生成
     #-------------------------------------------------------------------
@@ -344,7 +355,7 @@ def main():
              )
     
     images = []
-    fig = plt.figure(figsize=(4,8))
+    fig = plt.figure(figsize=(4,4))
     for i in range( result.shape[0] ):
         subplot = fig.add_subplot(1,1,1)
         subplot.set_xticks([])
@@ -390,7 +401,7 @@ def main():
              )
     
     images = []
-    fig = plt.figure(figsize=(4,8))
+    fig = plt.figure(figsize=(4,4))
     for i in range( result.shape[0] ):
         subplot = fig.add_subplot(1,1,1)
         subplot.set_xticks([])

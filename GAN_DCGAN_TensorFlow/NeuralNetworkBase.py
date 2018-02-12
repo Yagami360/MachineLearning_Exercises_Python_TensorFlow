@@ -6,13 +6,15 @@
     [17/10/14] : 新規作成
     [17/11/19] : scikit-learn ライブラリの推定器 estimator の基本クラス `BaseEstimator`, `ClassifierMixin` を継承しているように変更
                : 各種抽象メソッド追加
-    [17/12/01] :  TensorBoard に計算グラフを表示するためのファイルを書き込むための関数 write_tensorboard_graph(...) 追加
-    [xx/xx/xx] :
+    [17/12/01] : TensorBoard に計算グラフを表示するためのファイルを書き込むための関数 write_tensorboard_graph(...) 追加
+    [18/02/12] : 学習済み NN モデルの各種 Variable の保存関数 save_model(...)、及び読み込み関数 load_model(...) 追加
+    [xx/xx/xx] : 
 
 """
 
 from abc import ABCMeta, abstractmethod             # 抽象クラスを作成するための ABC クラス
 
+import os
 import numpy
 
 # scikit-learn ライブラリ関連
@@ -69,6 +71,10 @@ class NeuralNetworkBase( BaseEstimator, ClassifierMixin ):
         _y_out_op : Operator
             モデルの出力のオペレーター
 
+        _model__saver : tf.train.Saver クラスのオブジェクト
+            モデルの saver
+            モデルの保存に使用する。
+
     [protedted] protedted な使用法を想定 
 
     [private] 変数名の前にダブルアンダースコア __ を付ける（Pythonルール）
@@ -87,6 +93,8 @@ class NeuralNetworkBase( BaseEstimator, ClassifierMixin ):
         self._optimizer = None
         self._train_step = None
         self._y_out_op = None
+
+        self._model_saver = None
 
         return
 
@@ -221,4 +229,51 @@ class NeuralNetworkBase( BaseEstimator, ClassifierMixin ):
         merged = tf.summary.merge_all() # Add summaries to tensorboard
         summary_writer = tf.summary.FileWriter( dir, graph = self._session.graph )    # tensorboard --logdir=${PWD}
         
+        return
+
+
+    def save_model( self, dir = "./model_session", file_name = "model_variables", saver = None, global_step = None ):
+        """
+        学習済み NN モデルの重み等の各種 Variable を保存する。
+        [Input]
+
+        [補足]
+            保存した変数の数と，saver = tf.train.Saver()を呼ぶまでに宣言する変数数をそろえる必要がある
+        """
+        # 保存用ディレクトリの作成
+        if ( os.path.isdir( dir ) == False ):
+            os.makedirs( dir )
+
+        # tf.train.Saver() オブジェクト未作成ならオブジェクトを作成
+        if ( (saver == None) & (self._model_saver == None ) ):
+            self._model_saver = tf.train.Saver()
+
+        # 保存
+        self._model_saver.save( 
+            self._session, 
+            os.path.join( dir, file_name ), 
+            global_step = global_step 
+        )
+
+        print( "save model data at : %s",  os.path.join( dir, file_name ) )
+
+        return
+
+
+    def load_model( self, dir = "./model_session", file_name = "model_variables", saver = None ):
+        """
+        保存しておいた学習済み NN モデルの重み等の各種 Variable を読み込む。
+        """
+        check_point = tf.train.get_checkpoint_state( dir )
+        if ( (os.path.isdir( dir ) == False ) | ( check_point == None ) ):
+            print( "error : file is not founded at : %s" % os.path.join( dir, file_name ) )
+        
+        else:
+            # tf.train.Saver() オブジェクト未作成ならオブジェクトを作成
+            if ( (saver == None) & (self._model_saver == None ) ):
+                self._model_saver = tf.train.Saver()
+
+            self._model_saver.restore( self._session, os.path.join( dir, file_name ) )
+            print( "load model data from : %s" % os.path.join( dir, file_name ) )
+
         return
