@@ -5,7 +5,8 @@
     更新情報
     [17/11/18] : 新規作成
     [17/12/04] : 損失関数の処理の名前空間を設定するように修正 
-    [17/xx/xx] : 
+    [18/04/22] : シグモイド・クロス・エントロピー損失関数を表すクラス SigmoidCrossEntropy を追加
+    [18/xx/xx] : 
                : 
 """
 
@@ -146,6 +147,30 @@ class CrossEntropy( NNLoss ):
                                 -tf.reduce_sum( 
                                     t_holder * tf.log( tf.clip_by_value(y_out_op, 1e-10, 1.0) ), 
                                     reduction_indices = [1]     # sum をとる行列の方向 ( 1:row 方向 )
+                                )
+                            )
+        
+        return self._loss_op
+
+
+class SigmoidCrossEntropy( NNLoss ):
+    """
+    シグモイド・クロス・エントロピーの損失関数
+    NNLoss クラスの子クラスとして定義
+    """
+    def __init__( self, node_name = "Loss_SigmoidCrossEntropy_op" ):
+        self._loss_op = None
+        self._node_name = node_name
+
+        return
+
+    def loss( self, t_holder, y_out_op ):
+        with tf.name_scope( self._node_name ):
+            # softmax で正規化済みでない場合
+            self._loss_op = tf.reduce_mean(
+                                tf.nn.sigmoid_cross_entropy_with_logits(
+                                    labels = t_holder,
+                                    logits = y_out_op
                                 )
                             )
         
