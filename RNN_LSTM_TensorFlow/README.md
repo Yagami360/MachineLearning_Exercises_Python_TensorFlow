@@ -16,6 +16,9 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
     1. [LSTM による Adding Problem に対する長期予想性とその評価処理 : `main2.py`](#ID_3-2)
         1. [コードの内容説明](#ID_3-2-1)
         1. [コードの実行結果](#ID_3-2-2)
+    1. [多層構造をもつ LSTM による IMDb映画評論の感情分析 : `main3.py`](#ID_3-3)
+        1. [コードの内容説明](#ID_3-3-1)
+        1. [コードの実行結果](#ID_3-3-2)
 1. [背景理論](#ID_4)
     1. [リカレントニューラルネットワーク [RNN : Recursive Neural Network]<br>＜階層型ニューラルネットワーク＞](#ID_5)
         1. [長・短期記憶（LSTM [long short-term memory]）モデル](#ID_5-2)
@@ -30,11 +33,12 @@ TensorFlow を用いた、LSTM [Long short-term memory] による時系列モデ
 
 ### 使用するライブラリ
 
-> TensorFlow ライブラリ <br>
->> `tf.contrib.rnn.LSTMRNNCell(...)` : <br>
->> 時系列に沿った LSTM 構造を提供するクラス `LSTMCell` の `cell` を返す。<br>
->> この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
->>> https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
+- TensorFlow ライブラリ <br>
+    - `tf.contrib.rnn.LSTMRNNCell(...)` : <br>
+        時系列に沿った LSTM 構造を提供するクラス `LSTMCell` の `cell` を返す。<br>
+        この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。<br>
+        https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell<br>
+        → tf.nn.rnn_cell.BasicLSTMCell(...) に変更
 
 > その他ライブラリ
 >>
@@ -327,6 +331,20 @@ LSTM モデルによる時系列データの取り扱いの簡単な例として
 
 ---
 
+<a id="ID_3-2"></a>
+
+## 多層構造をもつ LSTM による IMDb映画評論の感情分析 : `main3.py`
+- 参考 URL
+    - https://github.com/Yagami360/python-machine-learning-book-2nd-edition/blob/master/code/ch16/ch16.ipynb
+- データセット
+    - 
+many-to-one な RNN （LSTM構造）で、IMDb映画評論データセットを用いて感情分析する。
+
+
+> 記載中...
+
+
+---
 
 <a id="ID_4"></a>
 
