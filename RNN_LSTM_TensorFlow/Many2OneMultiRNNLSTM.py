@@ -39,8 +39,13 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
     scikit-learn ライブラリとの互換性のある自作クラス
 
     [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
+        _n_hiddenLayers : int
+            １つの隠れ層のノードに集約されている LSTM の数
+        _n_MultiRNN : int
+            多層 RNN の層数
         _n_in_sequence_encoder : int
-            時系列データを区切った Encoder の各シークエンスの長さ（サイズ）
+            Encoder の各シークエンスの長さ（サイズ）
+
         _epochs : int
             エポック数（トレーニング回数）
         _batch_size : int
@@ -62,6 +67,13 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
             埋め込み行列を表す Variable
         _embedding_lookup_op : Operator
             埋め込み検索演算を表す Operator
+        
+        _rnn_cells : list<BasicRNNCell クラスのオブジェクト> <tensorflow.python.ops.rnn_cell_impl.BasicRNNCell>
+            RNN 構造を提供する cell のリスト <tf.nn.rnn_cell.BasicLSTMCell(...)>
+            この `cell` は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
+            これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
+        _rnn_states : list<Tensor>
+            cell の状態
 
     [protedted] protedted な使用法を想定 
 
@@ -72,8 +84,10 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
     def __init__( 
             self,
             session = tf.Session( config = tf.ConfigProto(log_device_placement=True) ),
-            n_vocab = 100,
+            n_hiddenLayer = 128,
+            n_MultiRNN = 1,
             n_in_sequence_encoder = 25,
+            n_vocab = 100,
             epochs = 1000,
             batch_size = 10,
             eval_step = 1,
@@ -85,22 +99,27 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         tf.set_random_seed(12)
 
         # 各パラメータの初期化
+        self._n_hiddenLayer = n_hiddenLayer
+        self._n_MultiRNN = n_MultiRNN
         self._n_in_sequence_encoder = n_in_sequence_encoder
 
         self._epochs = epochs
         self._batch_size = batch_size
         self._eval_step = eval_step   
-
-        #
+        
         self._n_vocab = n_vocab
         self._save_step = save_step
 
         # evaluate 関連の初期化
         self._losses_train = []
 
-        #
+        # 埋め込み関連の初期化
         self._embedding_matrix_var = None
         self._embedding_lookup_op = None
+
+        # RNN Cell の初期化
+        self._rnn_cells = []
+        self._rnn_states = []
 
         # placeholder の初期化
         # shape の列（横方向）は、各層の次元（ユニット数）に対応させる。
@@ -122,8 +141,41 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         return
 
 
-    def print( self, str):
+    def print( self, str ):
+        print( "----------------------------------" )
+        print( str )
+        print( self )
 
+        print( "_session : ", self._session )
+        print( "_init_var_op :\n", self._init_var_op )
+
+        print( "_loss_op : ", self._loss_op )
+        print( "_optimizer : ", self._optimizer )
+        print( "_train_step : ", self._train_step )
+        print( "_y_out_op : ", self._y_out_op )
+
+        print( "_n_hiddenLayer : ", self._n_hiddenLayer )
+        print( "_n_MultiRNN : ", self._n_MultiRNN )
+        print( "_n_in_sequence_encoder : ", self._n_in_sequence_encoder )
+        print( "_n_vocab : ", self._n_vocab )
+
+        print( "_epoches : ", self._epochs )
+        print( "_batch_size : ", self._batch_size )
+        print( "_eval_step : ", self._eval_step )
+
+        print( "_encoder_input_holder : ", self._encoder_input_holder )
+        print( "_t_holder : ", self._t_holder )
+        print( "_dropout_holder : ", self._dropout_holder )
+
+        print( "_rnn_cells : \n", self._rnn_cells )
+        #if( (self._session != None) and (self._init_var_op != None) ):
+            #print( self._session.run( self._rnn_cells ) )
+
+        print( "_rnn_states : \n", self._rnn_states )
+        #if( (self._session != None) and (self._init_var_op != None) ):
+            #print( self._session.run( self._rnn_states ) )
+
+        print( "----------------------------------" )
         return
 
 
@@ -138,10 +190,12 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         #--------------------------------------------------------------
         # Encoder 側の埋め込み層
         #--------------------------------------------------------------
+        embed_size = 256
         with tf.name_scope( 'EmbeddingLayer' ):
             # 埋め込み行列を表す Variable
             self._embedding_matrix_var = tf.Variable( 
-                                             tf.random_uniform( [self._n_vocab, self._n_in_sequence_encoder], -1.0, 1.0 ),
+                                             #tf.random_uniform( [self._n_vocab, self._n_in_sequence_encoder], -1.0, 1.0 ),
+                                             tf.random_uniform( [self._n_vocab, embed_size], -1.0, 1.0 ),
                                              name = "embedding_matrix_var"
                                          )
 
@@ -152,15 +206,12 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
 
         #--------------------------------------------------------------
         # many-to-one の RNN
-        #--------------------------------------------------------------
-        n_hiddenLayer = 256     # 隠れユニットの個数（LSTMセルの個数）
-        num_layers = 1          # 多層 RNN の層数
-        
+        #--------------------------------------------------------------        
         # 時系列に沿った RNN 構造を提供するクラス BasicLSTMCell の cell を取得する。
         # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
         # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
         lstm_cell = tf.nn.rnn_cell.BasicLSTMCell( 
-                        n_hiddenLayer,          # int, The number of units in the RNN(LSTM) cell.
+                        self._n_hiddenLayer,    # int, The number of units in the RNN(LSTM) cell.
                         forget_bias=0.0,        # 忘却ゲート
                         state_is_tuple=True 
                     )
@@ -169,19 +220,19 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         lstm_cell = tf.nn.rnn_cell.DropoutWrapper( lstm_cell, output_keep_prob=self._dropout_holder )
 
         # 総数に対応した cell のリストを Multi RNN 化
-        cells = tf.nn.rnn_cell.MultiRNNCell( [lstm_cell] * num_layers, state_is_tuple=True )
+        cells = tf.nn.rnn_cell.MultiRNNCell( [lstm_cell] * self._n_MultiRNN, state_is_tuple=True )
         
         """
         cells = tf.nn.rnn_cell.MultiRNNCell(
                     [ tf.nn.rnn_cell.DropoutWrapper(
                         tf.nn.rnn_cell.BasicLSTMCell( 
-                            n_hiddenLayer,          # int, The number of units in the RNN(LSTM) cell.
-                            forget_bias=0.0,        # 忘却ゲート
+                            self._n_hiddenLayer,          # int, The number of units in the RNN(LSTM) cell.
+                            forget_bias=0.0,              # 忘却ゲート
                             state_is_tuple=True 
                         ),
                         output_keep_prob = self._dropout_holder
                     ) 
-                    for i in range(num_layers) ]
+                    for i in range(self._n_MultiRNN) ]
                 )
         """
         print( "cells : ", cells )
@@ -190,6 +241,7 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         # 最初の時間 t0 では、過去の隠れ層がないので、
         # cell.zero_state(...) でゼロの状態を初期設定する。
         init_state_tsr = cells.zero_state( batch_size=self._batch_size, dtype=tf.float32 )
+        self._rnn_states.append( init_state_tsr )
         print( "init_state_tsr :", init_state_tsr )
         
         # tf.nn.dynamic_rnn(...) を用いて、シーケンス長が可変長な RNN シーケンスを作成する。
@@ -199,11 +251,13 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         outputs_tsr, final_state_tsr = tf.nn.dynamic_rnn(
                                            cells,
                                            self._embedding_lookup_op,     
-                                           initial_state = init_state_tsr   # TypeError: 'Tensor' object is not iterable.
+                                           initial_state = init_state_tsr
                                        )
-
+        self._rnn_cells.append( outputs_tsr )
+        self._rnn_states.append( final_state_tsr )
         print( "outputs_tsr :", outputs_tsr )                   # outputs_tsr : Tensor("rnn/transpose:0", shape=(100, 200, 256), dtype=float32)
         print( "outputs_tsr[:,-1] :", outputs_tsr[:,-1] )       # outputs_tsr[:,-1]
+        print( "self._rnn_cells[-1] :", self._rnn_cells[-1] )
         print( "final_state_tsr :", final_state_tsr )
 
         #---------------------------------------------
@@ -213,7 +267,7 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         # This layer implements the operation: outputs = activation(inputs.kernel + bias)
         # Where activation is the activation function passed as the activation argument (if not None)
         y_in_op = tf.layers.dense(
-                      inputs = outputs_tsr[:,-1],    # ?
+                      inputs = outputs_tsr[:,-1],    # RNN Cell の最終的な Output
                       units = 1,                     # ? Integer or Long, dimensionality of the output space.
                       activation = None,
                       name = "logits"
@@ -229,9 +283,20 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         # モデルの出力
         #--------------------------------------------------------------
         # sigmoid で活性化して最終出力
+        # ? name で予想確率の名前指定（ predict() メソッドで使用）
+        #self._y_out_op = tf.nn.sigmoid( y_in_op, name = "probabilities" )
         self._y_out_op = tf.nn.sigmoid( y_in_op )
         print( "_y_out_op :", self._y_out_op )
         
+        # ? 予想確率 or 予想ラベルのディクショナリ（ predict() メソッドで使用）
+        """
+        pred_dict = {
+                        "probabilities" : self._y_out_op,
+                        "labels" : tf.cast( tf.round(self._y_out_op), tf.int32, name="labels" )
+                    }
+        print( "pred_dict :", pred_dict )
+        """
+
         return self._y_out_op
 
 
@@ -281,6 +346,17 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         [Output]
             self : 自身のオブジェクト
         """
+        def generate_minibatch( x, y, batch_size ):
+            n_batches = len( x ) // batch_size
+            x = x[:n_batches*batch_size]
+            y = y[:n_batches*batch_size]
+
+            # batch_size 間隔で for loop
+            for i in range( 0, len(x), batch_size ):
+                # yield 文で逐次データを return（関数の処理を一旦停止し、値を返す）
+                # メモリ効率向上のための処理
+                yield x[i:i+batch_size], y[i:i+batch_size]
+        
         #----------------------------
         # 学習開始処理
         #----------------------------
@@ -290,45 +366,60 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         # Session の run（初期化オペレーター）
         self._session.run( self._init_var_op )
 
+        # ミニバッチの繰り返し回数
+        minibatch_iteration = 1
+        
         #-------------------
         # 学習処理
         #-------------------
         # for ループでエポック数分トレーニング
         for epoch in range( self._epochs ):
-            # ミニバッチ学習処理のためランダムサンプリング
-            idx_shuffled = numpy.random.choice( len(X_train), size = self._batch_size )
-            X_train_shuffled = X_train[ idx_shuffled ]
-            y_train_shuffled = y_train[ idx_shuffled ]
+            # 各エポックの最初に、RNN Cell の状態を初期状態にリセット
+            # このプロセスを繰り返すことにより、エポックを通じての現在の状態の更新を実現する。
+            rnn_cell_state = self._session.run( self._rnn_states[0] )
 
-            #print( "X_train_shuffled.shape", X_train_shuffled.shape )
-            #print( "y_train_shuffled.shape", y_train_shuffled.shape )
-            #print( "X_train_shuffled.shape", X_train_shuffled.shape )
+            # ミニバッチサイズ単位で for ループ
+            for batch_x, batch_y in generate_minibatch( X_train, y_train , self._batch_size ):
+                # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
+                _, rnn_cell_state = self._session.run(
+                                        [ self._train_step, self._rnn_states[-1] ],
+                                        feed_dict = {
+                                            self._encoder_input_holder: batch_x,
+                                            self._t_holder: batch_y,
+                                            self._dropout_holder: 0.5,
+                                            self._rnn_states[0]: rnn_cell_state
+                                        }
+                                    )
 
-            # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
-            self._session.run(
-                self._train_step,
-                feed_dict = {
-                    self._X_holder: X_train_shuffled,
-                    self._t_holder: y_train_shuffled,
-                    self._dropout_holder: 0.5
-                }
-            )
+                # RNN cell の最終状態に現在の状態を feed し、最終状態を更新する。
+                # このプロセスを繰り返すことにより、エポックを通じての現在の状態の更新を実現する。
+                """
+                rnn_cell_state = self._session.run(
+                                     self._rnn_states[-1],
+                                     feed_dict = {
+                                         self._rnn_states[0] : rnn_cell_state
+                                     }
+                                 )
+                """
+
+                minibatch_iteration += 1
             
-            # 評価処理を行う loop か否か
-            # % : 割り算の余りが 0 で判断
-            if ( ( (epoch+1) % self._eval_step ) == 0 ):
-                # 損失関数値の算出
-                loss = self._loss_op.eval(
-                       session = self._session,
-                       feed_dict = {
-                           self._X_holder: X_train_shuffled,
-                           self._t_holder: y_train_shuffled,
-                           self._dropout_holder: 0.5
-                       }
-                   )
+                # 評価処理を行う loop か否か
+                # % : 割り算の余りが 0 で判断
+                if ( ( (epoch+1) % self._eval_step ) == 0 ):
+                    # 損失関数値の算出
+                    loss = self._loss_op.eval(
+                               session = self._session,
+                               feed_dict = {
+                                   self._encoder_input_holder: batch_x,
+                                   self._t_holder: batch_y,
+                                   self._dropout_holder: 0.5
+                               }
+                           )
 
-                self._losses_train.append( loss )
-                print( "epoch %d / loss = %f" % ( epoch, loss ) )
+                    self._losses_train.append( loss )
+                    print( "Epoch: %d/%d, minibatch iteration: %d / loss = %0.5f" % ( (epoch+1), self._epochs, minibatch_iteration, loss ) )
+
 
         return self._y_out_op
 
@@ -349,5 +440,93 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
             predicts : numpy.ndarry ( shape = [n_samples] )
                 予想結果（分類モデルの場合は、クラスラベル）
         """
+        def generate_minibatch( x, batch_size ):
+            n_batches = len( x ) // batch_size
+            x = x[:n_batches*batch_size]
 
-        return
+            # batch_size 間隔で for loop
+            for i in range( 0, len(x), batch_size ):
+                # yield 文で逐次データを return（関数の処理を一旦停止し、値を返す）
+                # メモリ効率向上のための処理
+                yield x[i:i+batch_size]
+
+        preds = []
+        test_state = self._session.run( self._rnn_states[0] )   # RNN Cell の初期状態で Session run()
+
+        for (i, batch_x) in enumerate( generate_minibatch(X_test, self._batch_size), 1 ):
+            pred, test_state = self._session.run(
+                                   [ tf.cast( tf.round(self._y_out_op), tf.int32 ), self._rnn_states[-1] ],
+                                   feed_dict = {
+                                       self._encoder_input_holder: batch_x,
+                                       self._dropout_holder: 0.5,
+                                       self._rnn_states[0]: test_state
+                                   }
+                               )
+
+            preds.append( pred )
+
+            #print( "pred :", pred )
+            #print( "test_state :", test_state )
+
+        # numpy.concatenate(...) :
+        return numpy.concatenate( preds )
+
+
+    def predict_proba( self, X_test ):
+        """
+        fitting 処理したモデルで、推定を行い、クラスの所属確率の予想値を返す。
+        proba : probability
+        [Input]
+            X_test : numpy.ndarry ( shape = [n_samples, n_features] )
+                予想したい特徴行列
+        """
+        def generate_minibatch( x, batch_size ):
+            n_batches = len( x ) // batch_size
+            x = x[:n_batches*batch_size]
+
+            # batch_size 間隔で for loop
+            for i in range( 0, len(x), batch_size ):
+                # yield 文で逐次データを return（関数の処理を一旦停止し、値を返す）
+                # メモリ効率向上のための処理
+                yield x[i:i+batch_size]
+
+        preds = []
+        test_state = self._session.run( self._rnn_states[0] )   # RNN Cell の初期状態で Session run()
+
+        for (i, batch_x) in enumerate( generate_minibatch(X_test, self._batch_size), 1 ):
+            pred, test_state = self._session.run(
+                                   #[ "probabilities:0", self._rnn_states[-1] ],     # ?
+                                   [ self._y_out_op, self._rnn_states[-1] ],
+                                   feed_dict = {
+                                       self._encoder_input_holder: batch_x,
+                                       self._dropout_holder: 0.5,
+                                       self._rnn_states[0]: test_state
+                                   }
+                               )
+
+            preds.append( pred )
+
+            #print( "pred :", pred )
+            #print( "test_state :", test_state )
+
+        # numpy.concatenate(...) :
+        return numpy.concatenate( preds )
+
+
+    def accuracy( self, X_test, y_test ):
+        """
+        指定したデータでの正解率 [accuracy] を計算する。
+        """
+        # 予想ラベルを算出する。
+        predict = self.predict( X_test )
+
+        # 正解数
+        n_correct = numpy.sum( numpy.equal( predict, y_test ) )
+        #print( "numpy.equal( predict, y_test ) :", numpy.equal( predict, y_test ) )    # ValueError: operands could not be broadcast together with shapes (25000,) (25001,) 
+        #print( "n_correct :", n_correct )
+
+        # 正解率 = 正解数 / データ数
+        accuracy = n_correct / X_test.shape[0]
+
+        return accuracy
+

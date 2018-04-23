@@ -176,8 +176,12 @@ def main():
     X_train = sequences[:25000, :]
     y_train = dfIMb.loc[:25000, "sentiment"].values
 
-    X_test = sequences[25000:, :]
-    y_test = dfIMb.loc[25000:, "sentiment"].values
+    X_test = sequences[25001:, :]
+    y_test = dfIMb.loc[25001:, "sentiment"].values
+
+    #print( "n_samples [total] :", sequences.shape[0] )
+    print( "n_samples [train] :", X_train.shape[0] )
+    print( "n_samples [test] :", X_test.shape[0] )
 
     #======================================================================
     # アルゴリズム（モデル）のパラメータを設定
@@ -190,14 +194,14 @@ def main():
     learning_rate1 = 0.001
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
+
     rnn = Many2OneMultiRNNLSTM(
               session = tf.Session(),
-              #n_inputLayer = 1,
-              #n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
-              #n_outputLayer = 1,
+              n_hiddenLayer = 128,                             # １つの LSTM ブロック中に集約されている隠れ層のノード数
+              n_MultiRNN = 1,
               n_in_sequence_encoder = sequence_length,         # エンコーダー側のシーケンス長 / 
-              n_vocab = n_words,                                   #
-              epochs = 2000,
+              n_vocab = n_words,                               # 単語数（埋め込み行列の行数）
+              epochs = 2,
               batch_size = 100,
               eval_step = 1,
               save_step = 500
@@ -253,7 +257,8 @@ def main():
     # TensorBoard 用のファイル（フォルダ）を作成
     #rnn.write_tensorboard_graph()
 
-    #rnn.fit( X_train, y_train )
+    rnn.print( "before fitting" )
+    rnn.fit( X_train, y_train )
 
     #======================================================================
     # モデルの評価
@@ -262,6 +267,35 @@ def main():
     #---------------------------------------------------------
     # 損失関数を plot
     #---------------------------------------------------------
+    plt.clf()
+    plt.plot(
+        range( len(rnn._losses_train) ), rnn._losses_train,
+        label = 'RNN - %s = [%d - %d], learning_rate = %0.3f' % ( type(rnn) , rnn._n_hiddenLayer, rnn._n_MultiRNN, learning_rate1 ),
+        linestyle = '-',
+        linewidth = 0.2,
+        color = 'red'
+    )
+    plt.title( "loss / Sigmoid Cross Entropy" )
+    plt.legend( loc = 'best' )
+    plt.ylim( ymin = 0.0 )
+    plt.xlabel( "minibatch iteration" )
+    plt.grid()
+    plt.tight_layout()
+    
+    MLPlot.saveFigure( fileName = "RNN-LSTM_3-1.png" )
+    plt.show()
+
+    #---------------------------------------------------------
+    # 正解率を predict
+    #---------------------------------------------------------
+    #pred = rnn.predict( X_test )
+    #print( "pred :", pred )
+
+    accuracy_train = rnn.accuracy( X_train, y_train )
+    accuracy_test = rnn.accuracy( X_test, y_test )
+
+    print( "accuracy [train] :", accuracy_train )
+    print( "accuracy [test] :", accuracy_test )
 
 
     print("Finish main()")
