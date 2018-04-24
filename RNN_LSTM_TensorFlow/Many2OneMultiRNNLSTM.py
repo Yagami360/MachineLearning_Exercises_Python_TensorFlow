@@ -268,7 +268,7 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         # Where activation is the activation function passed as the activation argument (if not None)
         y_in_op = tf.layers.dense(
                       inputs = outputs_tsr[:,-1],    # RNN Cell の最終的な Output
-                      units = 1,                     # ? Integer or Long, dimensionality of the output space.
+                      units = 1,                     # Integer or Long, dimensionality of the output space. / one-hot encoding していないので出力ノード数は 1
                       activation = None,
                       name = "logits"
                   )
@@ -283,20 +283,9 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         # モデルの出力
         #--------------------------------------------------------------
         # sigmoid で活性化して最終出力
-        # ? name で予想確率の名前指定（ predict() メソッドで使用）
-        #self._y_out_op = tf.nn.sigmoid( y_in_op, name = "probabilities" )
         self._y_out_op = tf.nn.sigmoid( y_in_op )
         print( "_y_out_op :", self._y_out_op )
         
-        # ? 予想確率 or 予想ラベルのディクショナリ（ predict() メソッドで使用）
-        """
-        pred_dict = {
-                        "probabilities" : self._y_out_op,
-                        "labels" : tf.cast( tf.round(self._y_out_op), tf.int32, name="labels" )
-                    }
-        print( "pred_dict :", pred_dict )
-        """
-
         return self._y_out_op
 
 
