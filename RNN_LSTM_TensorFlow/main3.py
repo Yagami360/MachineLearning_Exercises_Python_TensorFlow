@@ -176,8 +176,8 @@ def main():
     X_train = sequences[:25000, :]
     y_train = dfIMb.loc[:25000, "sentiment"].values
 
-    X_test = sequences[25001:, :]
-    y_test = dfIMb.loc[25001:, "sentiment"].values
+    X_test = sequences[25000:, :]
+    y_test = dfIMb.loc[25000:, "sentiment"].values
 
     #print( "n_samples [total] :", sequences.shape[0] )
     print( "n_samples [train] :", X_train.shape[0] )
@@ -201,7 +201,7 @@ def main():
               n_MultiRNN = 1,
               n_in_sequence_encoder = sequence_length,         # エンコーダー側のシーケンス長 / 
               n_vocab = n_words,                               # 単語数（埋め込み行列の行数）
-              epochs = 2,
+              epochs = 40,
               batch_size = 100,
               eval_step = 1,
               save_step = 500

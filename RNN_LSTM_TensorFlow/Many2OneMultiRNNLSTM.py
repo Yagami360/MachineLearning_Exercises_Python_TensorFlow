@@ -521,7 +521,7 @@ class Many2OneMultiRNNLSTM( NeuralNetworkBase ):
         predict = self.predict( X_test )
 
         # 正解数
-        n_correct = numpy.sum( numpy.equal( predict, y_test ) )
+        n_correct = numpy.sum( numpy.equal( predict, y_test[0:predict.shape[0]] ) )
         #print( "numpy.equal( predict, y_test ) :", numpy.equal( predict, y_test ) )    # ValueError: operands could not be broadcast together with shapes (25000,) (25001,) 
         #print( "n_correct :", n_correct )
 
