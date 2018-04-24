@@ -17,10 +17,9 @@ TensorFlow を用いた、Seq2Seq モデルの１つである RNN Encoder-Decode
     1. [RNN Encoder-Decoder（単層の LSTM 層）による簡単な質問応答（足し算）処理 : `main1.py`](#ID_3-1)
         1. [コードの内容説明](#ID_3-1-1)
         1. [コードの実行結果](#ID_3-1-2)
-    1. [RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main2.py`](#ID_3-2)
+    1. [RNN Encoder-Decoder（多層の LSTM 層）による英文学作品のワード予想処理 : `main3.py`](#ID_3-2)
         1. [コードの内容説明](#ID_3-2-1)
         1. [コードの実行結果](#ID_3-2-2)
-    1. RNN Encoder-Decoder（多層の LSTM 層）による英文学作品のワード予想処理 : `main3.py`
 1. [参考サイト](#ID_0)
 
 
@@ -528,7 +527,7 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
 <a id="ID_3-2"></a>
 
-## RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main2.py`
+## RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main3.py`
 > 実装中...<br>
 
 <!--
@@ -720,32 +719,27 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
             # 単語の数
             n_vocab = len( dict_idx_to_vocab ) + 1
         ```
+    - そして、抽出したテキストデータを数値インデックス情報に変換したデータの形状を、<br>
+    入力用 x と（１文字ずれた）出力用 y のバッチに変換する。
+    ```Python
+    [main3.py]
+    
+    ```
 - この自然言語処理（NLP）に対応した、RNN Encoder-Decoder モデルの各種パラメーターの設定を行う。
-    - この設定は、`Seq2SeqRNNEncoderDecoderLSTM` クラスのインスタンス作成時の引数にて行う。
-    - 入力層のノード数 `n_inputLayer` は 1 ノード。隠れ層のノード数 `n_hiddenLayer` は 128 ノード。
+    - この設定は、`Seq2SeqMultiRNNLSTM` クラスのインスタンス作成時の引数にて行う。
     - xxx
     ```python
-    [main2.py]
-    rnn1 = Seq2SeqRNNEncoderDecoderLSTM(
-               session = tf.Session(),
-               n_inputLayer = 1,
-               n_hiddenLayer = 128,                 # rnn_size
-               n_outputLayer = 1,
-               n_in_sequence_encoder = 50,          # エンコーダー側のシーケンス長 / 
-               n_in_sequence_decoder = 50,          # デコーダー側のシーケンス長 / 
-               n_vocab = n_vocab,                   # 7511
-               epochs = 1000,
-               batch_size = 100,
-               eval_step = 1,
-               save_step = 500               
+    [main3.py]
+    rnn = Seq2SeqMultiRNNLSTM(
+        実装中...
            )
     ```
-- RNN Encoder-Decoder（単層の LSTM）モデルの構造を定義する。 
-    - この処理は、`Seq2SeqRNNEncoderDecoderLSTM` クラスの `model()` メソッドにて行う。
+- RNN Encoder-Decoder（多層の LSTM）モデルの構造を定義する。 
+    - この処理は、`Seq2SeqMultiRNNLSTM` クラスの `model()` メソッドにて行う。
     - まず、Encoder 側の埋め込み層の構造を構築していく。
         - 埋め込み行列（単語ベクトルの集合）の Variable `self._embedding_matrix_var` と 埋め込み探索演算の Operator `self.embedding_lookup_op` を作成する。
         ```python
-        [Seq2SeqRNNEncoderDecoderLSTM.py]
+        [Seq2SeqMultiRNNLSTM.py]
         def model():
             #--------------------------------------------------------------
             # 埋め込み行列（単語ベクトルの集合）と埋め込み探索演算を作成
@@ -762,23 +756,14 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 
         ```
     - 次に、Encoder 側の層の構造を、再帰構造に従って、構築していく。
-        - そのために、`tf.contrib.rnn.BasicLSTMCell(...)` を用いて、時系列に沿った RNN 構造を提供するクラス `BasicLSTMCell` の cell を取得する。
+        - そのために、`tf.tf.rnn.BasicLSTMCell(...)` を用いて、時系列に沿った RNN 構造を提供するクラス `BasicLSTMCell` の cell を取得する。
         - この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
         これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
         ```python
-        [Seq2SeqRNNEncoderDecoderLSTM.py]
+        [Seq2SeqMultiRNNLSTM.py]
         def model():
             ...
-            #--------------------------------------------------------------
-            # Encoder
-            #--------------------------------------------------------------
-            with tf.variable_scope( 'Encoder' ):
-                # 時系列に沿った RNN 構造を提供するクラス BasicLSTMCell の cell を取得する。
-                # この cell は、内部（プロパティ）で state（隠れ層の状態）を保持しており、
-                # これを次の時間の隠れ層に順々に渡していくことで、時間軸の逆伝搬を実現する。
-                cell_encoder = tf.contrib.rnn.BasicLSTMCell( 
-                                   num_units = self._n_hiddenLayer     # int, The number of units in the RNN cell.
-                               )
+            実装中
         ```
         - 最初の時間 t0 では、過去の隠れ層がないので、`cell.zero_state(...)` でゼロの状態を初期設定する。
         - `tf.nn.dynamic_rnn(...)` を用いて、可変長な RNN シーケンスを作成する。
