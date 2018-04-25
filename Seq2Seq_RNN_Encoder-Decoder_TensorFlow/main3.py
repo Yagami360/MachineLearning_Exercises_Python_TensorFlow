@@ -112,7 +112,9 @@ def main():
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
-    X_train, Y_train = text_data_idx_reshape( sequence = text_data_idx, batch_size = 64, n_steps = 10 )
+    batch_size = 64
+
+    X_train, Y_train = text_data_idx_reshape( sequence = text_data_idx, batch_size = batch_size, n_steps = 10 )
     print( "X_train :", X_train )
     print( "Y_train :", Y_train )
 
@@ -127,13 +129,12 @@ def main():
 
     rnn = Seq2SeqMultiRNNLSTM(
               session = tf.Session(),
-              n_classes = len( text_data_idx ),    # テキストコーパスの文字の総数
+              n_classes = n_vocab,    # テキストコーパスの文字の総数
               n_steps = 10,                        # ミニバッチの分割ステップ数
               n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
               n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
-              n_vocab = n_vocab,                   # 単語数（埋め込み行列の行数）
-              epochs = 40,
-              batch_size = 100,
+              epochs = 100,
+              batch_size = batch_size,
               eval_step = 1,
               save_step = 500
           )
@@ -166,7 +167,7 @@ def main():
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    rnn.loss( L2Norm() )
+    rnn.loss( SoftmaxCrossEntropy() )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
@@ -202,30 +203,28 @@ def main():
     #---------------------------------------------------------
     # 損失関数を plot
     #---------------------------------------------------------
-    """
     plt.clf()
     plt.plot(
-        range( rnn1._epochs ), rnn1._losses_train,
-        label = 'RNN - %s = [%d - %d - %d], learning_rate = %0.3f' % ( type(rnn1) , rnn1._n_inputLayer, rnn1._n_hiddenLayer, rnn1._n_outputLayer, learning_rate1 ) ,
+        range( len(rnn._losses_train) ), rnn._losses_train,
+        label = 'RNN - %s = [%d - %d], learning_rate = %0.3f' % ( type(rnn) , rnn._n_hiddenLayer, rnn._n_MultiRNN, learning_rate1 ),
         linestyle = '-',
         linewidth = 0.2,
         color = 'red'
     )
-    plt.title( "loss / L2 Norm (MSE)" )
+    plt.title( "loss / Softmax Cross Entropy" )
     plt.legend( loc = 'best' )
     plt.ylim( ymin = 0.0 )
-    plt.xlabel( "Epocs" )
+    plt.xlabel( "minibatch iteration" )
     plt.grid()
     plt.tight_layout()
-    
     MLPlot.saveFigure( fileName = "Seq2SeqRNN-LSTM_3-1.png" )
     plt.show()
-    """
+
     #---------------------------------------------------------
     # 予想値
     #---------------------------------------------------------
     # 予想値を取得
-    #predicts1 = rnn1.predict( X_features )
+    #predicts1 = rnn.predict( X_features )
     #print( "predicts1 :\n", predicts1 )
     
     

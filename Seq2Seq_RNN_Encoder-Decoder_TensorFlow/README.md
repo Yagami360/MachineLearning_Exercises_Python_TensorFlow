@@ -17,7 +17,7 @@ TensorFlow を用いた、Seq2Seq モデルの１つである RNN Encoder-Decode
     1. [RNN Encoder-Decoder（単層の LSTM 層）による簡単な質問応答（足し算）処理 : `main1.py`](#ID_3-1)
         1. [コードの内容説明](#ID_3-1-1)
         1. [コードの実行結果](#ID_3-1-2)
-    1. [RNN Encoder-Decoder（多層の LSTM 層）による英文学作品のワード予想処理 : `main3.py`](#ID_3-2)
+    1. [many-to-many な 多層RNN（LSTM ）による英文学作品のワード予想処理 : `main3.py`](#ID_3-2)
         1. [コードの内容説明](#ID_3-2-1)
         1. [コードの実行結果](#ID_3-2-2)
 1. [参考サイト](#ID_0)
@@ -527,14 +527,10 @@ RNN Encoder-Decoder（LSTM 使用） による自然言語処理の応用例と�
 
 <a id="ID_3-2"></a>
 
-## RNN Encoder-Decoder（単層の LSTM 層）による英文学作品のワード予想処理 : `main3.py`
+## many-to-many な 多層RNN（LSTM ）による英文学作品のワード予想処理 : `main3.py`
 > 実装中...<br>
 
-<!--
-> ./RNN_Attention_TensorFlow フォルダに移行予定
--->
-
-RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英文学作品のシェイクスピア作品のテキストデータ ( http://www.gutenberg.org/cache/epub/100/pg100.txt ) を用いて、RNN Encoder-Decoder （LSTM 使用）モデルで学習し、特定のワード（"thus"（それ故）, "more"（更には） 等）の後に続くワードを予想する処理を実装する。
+many-to-many な構造を持つ多層 RNN による自然言語処理（NLP）の一例として、英文学作品のシェイクスピア作品のテキストデータ ( http://www.gutenberg.org/cache/epub/100/pg100.txt ) を用いて、RNN Encoder-Decoder （LSTM 使用）モデルで学習し、特定のワード（"thus"（それ故）, "more"（更には） 等）の後に続くワードを予想する処理を実装する。
 
 
 ### 使用するライブラリ
@@ -553,6 +549,7 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 > `tf.nn.dynamic_rnn(...)` : 可変長サイズの動的な RNN 
 >> https://www.tensorflow.org/api_docs/python/tf/nn/dynamic_rnn
 
+<!--
 > `tf.contrib.seq2seq.TrainingHelper(...)` : seq2seq モデルの Decoder に対する Beam-Serach ?
 >> https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/TrainingHelper
 
@@ -561,8 +558,7 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 
 > `tf.contrib.seq2seq.dynamic_decode(...)` :
 >> https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/dynamic_decode
-
-
+-->
 
 
 <a id="ID_3-2-1"></a>
@@ -723,7 +719,7 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
     入力用 x と（１文字ずれた）出力用 y のバッチに変換する。
     ```Python
     [main3.py]
-    
+
     ```
 - この自然言語処理（NLP）に対応した、RNN Encoder-Decoder モデルの各種パラメーターの設定を行う。
     - この設定は、`Seq2SeqMultiRNNLSTM` クラスのインスタンス作成時の引数にて行う。
@@ -775,10 +771,29 @@ RNN Encoder-Decoder による自然言語処理（NLP）の一例として、英
 
 <br>
 
-
-
 ---
 
+<a id="ID_3-2-2"></a>
+
+### コードの実行結果
+> 実装中...
+
+### 実行条件１
+- 隠れ層（LSTM） : **128** ノード、の many-to-many な RNN モデル
+    - テキストコーパスの総単語数：**789083** 個
+    - 学習率 **0.001**, 最適化アルゴリズム : Adam ( 減衰項 : beta1 = **0.9**, beta2 = **0.999** )
+    - エポック数 **100** 回, ミニバッチサイズ **100**、ミニバッチのイテレーション回数 **xxx** 回
+
+##### 損失関数のグラフ（実行条件１）
+
+> エポック数 xxx 回程度で 0 に収束しており、うまく学習出来ていることが見て取れる。
+
+##### 生成文（実行条件１）
+
+
+
+
+<br>
 
 ---
 
