@@ -62,12 +62,15 @@ def main():
 
     # The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み＆抽出処理
     text_data = MLPreProcess.load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path = path_text, n_DeleteParagraph = 182, bCleaning = True )
-    #print( "text_data :\n", text_data )
+    print( "text_data :\n", len( text_data ) )
+
+    # 計算コストを減少させるためのデバッグ用処理
+    text_data = text_data[0:10000]
 
     # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
     # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
     text_data_idx, n_vocab = MLPreProcess.text_vocabulary_processing_without_tensorflow( text_data , min_word_freq = 5 )
-    print( "text_data_idx :", text_data_idx )
+    #print( "text_data_idx :", text_data_idx )
     print( "len( text_data_idx ) :", len( text_data_idx ) )
     print( "n_vocab :", n_vocab )
 
@@ -93,14 +96,14 @@ def main():
         # 元のシーケンスデータを入力用 x と出力用 y のシーケンスの２つに分割
         x = sequence[ 0 : n_batches*batch_size*n_steps ]
         y = sequence[ 1 : n_batches*batch_size*n_steps + 1 ]
-        print( "x :", x )   # shape = [n_batches*batch_size*n_steps]
-        print( "y :", y )   # shape = [n_batches*batch_size*n_steps]
+        #print( "x :", x )   # shape = [n_batches*batch_size*n_steps]
+        #print( "y :", y )   # shape = [n_batches*batch_size*n_steps]
 
         # 入力用 x と出力用 y のシーケンスを、バッチのリストに変換
         x_batches = np.split( x, batch_size )
         y_batches = np.split( y, batch_size )
-        print( "x_batches :", x_batches )   # shape = [batch_size(64), n_batches*n_steps(12320)] / [array([   1,    2,    3, ..., 1810,   50,  201]), array([ 28, 201,   0, ...,   0, 122, 117]),
-        print( "y_batches :", y_batches )
+        #print( "x_batches :", x_batches )   # shape = [batch_size(64), n_batches*n_steps(12320)] / [array([   1,    2,    3, ..., 1810,   50,  201]), array([ 28, 201,   0, ...,   0, 122, 117]),
+        #print( "y_batches :", y_batches )
 
         # 分割したバッチのリストを結合してリスト型から ndarry へ変換
         # np.stack(...) : 次元増加方向にリストを重ねる
@@ -115,15 +118,15 @@ def main():
     batch_size = 64
 
     X_train, Y_train = text_data_idx_reshape( sequence = text_data_idx, batch_size = batch_size, n_steps = 10 )
-    print( "X_train :", X_train )
-    print( "Y_train :", Y_train )
+    print( "X_train.shape :", X_train.shape )
+    print( "Y_train.shape :", Y_train.shape )
 
     #======================================================================
     # アルゴリズム（モデル）のパラメータを設定
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    learning_rate1 = 0.001
+    learning_rate1 = 0.01
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
@@ -133,13 +136,14 @@ def main():
               n_steps = 10,                        # ミニバッチの分割ステップ数
               n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
               n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
-              epochs = 100,
+              epochs = 2,
               batch_size = batch_size,
               eval_step = 1,
-              save_step = 500
+              save_step = 50,
+              bSamplingMode = False
           )
 
-    rnn.print( "after __init__()" )
+    #rnn.print( "after __init__()" )
 
     #======================================================================
     # 変数とプレースホルダを設定
@@ -160,20 +164,21 @@ def main():
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
-    rnn.model()
-    rnn.print( "after model()" )
+    rnn.model( reuse = False )
+    #rnn.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
-    rnn.loss( SoftmaxCrossEntropy() )
+    rnn.loss( SoftmaxCrossEntropy(), reuse = False )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
-    rnn.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    #rnn.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    rnn.optimizer( None, reuse = False )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -218,15 +223,35 @@ def main():
     plt.grid()
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "Seq2SeqRNN-LSTM_3-1.png" )
-    plt.show()
+    #plt.show()
 
     #---------------------------------------------------------
     # 予想値
     #---------------------------------------------------------
-    # 予想値を取得
-    #predicts1 = rnn.predict( X_features )
-    #print( "predicts1 :\n", predicts1 )
+    rnn._session.close()
+    del rnn
     
+    rnn = Seq2SeqMultiRNNLSTM(
+              session = tf.Session(),
+              n_classes = n_vocab,    # テキストコーパスの文字の総数
+              n_steps = 10,                        # ミニバッチの分割ステップ数
+              n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
+              n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
+              epochs = 2,
+              batch_size = batch_size,
+              eval_step = 1,
+              save_step = 50,
+              bSamplingMode = True
+          )
+    
+    rnn.model( reuse = True )
+    rnn.loss( SoftmaxCrossEntropy(), reuse = True )
+    #rnn.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ), reuse = True )
+    rnn.optimizer( None, reuse = True )
+    rnn.print( "for sampling" )
+
+    # 予想値を取得
+    rnn.sampling( output_length = 100, text2int_dir = text_data_idx, start_seq = "The" )    
     
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)

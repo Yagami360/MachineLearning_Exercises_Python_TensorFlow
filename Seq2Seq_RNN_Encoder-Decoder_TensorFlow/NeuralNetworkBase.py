@@ -255,7 +255,7 @@ class NeuralNetworkBase( BaseEstimator, ClassifierMixin ):
             global_step = global_step 
         )
 
-        print( "save model data at : %s",  os.path.join( dir, file_name ) )
+        print( "save model data at : %s" % os.path.join( dir, file_name ) )
 
         return
 
