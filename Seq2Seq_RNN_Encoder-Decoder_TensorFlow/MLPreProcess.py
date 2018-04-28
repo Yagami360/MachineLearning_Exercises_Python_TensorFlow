@@ -16,6 +16,7 @@
     [17/12/08] : The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み関数 `load_textdata_by_shakespeare_from_theProjectGutenbergEBook(...)` 追加
     [17/12/09] : テキストデータを数値インデックスの配列に変換する関数 `text_vocabulary_processing_without_tensorflow( ... )` 追加
     [17/12/10] : 整数の加算演算データセット `generate_add_uint_operation_dataset(...)` 生成関数追加
+    [18/04/28] : テキストデータを数値インデックスの配列に変換する関数 text_vocabulary_processing_without_tensorflow(...) 関数にて、テキストデータ ↔ 数値インデックスへの変換 map 情報を返すように修正。
     [xx/xx/xx] :
 
 """
@@ -1114,6 +1115,11 @@ class MLPreProcess( object ):
                 テキストデータのインデックスの配列
             n_vocab : int
                 出現頻度の高い単語（ワード、語彙）の数
+
+            dict_vcab_to_idx : ディクショナリ
+                語彙 "xxx" → インデックスへの map
+            dict_vcab_to_idx : ディクショナリ
+                インデックス → 語彙 "xxx" への map
         """
         # list<str> → １つの str に変換
         text_data = "".join( text_data )
@@ -1173,7 +1179,7 @@ class MLPreProcess( object ):
         #print( "text_data_idx :\n", text_data_idx )     # [   1    2    3 ...,    0  953 4616]
         #print( "n_vocab :\n", n_vocab )                 #
 
-        return text_data_idx, n_vocab
+        return text_data_idx, n_vocab, dict_vcab_to_idx, dict_idx_to_vocab
 
     #---------------------------------------------------------
     # 欠損値の処理を行う関数群
