@@ -65,7 +65,7 @@ def main():
     print( "text_data :\n", len( text_data ) )
 
     # 計算コストを減少させるためのデバッグ用処理
-    text_data = text_data[0:10000]
+    text_data = text_data[0:50000]
 
     # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
     # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
@@ -126,52 +126,38 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    learning_rate1 = 0.01
+    n_steps = 100           # ミニバッチの分割ステップ数
+    epochs = 100
+    
+    learning_rate1 = 0.005
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
     rnn = Seq2SeqMultiRNNLSTM(
               session = tf.Session(),
-              n_classes = n_vocab,    # テキストコーパスの文字の総数
-              n_steps = 10,                        # ミニバッチの分割ステップ数
+              n_classes = n_vocab,                 # テキストコーパスの文字の種類の総数
+              n_steps = n_steps,                   # ミニバッチの分割ステップ数
               n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
               n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
-              epochs = 2,
+              epochs = epochs,
               batch_size = batch_size,
               eval_step = 1,
               save_step = 50,
               bSamplingMode = False
           )
-
-    """
-    with tf.variable_scope( tf.get_variable_scope(), reuse = True ):
-        test_rnn = Seq2SeqMultiRNNLSTM(
-                       session = rnn._session,
-                       n_classes = n_vocab,    # テキストコーパスの文字の総数
-                       n_steps = 10,                        # ミニバッチの分割ステップ数
-                       n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
-                       n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
-                       epochs = 2,
-                       batch_size = batch_size,
-                       eval_step = 1,
-                       save_step = 50,
-                       bSamplingMode = True
-                   )
-    """
     
     test_rnn = Seq2SeqMultiRNNLSTM(
                    session = rnn._session,
-                   n_classes = n_vocab,    # テキストコーパスの文字の総数
-                   n_steps = 10,                        # ミニバッチの分割ステップ数
+                   n_classes = n_vocab,                 # テキストコーパスの文字の種類の総数
+                   n_steps = n_steps,                   # ミニバッチの分割ステップ数
                    n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
                    n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
-                   epochs = 2,
+                   epochs = epochs,
                    batch_size = batch_size,
                    eval_step = 1,
                    save_step = 50,
                    bSamplingMode = True
                )
-
 
     #rnn.print( "after __init__()" )
 
@@ -204,7 +190,6 @@ def main():
     # Declare the loss functions.
     #======================================================================
     rnn.loss( SoftmaxCrossEntropy(), reuse = False )
-
     test_rnn.loss( SoftmaxCrossEntropy(), reuse = True )
 
     #======================================================================
@@ -235,7 +220,7 @@ def main():
     #rnn.write_tensorboard_graph()
 
     # fitting 処理を行う
-    #rnn.fit( X_train, Y_train )
+    rnn.fit( X_train, Y_train )
     rnn.print( "after fitting" )
 
     test_rnn.print( "for sampling" )
@@ -252,7 +237,7 @@ def main():
         output_length = 100,
         text2int_dir = dict_vcab_to_idx,
         int2text_dir = dict_idx_to_vocab,
-        start_seq = "The" 
+        start_seq = "thou art" 
     )
     
     

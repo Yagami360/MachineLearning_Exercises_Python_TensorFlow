@@ -185,13 +185,8 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         print( "_dropout_holder : ", self._dropout_holder )
 
         print( "_rnn_cells : \n", self._rnn_cells )
-        #if( (self._session != None) and (self._init_var_op != None) ):
-            #print( self._session.run( self._rnn_cells ) )
-
         print( "_rnn_states : \n", self._rnn_states )
-        #if( (self._session != None) and (self._init_var_op != None) ):
-            #print( self._session.run( self._rnn_states ) )
-
+        
         print( "----------------------------------" )
         return
 
@@ -257,14 +252,14 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
 
             # 総数に対応した cell のリストを Multi RNN 化
             cells = tf.nn.rnn_cell.MultiRNNCell( [lstm_cell] * self._n_MultiRNN, state_is_tuple=True )
-            print( "cells : ", cells )
+            #print( "cells : ", cells )
         
             # cell 初期状態を定義
             # 最初の時間 t0 では、過去の隠れ層がないので、
             # cell.zero_state(...) でゼロの状態を初期設定する。
             init_state_tsr = cells.zero_state( batch_size = batch_size, dtype=tf.float32 )
             self._rnn_states.append( init_state_tsr )
-            print( "init_state_tsr :", init_state_tsr )
+            #print( "init_state_tsr :", init_state_tsr )
         
             # tf.nn.dynamic_rnn(...) を用いて、シーケンス長が可変長な RNN シーケンスを作成する。
             # outputs_tsr: The RNN output Tensor
@@ -278,10 +273,10 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
 
             self._rnn_cells.append( outputs_tsr )
             self._rnn_states.append( final_state_tsr )
-            print( "outputs_tsr :", outputs_tsr )                   # outputs_tsr : Tensor("rnn/transpose:0", shape=(100, 200, 256), dtype=float32)
-            print( "outputs_tsr[:,-1] :", outputs_tsr[:,-1] )       # outputs_tsr[:,-1]
-            print( "self._rnn_cells[-1] :", self._rnn_cells[-1] )
-            print( "final_state_tsr :", final_state_tsr )
+            #print( "outputs_tsr :", outputs_tsr )                   # outputs_tsr : Tensor("rnn/transpose:0", shape=(100, 200, 256), dtype=float32)
+            #print( "outputs_tsr[:,-1] :", outputs_tsr[:,-1] )       # outputs_tsr[:,-1]
+            #print( "self._rnn_cells[-1] :", self._rnn_cells[-1] )
+            #print( "final_state_tsr :", final_state_tsr )
 
             #---------------------------------------------
             # fully connected layer
@@ -298,14 +293,14 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
                           activation = None
                       )
 
-            print( "y_in_op :", y_in_op )              #
+            #print( "y_in_op :", y_in_op )              #
         
             #--------------------------------------------------------------
             # モデルの出力
             #--------------------------------------------------------------
             # softmax 出力（出力ノードが複数個存在するため）
             self._y_out_op = Softmax().activate( y_in_op )
-            print( "_y_out_op :", self._y_out_op )
+            #print( "_y_out_op :", self._y_out_op )
         
         return self._y_out_op
 
@@ -357,7 +352,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             # Optimizer, train step の設定
             #------------------------------------------------
             #self._optimizer = nnOptimizer._optimizer
-            self._optimizer = tf.train.AdamOptimizer( 0.001 )
+            self._optimizer = tf.train.AdamOptimizer( 0.005 )
 
             #self._train_step = nnOptimizer.train_step( self._loss_op )
 
@@ -437,24 +432,6 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
                 self._losses_train.append( loss )
                 print( "Epoch: %d/%d, minibatch iteration: %d / loss = %0.5f" % ( (epoch+1), self._epochs, minibatch_iteration, loss ) )
                 
-                """
-                # 評価処理を行う loop か否か
-                # % : 割り算の余りが 0 で判断
-                if ( ( (epoch+1) % self._eval_step ) == 0 ):
-                    # 損失関数値の算出
-                    loss = self._loss_op.eval(
-                               session = self._session,
-                               feed_dict = {
-                                   self._input_holder: batch_x,
-                                   self._t_holder: batch_y,
-                                   self._dropout_holder: 0.5
-                               }
-                           )
-
-                    self._losses_train.append( loss )
-                    print( "Epoch: %d/%d, minibatch iteration: %d / loss = %0.5f" % ( (epoch+1), self._epochs, minibatch_iteration, loss ) )
-
-                """
                 # モデルの保存処理を行う loop か否か
                 # % : 割り算の余りが 0 で判断
                 if ( ( (minibatch_iteration+1) % self._save_step ) == 0 ):
@@ -494,11 +471,10 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
 
             return char_idx
 
-        """
+
         if( self._bSamplingMode == False ):
             print( "this mesod is invalid error : not sampling mode" )
             return
-        """
 
         # 学習済みモデルを読み込み
         #self.load_model()
@@ -525,7 +501,6 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             str = str.lower()       # 大文字 → 小文字に変換
             x = np.zeros( (1,1) )   # shape = [1,1]
             x[0,0] = text2int_dir[str]
-            #print( "x :", x )
 
             probs, rnn_cell_state = self._session.run(
                                         [ self._y_out_op, self._rnn_states[-1] ],
@@ -537,7 +512,11 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
                                     )
 
             #print( "probs :", probs )
-            char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
+            #char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
+            
+            p = np.squeeze( probs )     # 余計な次元削除
+            char_id = np.argmax( p )    # 最大の確率を与えるインデックス
+
             pred_seq.append( int2text_dir[char_id] )
 
         #------------------------------------------------
@@ -555,7 +534,11 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
                                         }
                                     )
 
-            char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
+            #char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
+
+            p = np.squeeze( probs )     # 余計な次元削除
+            char_id = np.argmax( p )    # 最大の確率を与えるインデックス
+
             pred_seq.append( int2text_dir[char_id] )
 
         #------------------------------------------------
