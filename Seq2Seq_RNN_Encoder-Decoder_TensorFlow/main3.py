@@ -62,10 +62,10 @@ def main():
 
     # The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み＆抽出処理
     text_data = MLPreProcess.load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path = path_text, n_DeleteParagraph = 182, bCleaning = True )
-    print( "text_data :\n", len( text_data ) )
+    print( "len( text_data ) :\n", len( text_data ) )
 
     # 計算コストを減少させるためのデバッグ用処理
-    text_data = text_data[0:50000]
+    text_data = text_data[0:25000]
 
     # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
     # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
@@ -87,7 +87,7 @@ def main():
         
         # バッチの個数
         n_batches = int( len(sequence) / (batch_size * n_steps) )
-        print( "n_batches", n_batches )
+        #print( "n_batches", n_batches )
 
         # 元のシーケンスデータのサイズ以上の場合
         if( (n_batches*batch_size*n_steps+1) > len(sequence) ):
@@ -116,8 +116,9 @@ def main():
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
     batch_size = 64
+    n_steps = 100                           # ミニバッチの分割ステップ数
 
-    X_train, Y_train = text_data_idx_reshape( sequence = text_data_idx, batch_size = batch_size, n_steps = 10 )
+    X_train, Y_train = text_data_idx_reshape( sequence = text_data_idx, batch_size = batch_size, n_steps = n_steps )
     print( "X_train.shape :", X_train.shape )
     print( "Y_train.shape :", Y_train.shape )
 
@@ -126,10 +127,10 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    n_steps = 100           # ミニバッチの分割ステップ数
-    epochs = 100
+    n_vocab = len( dict_vcab_to_idx ) + 1   #
+    epochs = 100                            #
     
-    learning_rate1 = 0.005
+    learning_rate1 = 0.001
     adam_beta1 = 0.9        # For the Adam optimizer
     adam_beta2 = 0.999      # For the Adam optimizer
 
@@ -237,14 +238,13 @@ def main():
         output_length = 100,
         text2int_dir = dict_vcab_to_idx,
         int2text_dir = dict_idx_to_vocab,
-        start_seq = "thou art" 
+        start_seq = "the " 
     )
     
     
     #---------------------------------------------------------
     # 損失関数を plot
     #---------------------------------------------------------
-    """
     plt.clf()
     plt.plot(
         range( len(rnn._losses_train) ), rnn._losses_train,
@@ -260,8 +260,7 @@ def main():
     plt.grid()
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "Seq2SeqRNN-LSTM_3-1.png" )
-    #plt.show()
-    """
+    plt.show()
     
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)

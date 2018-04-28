@@ -41,7 +41,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
 
     [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
         _n_classes : int
-            テキストコーパスの文字の総数
+            テキストコーパスの文字の種類の総数
         _n_steps : int
             ミニバッチの分割ステップ数（入出力の placeholder の横 size になる）
 
@@ -121,37 +121,14 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         self._rnn_cells = []
         self._rnn_states = []
 
-        # placeholder の初期化
-        if ( self._bSamplingMode == False ):    # トレーニング時のアーキテクチャ
-            # shape の列（横方向）は、各層の次元（ユニット数）に対応させる。
-            # shape の行は、None にして汎用性を確保
-            self._input_holder = tf.placeholder( 
-                                     tf.int32, 
-                                     shape = [ self._batch_size, self._n_steps ],
-                                     name = "input_holder"
-                                 )
-        
-            self._t_holder = tf.placeholder( 
-                                 tf.int32, 
-                                 shape = [ self._batch_size, self._n_steps ],
-                                 name = "t_holder"
-                             )
+        # サンプリングモードに応じた処理の切り替え
+        if ( self._bSamplingMode == False ):
+            self._batch_size = batch_size
+            self._n_steps = n_steps
+        else:
+            self._batch_size = 1
+            self._n_steps = 1
 
-        else:   # サンプリングモード時
-            # サンプリングモード時は、batch_size = 1, n_steps = 1
-            self._input_holder = tf.placeholder( 
-                                     tf.int32, 
-                                     shape = [ 1, 1 ],
-                                     name = "input_holder"
-                                 )
-        
-            self._t_holder = tf.placeholder( 
-                                 tf.int32, 
-                                 shape = [ 1, 1 ],
-                                 name = "t_holder"
-                             )
-        
-        self._dropout_holder = tf.placeholder( tf.float32, name = "dropout_holder" )
 
         return
 
@@ -203,26 +180,20 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             #--------------------------------------------------------------
             # 学習時と推定時で処理の切り替えを行う。
             #--------------------------------------------------------------
-            batch_size = self._batch_size
-            n_steps = self._n_steps
-
-            if( self._bSamplingMode == True ):
-                batch_size = 1
-                n_steps = 1
-        
-            """
+            # placeholder の初期化        
             self._input_holder = tf.placeholder( 
                                      tf.int32, 
-                                     shape = [ batch_size, n_steps ],
+                                     shape = [ self._batch_size, self._n_steps ],
                                      name = "input_holder"
                                  )
         
             self._t_holder = tf.placeholder( 
                                  tf.int32, 
-                                 shape = [ batch_size, n_steps ],
+                                 shape = [ self._batch_size, self._n_steps ],
                                  name = "t_holder"
                              )
-            """
+
+            self._dropout_holder = tf.placeholder( tf.float32, name = "dropout_holder" )
 
             #--------------------------------------------------------------
             # Encoder 側の埋め込み層
@@ -257,7 +228,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             # cell 初期状態を定義
             # 最初の時間 t0 では、過去の隠れ層がないので、
             # cell.zero_state(...) でゼロの状態を初期設定する。
-            init_state_tsr = cells.zero_state( batch_size = batch_size, dtype=tf.float32 )
+            init_state_tsr = cells.zero_state( batch_size = self._batch_size, dtype=tf.float32 )
             self._rnn_states.append( init_state_tsr )
             #print( "init_state_tsr :", init_state_tsr )
         
@@ -352,7 +323,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             # Optimizer, train step の設定
             #------------------------------------------------
             #self._optimizer = nnOptimizer._optimizer
-            self._optimizer = tf.train.AdamOptimizer( 0.005 )
+            self._optimizer = tf.train.AdamOptimizer( 0.001 )
 
             #self._train_step = nnOptimizer.train_step( self._loss_op )
 
@@ -450,23 +421,28 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         [Output]
 
         """
-        def sampling_char_with_predprob( probs, char_size, n_top = 5 ):
+        def sampling_char_with_predprob( probs, n_vocab, n_top = 5 ):
             """
             予測確率に従って、実際の文字（単語）をサンプリング
+            貪欲なサンプリングではない手法で、
+            "for the for the for the ..." のような同じフレーズの繰り返しを防ぐ。
 
             """
             # 余計な次元削除
             p = np.squeeze( probs )
 
+            # 0 番目の要素 "unknown" を除外
+            p = p[1:]
+
             # 上位 n_top 個にソートするために、上位以外を 0 で埋める。
             idxs_zero = np.argsort(p)[:-n_top]
             p[ idxs_zero ] = 0.0
 
-            # 全体の確率の平均をとる
+            # 全体の確率を正規化
             p = p / np.sum( p )
 
-            # idx を予想確率に基づきランダムサンプリング
-            char_idxs = np.random.choice( char_size, 1, p = p )
+            # 予想確率 p に基づき、idx をランダムサンプリング
+            char_idxs = np.random.choice( n_vocab - 1, 1, p = p )
             char_idx = char_idxs[0]
 
             return char_idx
@@ -477,14 +453,8 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             return
 
         # 学習済みモデルを読み込み
-        #self.load_model()
-
-        if( self._model_saver == None ):
-            self._model_saver = tf.train.Saver()
-
-        self._model_saver.restore( self._session, tf.train.latest_checkpoint( "./model_session" ) )
-
-
+        self.load_model()
+        
         #------------------------------------------------------------
         # 引数で指定された開始シーケンス start_seq を起点にモデルを実行
         #------------------------------------------------------------
@@ -506,16 +476,16 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
                                         [ self._y_out_op, self._rnn_states[-1] ],
                                         feed_dict = {
                                             self._input_holder: x,
-                                            self._dropout_holder: 0.5,
+                                            self._dropout_holder: 1.0,
                                             self._rnn_states[0]: rnn_cell_state
                                         }
                                     )
 
-            #print( "probs :", probs )
-            #char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
-            
-            p = np.squeeze( probs )     # 余計な次元削除
-            char_id = np.argmax( p )    # 最大の確率を与えるインデックス
+            print( "probs :", probs )
+
+            char_id = sampling_char_with_predprob( probs, n_vocab = self._n_classes, n_top = 5 )
+            #p = np.squeeze( probs )         # 余計な次元削除
+            #char_id = np.argmax( p[1:] )    # 最大の確率を与えるインデックス。0 番目の "unknown" は除外
 
             pred_seq.append( int2text_dir[char_id] )
 
@@ -529,15 +499,14 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
                                         [ self._y_out_op, self._rnn_states[-1] ],
                                         feed_dict = {
                                             self._input_holder: x,
-                                            self._dropout_holder: 0.5,
+                                            self._dropout_holder: 1.0,
                                             self._rnn_states[0]: rnn_cell_state
                                         }
                                     )
 
-            #char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
-
-            p = np.squeeze( probs )     # 余計な次元削除
-            char_id = np.argmax( p )    # 最大の確率を与えるインデックス
+            char_id = sampling_char_with_predprob( probs, n_vocab = self._n_classes, n_top = 5 )
+            #p = np.squeeze( probs )         # 余計な次元削除
+            #char_id = np.argmax( p[1:] )    # 最大の確率を与えるインデックス。0 番目の "unknown" は除外
 
             pred_seq.append( int2text_dir[char_id] )
 
