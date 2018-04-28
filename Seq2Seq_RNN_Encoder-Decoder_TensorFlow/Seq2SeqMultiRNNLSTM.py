@@ -204,7 +204,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             self._y_out_op : Operator
                 モデルの出力のオペレーター
         """
-        with tf.variable_scope( "model", reuse = reuse ):
+        with tf.variable_scope( tf.get_variable_scope(), reuse = reuse ):
             #--------------------------------------------------------------
             # 学習時と推定時で処理の切り替えを行う。
             #--------------------------------------------------------------
@@ -321,7 +321,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             self._loss_op : Operator
                 損失関数を表すオペレーター
         """
-        with tf.variable_scope( "loss", reuse = reuse ):
+        with tf.variable_scope( tf.get_variable_scope(), reuse = reuse ):
             t_onehot = tf.one_hot( self._t_holder, depth = self._n_classes )               # 出力データを one-hot encoding
             t_reshaped_holder = tf.reshape( t_onehot, shape = [-1, self._n_classes ] )     # loss 値の計算時の y_out_op との形状の整合性のため reshape
         
@@ -340,7 +340,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         [Output]
             optimizer の train_step
         """
-        with tf.variable_scope( "optimizer", reuse = reuse ):
+        with tf.variable_scope( tf.get_variable_scope(), reuse = reuse ):
             #------------------------------------------------
             # 勾配損失問題を回避するための勾配刈り込み処理
             #------------------------------------------------
@@ -464,7 +464,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         return self._y_out_op
 
 
-    def sampling( self, output_length, text2int_dir, start_seq = "The " ):
+    def sampling( self, output_length, text2int_dir, int2text_dir, start_seq = "the " ):
         """
         学習済みモデルで、次の文書の確率算出し、それに基づいた文字を生成する。（サンプリング）
 
@@ -473,9 +473,32 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         [Output]
 
         """
+        def sampling_char_with_predprob( probs, char_size, n_top = 5 ):
+            """
+            予測確率に従って、実際の文字（単語）をサンプリング
+
+            """
+            # 余計な次元削除
+            p = np.squeeze( probs )
+
+            # 上位 n_top 個にソートするために、上位以外を 0 で埋める。
+            idxs_zero = np.argsort(p)[:-n_top]
+            p[ idxs_zero ] = 0.0
+
+            # 全体の確率の平均をとる
+            p = p / np.sum( p )
+
+            # idx を予想確率に基づきランダムサンプリング
+            char_idxs = np.random.choice( char_size, 1, p = p )
+            char_idx = char_idxs[0]
+
+            return char_idx
+
+        """
         if( self._bSamplingMode == False ):
             print( "this mesod is invalid error : not sampling mode" )
             return
+        """
 
         # 学習済みモデルを読み込み
         #self.load_model()
@@ -485,16 +508,59 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
 
         self._model_saver.restore( self._session, tf.train.latest_checkpoint( "./model_session" ) )
 
-        #----------------------------------
-        # start_seq を起点にモデルを実行
-        #----------------------------------
+
+        #------------------------------------------------------------
+        # 引数で指定された開始シーケンス start_seq を起点にモデルを実行
+        #------------------------------------------------------------
         # 学習済みモデルで RNN Cell の状態を初期状態にリセット
         rnn_cell_state = self._session.run( self._rnn_states[0] )
 
-        for char in start_seq:
-            x = np.zeros( (1,1) )   # shape = [1,1]
-            x[0,0] = text2int_dir[char]
-            print( "x :", x )
+        # 引数で指定された開始シーケンスを単語単位に分割
+        start_seqs = start_seq.split()
 
+        # 予想シーケンスを初期化（別オブジェクトとして初期化）
+        pred_seq = [str for str in start_seqs]
+
+        for str in start_seqs:
+            str = str.lower()       # 大文字 → 小文字に変換
+            x = np.zeros( (1,1) )   # shape = [1,1]
+            x[0,0] = text2int_dir[str]
+            #print( "x :", x )
+
+            probs, rnn_cell_state = self._session.run(
+                                        [ self._y_out_op, self._rnn_states[-1] ],
+                                        feed_dict = {
+                                            self._input_holder: x,
+                                            self._dropout_holder: 0.5,
+                                            self._rnn_states[0]: rnn_cell_state
+                                        }
+                                    )
+
+            #print( "probs :", probs )
+            char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
+            pred_seq.append( int2text_dir[char_id] )
+
+        #------------------------------------------------
+        # 初回予想シーケンス pred_seq を起点にモデルを実行
+        #------------------------------------------------
+        for i in range( output_length ):
+            x[0,0] = char_id
+
+            probs, rnn_cell_state = self._session.run(
+                                        [ self._y_out_op, self._rnn_states[-1] ],
+                                        feed_dict = {
+                                            self._input_holder: x,
+                                            self._dropout_holder: 0.5,
+                                            self._rnn_states[0]: rnn_cell_state
+                                        }
+                                    )
+
+            char_id = sampling_char_with_predprob( probs, char_size = self._n_classes, n_top = 5 )
+            pred_seq.append( int2text_dir[char_id] )
+
+        #------------------------------------------------
+        # 予想文を出力
+        #------------------------------------------------
+        print( "sampling text :\n", " ".join( pred_seq ) )
 
         return

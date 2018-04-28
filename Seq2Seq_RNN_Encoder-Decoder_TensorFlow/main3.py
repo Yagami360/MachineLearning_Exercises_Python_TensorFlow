@@ -69,7 +69,7 @@ def main():
 
     # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
     # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
-    text_data_idx, n_vocab = MLPreProcess.text_vocabulary_processing_without_tensorflow( text_data , min_word_freq = 5 )
+    text_data_idx, n_vocab, dict_vcab_to_idx, dict_idx_to_vocab = MLPreProcess.text_vocabulary_processing_without_tensorflow( text_data , min_word_freq = 5 )
     #print( "text_data_idx :", text_data_idx )
     print( "len( text_data_idx ) :", len( text_data_idx ) )
     print( "n_vocab :", n_vocab )
@@ -143,6 +143,36 @@ def main():
               bSamplingMode = False
           )
 
+    """
+    with tf.variable_scope( tf.get_variable_scope(), reuse = True ):
+        test_rnn = Seq2SeqMultiRNNLSTM(
+                       session = rnn._session,
+                       n_classes = n_vocab,    # テキストコーパスの文字の総数
+                       n_steps = 10,                        # ミニバッチの分割ステップ数
+                       n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
+                       n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
+                       epochs = 2,
+                       batch_size = batch_size,
+                       eval_step = 1,
+                       save_step = 50,
+                       bSamplingMode = True
+                   )
+    """
+    
+    test_rnn = Seq2SeqMultiRNNLSTM(
+                   session = rnn._session,
+                   n_classes = n_vocab,    # テキストコーパスの文字の総数
+                   n_steps = 10,                        # ミニバッチの分割ステップ数
+                   n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
+                   n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
+                   epochs = 2,
+                   batch_size = batch_size,
+                   eval_step = 1,
+                   save_step = 50,
+                   bSamplingMode = True
+               )
+
+
     #rnn.print( "after __init__()" )
 
     #======================================================================
@@ -167,11 +197,15 @@ def main():
     rnn.model( reuse = False )
     #rnn.print( "after model()" )
 
+    test_rnn.model( reuse = True )
+
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
     rnn.loss( SoftmaxCrossEntropy(), reuse = False )
+
+    test_rnn.loss( SoftmaxCrossEntropy(), reuse = True )
 
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
@@ -179,6 +213,9 @@ def main():
     #======================================================================
     #rnn.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
     rnn.optimizer( None, reuse = False )
+
+    #test_rnn.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ), reuse = True )
+    test_rnn.optimizer( None, reuse = True )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -198,16 +235,31 @@ def main():
     #rnn.write_tensorboard_graph()
 
     # fitting 処理を行う
-    rnn.fit( X_train, Y_train )
+    #rnn.fit( X_train, Y_train )
     rnn.print( "after fitting" )
+
+    test_rnn.print( "for sampling" )
 
     #======================================================================
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
     #---------------------------------------------------------
+    # 予想値
+    #---------------------------------------------------------        
+    # 予想値を取得＆出力
+    test_rnn.sampling( 
+        output_length = 100,
+        text2int_dir = dict_vcab_to_idx,
+        int2text_dir = dict_idx_to_vocab,
+        start_seq = "The" 
+    )
+    
+    
+    #---------------------------------------------------------
     # 損失関数を plot
     #---------------------------------------------------------
+    """
     plt.clf()
     plt.plot(
         range( len(rnn._losses_train) ), rnn._losses_train,
@@ -224,34 +276,7 @@ def main():
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "Seq2SeqRNN-LSTM_3-1.png" )
     #plt.show()
-
-    #---------------------------------------------------------
-    # 予想値
-    #---------------------------------------------------------
-    rnn._session.close()
-    del rnn
-    
-    rnn = Seq2SeqMultiRNNLSTM(
-              session = tf.Session(),
-              n_classes = n_vocab,    # テキストコーパスの文字の総数
-              n_steps = 10,                        # ミニバッチの分割ステップ数
-              n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
-              n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
-              epochs = 2,
-              batch_size = batch_size,
-              eval_step = 1,
-              save_step = 50,
-              bSamplingMode = True
-          )
-    
-    rnn.model( reuse = True )
-    rnn.loss( SoftmaxCrossEntropy(), reuse = True )
-    #rnn.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ), reuse = True )
-    rnn.optimizer( None, reuse = True )
-    rnn.print( "for sampling" )
-
-    # 予想値を取得
-    rnn.sampling( output_length = 100, text2int_dir = text_data_idx, start_seq = "The" )    
+    """
     
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
