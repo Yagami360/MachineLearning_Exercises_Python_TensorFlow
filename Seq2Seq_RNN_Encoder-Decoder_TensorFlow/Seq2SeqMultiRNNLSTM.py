@@ -412,7 +412,7 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         return self._y_out_op
 
 
-    def sampling( self, output_length, text2int_dir, int2text_dir, start_seq = "the " ):
+    def sampling( self, output_length, text2int_dir, int2text_dir, start_seq = "the ", bWordToken = True ):
         """
         学習済みモデルで、次の文書の確率算出し、それに基づいた文字を生成する。（サンプリング）
 
@@ -431,8 +431,10 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             # 余計な次元削除
             p = np.squeeze( probs )
 
-            # 0 番目の要素 "unknown" を除外
-            p = p[1:]
+            # 単語単位の分割の場合
+            if( bWordToken == True ):
+                # 0 番目の要素 "unknown" を除外
+                p = p[1:]      # ディクショナリが単語単位で分割されている場合
 
             # 上位 n_top 個にソートするために、上位以外を 0 で埋める。
             idxs_zero = np.argsort(p)[:-n_top]
@@ -442,7 +444,14 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
             p = p / np.sum( p )
 
             # 予想確率 p に基づき、idx をランダムサンプリング
-            char_idxs = np.random.choice( n_vocab - 1, 1, p = p )
+            # 単語単位の分割の場合
+            if( bWordToken == True ):
+                char_idxs = np.random.choice( n_vocab - 1, 1, p = p )  # ディクショナリが単語単位で分割されている場合
+            
+            # 文字単位の分割の場合
+            else:
+                char_idxs = np.random.choice( n_vocab, 1, p = p )
+
             char_idx = char_idxs[0]
 
             return char_idx
@@ -461,14 +470,18 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         # 学習済みモデルで RNN Cell の状態を初期状態にリセット
         rnn_cell_state = self._session.run( self._rnn_states[0] )
 
-        # 引数で指定された開始シーケンスを単語単位に分割
-        start_seqs = start_seq.split()
+        # 単語単位の分割の場合
+        if( bWordToken == True ):
+            # 引数で指定された開始シーケンスを単語単位に分割
+            start_seq = start_seq.split()     # ディクショナリが単語単位で分割されている場合
 
         # 予想シーケンスを初期化（別オブジェクトとして初期化）
-        pred_seq = [str for str in start_seqs]
+        pred_seq = [str for str in start_seq]
 
-        for str in start_seqs:
-            str = str.lower()       # 大文字 → 小文字に変換
+        for str in start_seq:
+            if( bWordToken == True ):
+                str = str.lower()       # 大文字 → 小文字に変換（ディクショナリが小文字単語単位で分割されている場合）
+
             x = np.zeros( (1,1) )   # shape = [1,1]
             x[0,0] = text2int_dir[str]
 
@@ -513,6 +526,13 @@ class Seq2SeqMultiRNNLSTM( NeuralNetworkBase ):
         #------------------------------------------------
         # 予想文を出力
         #------------------------------------------------
-        print( "sampling text :\n", " ".join( pred_seq ) )
+        if( bWordToken == True ):
+            # 単語間のスペースを開けて print
+            print( "sampling text :\n", " ".join( pred_seq ) )
 
-        return
+        else:
+            # 単語間のスペースを開けずに print （スペース記号も予想対象）
+            print( "sampling text :\n", "".join( pred_seq ) )
+
+        return pred_seq
+

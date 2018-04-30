@@ -54,25 +54,44 @@ def main():
     # Reset graph
     #ops.reset_default_graph()
 
+    # 文字単位か単語単位のデータを使うか否かのフラグ
+    bWordToken = True
+
     #======================================================================
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    path_text = "C:\Data\MachineLearning_DataSet\Project_Gutenberg\William_Shakespeare\pg100.txt"
+    path_text = "C:\Data\MachineLearning_DataSet\Project_Gutenberg\William_Shakespeare\pg2265.txt"
 
-    # The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み＆抽出処理
-    text_data = MLPreProcess.load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path = path_text, n_DeleteParagraph = 182, bCleaning = True )
-    print( "len( text_data ) :\n", len( text_data ) )
+    # 単語単位の分割の場合
+    if( bWordToken == True ):
+        # The Project Gutenberg EBook にある、シェイクスピア作品のテキストデータの読み込み＆抽出処理
+        text_data = MLPreProcess.load_textdata_by_shakespeare_from_theProjectGutenbergEBook( path = path_text, n_DeleteParagraph = 378, bCleaning = True )
+        print( "len( text_data ) :\n", len( text_data ) )
 
-    # 計算コストを減少させるためのデバッグ用処理
-    text_data = text_data[0:25000]
+        # 計算コストを減少させるためのデバッグ用処理
+        #text_data = text_data[0:10000]
 
-    # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
-    # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
-    text_data_idx, n_vocab, dict_vcab_to_idx, dict_idx_to_vocab = MLPreProcess.text_vocabulary_processing_without_tensorflow( text_data , min_word_freq = 5 )
-    #print( "text_data_idx :", text_data_idx )
-    print( "len( text_data_idx ) :", len( text_data_idx ) )
-    print( "n_vocab :", n_vocab )
+        # 抽出したテキストデータから、出現頻度の高い単語をディクショナリに登録する
+        # 抽出したテキストデータを、このディクショナリに基づき、数値インデックス情報に変換する。
+        text_data_idx, n_vocab, dict_vcab_to_idx, dict_idx_to_vocab = MLPreProcess.text_vocabulary_processing_without_tensorflow( text_data , min_word_freq = 5 )
+        #print( "text_data_idx :", text_data_idx )
+        print( "len( text_data_idx ) :", len( text_data_idx ) )
+        print( "n_vocab :", n_vocab )
+
+    # 文字単位の分割の場合
+    else:
+        with open( path_text, 'r', encoding='utf-8' ) as f: 
+            text_data=f.read()
+
+        text_data = text_data[15858:]
+        print( "len( text_data ) :\n", len( text_data ) )
+
+        chars = set(text_data)   # 集合なので、リストとは異なり要素は順番をもちません。また、重複した要素は取り除かれます。
+        dict_vcab_to_idx = {ch:i for i,ch in enumerate(chars)}
+        dict_idx_to_vocab = dict( enumerate(chars) )
+        text_data_idx = np.array( [dict_vcab_to_idx[ch] for ch in text_data], dtype=np.int32 )
+        print( "len( text_data_idx ) :", len( text_data_idx ) )
 
     #======================================================================
     # データを変換、正規化
@@ -127,7 +146,8 @@ def main():
     # Set algorithm parameters.
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
-    n_vocab = len( dict_vcab_to_idx ) + 1   #
+    #n_vocab = len( dict_vcab_to_idx ) + 1   #
+    n_vocab = len( set(text_data) )
     epochs = 100                            #
     
     learning_rate1 = 0.001
@@ -143,7 +163,7 @@ def main():
               epochs = epochs,
               batch_size = batch_size,
               eval_step = 1,
-              save_step = 50,
+              save_step = 100,
               bSamplingMode = False
           )
     
@@ -156,9 +176,10 @@ def main():
                    epochs = epochs,
                    batch_size = batch_size,
                    eval_step = 1,
-                   save_step = 50,
+                   save_step = 100,
                    bSamplingMode = True
                )
+    
 
     #rnn.print( "after __init__()" )
 
@@ -230,6 +251,26 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
+    """
+    rnn = Seq2SeqMultiRNNLSTM(
+                   session = rnn._session,
+                   n_classes = n_vocab,                 # テキストコーパスの文字の種類の総数
+                   n_steps = n_steps,                   # ミニバッチの分割ステップ数
+                   n_hiddenLayer = 128,                 # １つの LSTM ブロック中に集約されている隠れ層のノード数
+                   n_MultiRNN = 1,                      # 多層 RNN の LSTM の総数
+                   epochs = epochs,
+                   batch_size = batch_size,
+                   eval_step = 1,
+                   save_step = 100,
+                   bSamplingMode = True
+               )
+
+    rnn.model( reuse = True )
+    rnn.loss( SoftmaxCrossEntropy(), reuse = True )
+    rnn.optimizer( None, reuse = True )
+    #rnn.write_tensorboard_graph()
+    """
+
     #---------------------------------------------------------
     # 予想値
     #---------------------------------------------------------        
@@ -238,7 +279,8 @@ def main():
         output_length = 100,
         text2int_dir = dict_vcab_to_idx,
         int2text_dir = dict_idx_to_vocab,
-        start_seq = "the " 
+        start_seq = "The " ,
+        bWordToken = bWordToken
     )
     
     
