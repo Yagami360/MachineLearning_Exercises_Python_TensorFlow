@@ -6,6 +6,7 @@
     [17/11/18] : 新規作成
     [17/11/20] : 最急降下法で学習率が幾何学的に減衰していく最適化アルゴリズム GradentDecentDecay 追加
     [17/12/03] : RMSProp アルゴリズムを追加
+    [18/05/03] : クラス名修正 NNOptimzer → NNOptimizer
     [xx/xx/xx]
 """
 
@@ -16,7 +17,7 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 
-class NNOptimzer( object ):
+class NNOptimizer( object ):
     """
     ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
     実際の最適化アルゴリズムを表すクラスの実装は、このクラスを継承し、オーバーライドするを想定している。
@@ -80,7 +81,7 @@ class NNOptimzer( object ):
         return self._train_step
 
 
-class GradientDecent( NNOptimzer ):
+class GradientDecent( NNOptimizer ):
     """
     最急降下法を表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -102,7 +103,7 @@ class GradientDecent( NNOptimzer ):
         return self._train_step
 
 
-class GradientDecentDecay( NNOptimzer ):
+class GradientDecentDecay( NNOptimizer ):
     """
     最急降下法（学習率が減衰）を表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -155,7 +156,7 @@ class GradientDecentDecay( NNOptimzer ):
         return self._train_step
 
 
-class Momentum( NNOptimzer ):
+class Momentum( NNOptimizer ):
     """
     モメンタム アルゴリズムを表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -183,7 +184,7 @@ class Momentum( NNOptimzer ):
         return self._train_step
 
 
-class NesterovMomentum( NNOptimzer ):
+class NesterovMomentum( NNOptimizer ):
     """
     Nesterov モメンタム アルゴリズムを表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -211,7 +212,7 @@ class NesterovMomentum( NNOptimzer ):
         return self._train_step
 
 
-class Adagrad( NNOptimzer ):
+class Adagrad( NNOptimizer ):
     """
     Adagrad アルゴリズムを表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -233,7 +234,7 @@ class Adagrad( NNOptimzer ):
         return self._train_step
 
 
-class Adadelta( NNOptimzer ):
+class Adadelta( NNOptimizer ):
     """
     Adadelta アルゴリズムを表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -256,7 +257,7 @@ class Adadelta( NNOptimzer ):
         return self._train_step
 
 
-class Adam( NNOptimzer ):
+class Adam( NNOptimizer ):
     """
     Adam アルゴリズムを表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -285,7 +286,7 @@ class Adam( NNOptimzer ):
         return self._train_step
 
 
-class RMSProp( NNOptimzer ):
+class RMSProp( NNOptimizer ):
     """
     RMSProp アルゴリズムを表すクラス
     NNOptimizer クラスの子クラスとして定義
@@ -312,3 +313,4 @@ class RMSProp( NNOptimzer ):
     def train_step( self, loss_op ):
         self._train_step = self._optimizer.minimize( loss_op )
         return self._train_step
+

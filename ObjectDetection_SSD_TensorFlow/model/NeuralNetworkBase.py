@@ -27,32 +27,28 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 # 自作モジュール
-from model import NNActivation
-from model import NNLoss
-from model import NNOptimizer
+from model.NNActivation import NNActivation              # ニューラルネットワークの活性化関数を表すクラス
+from model.NNActivation import Sigmoid
+from model.NNActivation import Relu
+from model.NNActivation import Softmax
 
-"""
-import NNActivation
-from NNActivation import NNActivation               # ニューラルネットワークの活性化関数を表すクラス
-from NNActivation import Sigmoid
-from NNActivation import Relu
-from NNActivation import Softmax
+from model.NNLoss import NNLoss                          # ニューラルネットワークの損失関数を表すクラス
+from model.NNLoss import L1Norm
+from model.NNLoss import L2Norm
+from model.NNLoss import BinaryCrossEntropy
+from model.NNLoss import CrossEntropy
+from model.NNLoss import SoftmaxCrossEntropy
+from model.NNLoss import SparseSoftmaxCrossEntropy
 
-import NNLoss                                       # ニューラルネットワークの損失関数を表すクラス
-from NNLoss import L1Norm
-from NNLoss import L2Norm
-from NNLoss import BinaryCrossEntropy
-from NNLoss import CrossEntropy
-from NNLoss import SoftmaxCrossEntropy
-from NNLoss import SparseSoftmaxCrossEntropy
+from model.NNOptimizer import NNOptimizer                # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from model.NNOptimizer import GradientDecent
+from model.NNOptimizer import GradientDecentDecay
+from model.NNOptimizer import Momentum
+from model.NNOptimizer import NesterovMomentum
+from model.NNOptimizer import Adagrad
+from model.NNOptimizer import Adadelta
+from model.NNOptimizer import Adam
 
-import NNOptimizer                                  # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
-from NNOptimizer import GradientDecent
-from NNOptimizer import Momentum
-from NNOptimizer import NesterovMomentum
-from NNOptimizer import Adagrad
-from NNOptimizer import Adadelta
-"""
 
 class NeuralNetworkBase( BaseEstimator, ClassifierMixin ):
     """

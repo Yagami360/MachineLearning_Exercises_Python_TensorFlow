@@ -15,36 +15,33 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 # 自作モジュール
-from util import MLPreProcess
-from util import MLPlot
+from util.MLPreProcess import MLPreProcess
+from util.MLPlot import MLPlot
 
-#import NNActivation                                     # ニューラルネットワークの活性化関数を表すクラス
-from model import NNActivation
-#from model import Sigmoid
-#from model import Relu
-#from model import Softmax
+from model.NNActivation import NNActivation              # ニューラルネットワークの活性化関数を表すクラス
+from model.NNActivation import Sigmoid
+from model.NNActivation import Relu
+from model.NNActivation import Softmax
 
-#import NNLoss                                           # ニューラルネットワークの損失関数を表すクラス
-from model import NNLoss
-#from model import L1Norm
-#from model import L2Norm
-#from model import BinaryCrossEntropy
-#from model import CrossEntropy
-#from model import SoftmaxCrossEntropy
-#from model import SparseSoftmaxCrossEntropy
+from model.NNLoss import NNLoss                          # ニューラルネットワークの損失関数を表すクラス
+from model.NNLoss import L1Norm
+from model.NNLoss import L2Norm
+from model.NNLoss import BinaryCrossEntropy
+from model.NNLoss import CrossEntropy
+from model.NNLoss import SoftmaxCrossEntropy
+from model.NNLoss import SparseSoftmaxCrossEntropy
 
-#import NNOptimizer                                      # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
-from model import NNOptimizer
-#from model import GradientDecent
-#from model import GradientDecentDecay
-#from model import Momentum
-#from model import NesterovMomentum
-#from model import Adagrad
-#from model import Adadelta
-#from model import Adam
+from model.NNOptimizer import NNOptimizer                # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from model.NNOptimizer import GradientDecent
+from model.NNOptimizer import GradientDecentDecay
+from model.NNOptimizer import Momentum
+from model.NNOptimizer import NesterovMomentum
+from model.NNOptimizer import Adagrad
+from model.NNOptimizer import Adadelta
+from model.NNOptimizer import Adam
 
-from model import NeuralNetworkBase
-from model import VGG16
+from model.NeuralNetworkBase import NeuralNetworkBase
+from model.VGG16Network import VGG16Network
 
 
 def main():
@@ -96,14 +93,19 @@ def main():
     #     x_input_holder = tf.placeholder(tf.float32, [None, input_size])
     #     y_input_holder = tf.placeholder(tf.fload32, [None, num_classes])
     #======================================================================
+    vgg16 = VGG16Network(
+                session = tf.Session()
+            )
 
+    vgg16.print( "after init()" )
 
     #======================================================================
     # モデルの構造を定義する。
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
-
+    vgg16.model()
+    vgg16.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。
