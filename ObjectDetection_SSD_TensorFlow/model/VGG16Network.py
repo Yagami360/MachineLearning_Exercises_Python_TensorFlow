@@ -15,13 +15,32 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 # 自作モジュール
-from model import NeuralNetworkBase
-from model import NNActivation
-from model import NNLoss
-from model import NNOptimizer
+from model.NeuralNetworkBase import NeuralNetworkBase
+
+from model.NNActivation import NNActivation              # ニューラルネットワークの活性化関数を表すクラス
+from model.NNActivation import Sigmoid
+from model.NNActivation import Relu
+from model.NNActivation import Softmax
+
+from model.NNLoss import NNLoss                          # ニューラルネットワークの損失関数を表すクラス
+from model.NNLoss import L1Norm
+from model.NNLoss import L2Norm
+from model.NNLoss import BinaryCrossEntropy
+from model.NNLoss import CrossEntropy
+from model.NNLoss import SoftmaxCrossEntropy
+from model.NNLoss import SparseSoftmaxCrossEntropy
+
+from model.NNOptimizer import NNOptimizer                # ニューラルネットワークの最適化アルゴリズム Optimizer を表すクラス
+from model.NNOptimizer import GradientDecent
+from model.NNOptimizer import GradientDecentDecay
+from model.NNOptimizer import Momentum
+from model.NNOptimizer import NesterovMomentum
+from model.NNOptimizer import Adagrad
+from model.NNOptimizer import Adadelta
+from model.NNOptimizer import Adam
 
 
-class VGG16Network( NeuralNetworkBase.NeuralNetworkBase ):
+class VGG16Network( NeuralNetworkBase ):
     """
     VGG-16 を表しクラス（自作クラス）
     TensorFlow での VGG-16 の処理をクラス（任意の層に DNN 化可能な柔軟なクラス）でラッピングし、
@@ -321,7 +340,30 @@ class VGG16Network( NeuralNetworkBase.NeuralNetworkBase ):
         self.conv3_1_op = self.convolution_layer( input_tsr = self.pool2_op, name = 'conv3_1', reuse = False )
         self.conv3_2_op = self.convolution_layer( input_tsr = self.conv3_1_op, name = 'conv3_2', reuse = False )
         self.conv3_3_op = self.convolution_layer( input_tsr = self.conv3_2_op, name = 'conv3_3', reuse = False )
-        self.pool3_op = self.pooling_layer( input_tsr = self.conv3_2_op, name = "pool3", reuse = False )
+        self.pool3_op = self.pooling_layer( input_tsr = self.conv3_3_op, name = "pool3", reuse = False )
+
+        # layer 4
+        self.conv4_1_op = self.convolution_layer( input_tsr = self.pool3_op, name = 'conv4_1', reuse = False )
+        self.conv4_2_op = self.convolution_layer( input_tsr = self.conv4_1_op, name = 'conv4_2', reuse = False )
+        self.conv4_3_op = self.convolution_layer( input_tsr = self.conv4_2_op, name = 'conv4_3', reuse = False )
+        self.pool4_op = self.pooling_layer( input_tsr = self.conv4_3_op, name = "pool4", reuse = False )
+
+        # layer 5
+        self.conv5_1_op = self.convolution_layer( input_tsr = self.pool4_op, name = 'conv5_1', reuse = False )
+        self.conv5_2_op = self.convolution_layer( input_tsr = self.conv5_1_op, name = 'conv5_2', reuse = False )
+        self.conv5_3_op = self.convolution_layer( input_tsr = self.conv5_2_op, name = 'conv5_3', reuse = False )
+        self.pool5_op = self.pooling_layer( input_tsr = self.conv5_3_op, name = "pool5", reuse = False )
+
+        # fc6
+        #self.fc6_op = self.fully_conntected_layer( input_tsr = self.pool5_op, nnActivation = Relu(), name = "fc6", reuse = False )
+
+        # fc7
+        #self.fc7_op = self.fully_conntected_layer( input_tsr = self.fc6_op, nnActivation = Relu(), name = "fc7", reuse = False )
+
+        # fc8
+        #self.fc8_op = self.fully_conntected_layer( input_tsr = self.fc7_op, nnActivation = Softmax(), name = "fc8", reuse = False )
+
+        #self._y_out_op = self.fc8_op
 
         return self._y_out_op
 
