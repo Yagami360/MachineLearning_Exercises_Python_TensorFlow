@@ -50,14 +50,6 @@ class VGG16Network( NeuralNetworkBase ):
     [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
 
     [protedted] protedted な使用法を想定 
-        vgg_layers_dict : 辞書型
-            VGG-16 モデルの構造とパラメータ定義
-            size-format:
-             "conv": [ [(filterの高さ) , (filterの幅) , (入力チャネル数) , (出力チャネル数) ], [   bias   ] ]
-             "relu": [ None ]
-             "pool": []
-             "fc": [ [ f_h, f_w, in_size, out_size ], [ out_size ] ]
-
         X_holder : placeholder
             入力層に入力データを供給するための placeholder
         t_holder : placeholder
@@ -74,37 +66,7 @@ class VGG16Network( NeuralNetworkBase ):
 
         super().__init__( session )
 
-        # VGG-16 モデルの構造とパラメータ定義
-        self.vgg_layers_dict = {
-            # layer 1
-            "conv1_1": [ [3, 3, 3, 64], [64] ], "relu1_1": [None],
-            'conv1_2': [ [3, 3, 64, 64], [64] ], 'relu1_2': [None], 'pool1':[],
-            
-            # layer 2
-            'conv2_1': [ [3, 3, 64, 128], [128] ], 'relu2_1': [None],
-            'conv2_2': [ [3, 3, 128, 128], [128] ], 'relu2_2': [], 'pool2': [],
-            
-            # layer 3
-            'conv3_1': [ [3, 3, 128, 256], [256] ], 'relu3_1': [],
-            'conv3_2': [ [3, 3, 256, 256], [256] ], 'relu3_2': [],
-            'conv3_3': [ [3, 3, 256, 256], [256] ], 'relu3_3': [],
-            
-            # layer 4
-            'conv4_1': [ [3, 3, 256, 512], [512] ], 'relu4_1': [],
-            'conv4_2': [ [3, 3, 512, 512], [512] ], 'relu4_2': [],
-            'conv4_3': [ [3, 3, 512, 512], [512] ], 'relu4_3': [],
-            
-            # layer 5
-            'conv5_1': [ [3, 3, 512, 512], [512] ], 'relu5_1': [],
-            'conv5_2': [ [3, 3, 512, 512], [512] ], 'relu5_2': [],
-            'conv5_3': [ [3, 3, 512, 512], [512] ], 'relu5_3': [],
-
-            # 
-            'fc6': [ [4096, 0, 0, 0], [4096] ],
-            'fc7': [ [4096, 0, 0, 0], [4096] ],
-            'fc8': [ [1000, 0, 0, 0], [1000] ]
-        }
-
+        # VGG-16 モデルの各オペレーター
         self.conv1_1_op = None
         self.conv1_2_op = None
         self.pool1_op = None
@@ -153,7 +115,6 @@ class VGG16Network( NeuralNetworkBase ):
         print( "_loss_op :", self._loss_op )
         print( "_y_out_op :", self._y_out_op )
 
-        print( "vgg_layers_dict :", self.vgg_layers_dict )
         print( "conv1_1_op :", self.conv1_1_op )
         print( "conv1_2_op :", self.conv1_2_op )
         print( "pool1_op :", self.pool1_op )
@@ -227,7 +188,12 @@ class VGG16Network( NeuralNetworkBase ):
         return bias_var
 
 
-    def convolution_layer( self, input_tsr, name = "conv", reuse = False ):
+    def convolution_layer( 
+            self, 
+            input_tsr, 
+            filter_height, filter_width, n_input_channels, n_output_channels, 
+            name = "conv", reuse = False
+        ):
         """
         畳み込み層を構築する。
 
@@ -239,14 +205,11 @@ class VGG16Network( NeuralNetworkBase ):
         
         # Variable の名前空間（スコープ定義）
         with tf.variable_scope( name, reuse = reuse ):
-            # VGG16 の構造パラメータを定義した辞書から、畳み込み層のサイズ
-            # [ [(filterの高さ) , (filterの幅) , (入力チャネル数) , (出力チャネル数) ], [   bias   ] ] を取得
-            size = self.vgg_layers_dict[name]
-            
             # 畳み込み層の重み（カーネル）を追加
             # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
-            kernel = self.init_weight_variable( input_shape = size[0] )
-            bias = self.init_bias_variable( input_shape = size[1] )
+            # kernel_shape : [ [(filterの高さ) , (filterの幅) , (入力チャネル数) , (出力チャネル数) ]
+            kernel = self.init_weight_variable( input_shape = [filter_height, filter_width, n_input_channels, n_output_channels] )
+            bias = self.init_bias_variable( input_shape = [n_output_channels] )
 
             # 畳み込み演算
             conv_op = tf.nn.conv2d(
@@ -281,37 +244,37 @@ class VGG16Network( NeuralNetworkBase ):
         return pool_op
 
 
-    def fully_conntected_layer( self, input_tsr, nnActivation, name = "", reuse = False ):
+    def fully_conntected_layer( 
+            self, 
+            input_tsr, 
+            n_output_units,
+            nnActivation, 
+            name = "fc", 
+            reuse = False 
+        ):
         """
         VGG16 の全結合層を構築する。
         """
         # Variable の名前空間（スコープ定義）
         with tf.variable_scope( name, reuse = reuse ):
-            # VGG16 の構造パラメータを定義した辞書から、全結合層のサイズ
-            # [ [ f_h, f_w, in_size, out_size ], [ out_size ] ] を取得
-            size = self.vgg_layers_dict[name]
-
-            # input_tsr の shape を取り出し、list 構造に変換する。
-            shape = input_tsr.get_shape().as_list()
+            # input_tsr の shape を取り出し、list 構造に変換する。（ 0 番目の要素であるバッチ数は除外）
+            shape = input_tsr.get_shape().as_list()[1:]
             print( "input_tsr / shape", shape )
 
-            # 無名関数 lamda ( x,y が引数 )
-            # reduce で畳み込み演算し、fc 層の次元数を算出
-            from functools import reduce
-            dim = reduce( lambda x, y: x * y, shape[1:] )
-            print( "dim :", dim )
+            # input_tsr の shape の積が入力 Tensor の shape となる。
+            n_input_units = np.prod(shape)
+            print( "n_input_units", n_input_units )
+
+            # 入力 Tensor の shape を２次元化
+            if( n_input_units > 1 ):
+                input_tsr_reshaped = tf.reshape( input_tsr, shape = [-1, n_input_units] )
 
             #
-            input_reshaped_tsr = tf.reshape( input_tsr, shape = [-1, dim] )
-            print( "input_tsr / shape :", input_tsr.get_shape() )
-            print( "input_reshaped_tsr / shape :", input_reshaped_tsr.get_shape() )
-
-            #
-            weights = self.init_bias_variable( input_shape = [ dim, size[0][0] ] )
-            biases = self.init_bias_variable( input_shape = [1] )
+            weights = self.init_bias_variable( input_shape = [ n_input_units, n_output_units ] )
+            biases = self.init_bias_variable( input_shape = [n_output_units] )
 
             # 全結合層の入力と出力
-            fc_in_op = tf.nn.bias_add( tf.matmul(input_reshaped_tsr, weights), biases )
+            fc_in_op = tf.nn.bias_add( tf.matmul(input_tsr_reshaped, weights), biases )
             fc_out_op = nnActivation.activate( fc_in_op )
 
         return fc_out_op
@@ -324,45 +287,171 @@ class VGG16Network( NeuralNetworkBase ):
         [Output]
             self._y_out_op : Operator
                 モデルの出力のオペレーター
-        """
-        
+        """        
+        #-----------------------------------------------------------------------------
         # layer 1
-        self.conv1_1_op = self.convolution_layer( input_tsr = self.X_holder, name = 'conv1_1', reuse = False )
-        self.conv1_2_op = self.convolution_layer( input_tsr = self.conv1_1_op, name = 'conv1_2', reuse = False )
+        #-----------------------------------------------------------------------------
+        self.conv1_1_op = self.convolution_layer( 
+                              input_tsr = self.X_holder, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 3, n_output_channels = 64,
+                              name = "conv1_1", 
+                              reuse = False
+                          )
+
+        self.conv1_2_op = self.convolution_layer( 
+                              input_tsr = self.conv1_1_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 64, n_output_channels = 64,
+                              name = "conv1_2", 
+                              reuse = False
+                          )
+
         self.pool1_op = self.pooling_layer( input_tsr = self.conv1_2_op, name = "pool1", reuse = False )
 
+        #-----------------------------------------------------------------------------
         # layer 2
-        self.conv2_1_op = self.convolution_layer( input_tsr = self.pool1_op, name = 'conv2_1', reuse = False )
-        self.conv2_2_op = self.convolution_layer( input_tsr = self.conv2_1_op, name = 'conv2_2', reuse = False )
+        #-----------------------------------------------------------------------------
+        self.conv2_1_op = self.convolution_layer( 
+                              input_tsr = self.pool1_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 64, n_output_channels = 128,
+                              name = "conv2_1",
+                              reuse = False
+                          )
+
+        self.conv2_2_op = self.convolution_layer( 
+                              input_tsr = self.conv2_1_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 128, n_output_channels = 128,
+                              name = "conv2_2",
+                              reuse = False
+                          )
+
         self.pool2_op = self.pooling_layer( input_tsr = self.conv2_2_op, name = "pool2", reuse = False )
 
+        #-----------------------------------------------------------------------------
         # layer 3
-        self.conv3_1_op = self.convolution_layer( input_tsr = self.pool2_op, name = 'conv3_1', reuse = False )
-        self.conv3_2_op = self.convolution_layer( input_tsr = self.conv3_1_op, name = 'conv3_2', reuse = False )
-        self.conv3_3_op = self.convolution_layer( input_tsr = self.conv3_2_op, name = 'conv3_3', reuse = False )
+        #-----------------------------------------------------------------------------
+        self.conv3_1_op = self.convolution_layer( 
+                              input_tsr = self.pool2_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 128, n_output_channels = 256,
+                              name = "conv3_1",
+                              reuse = False
+                          )
+
+        self.conv3_2_op = self.convolution_layer( 
+                              input_tsr = self.conv3_1_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 256, n_output_channels = 256,
+                              name = "conv3_2",
+                              reuse = False
+                          )
+
+        self.conv3_3_op = self.convolution_layer( 
+                              input_tsr = self.conv3_2_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 256, n_output_channels = 256,
+                              name = "conv3_3",
+                              reuse = False
+                          )
+
         self.pool3_op = self.pooling_layer( input_tsr = self.conv3_3_op, name = "pool3", reuse = False )
 
+        #-----------------------------------------------------------------------------
         # layer 4
-        self.conv4_1_op = self.convolution_layer( input_tsr = self.pool3_op, name = 'conv4_1', reuse = False )
-        self.conv4_2_op = self.convolution_layer( input_tsr = self.conv4_1_op, name = 'conv4_2', reuse = False )
-        self.conv4_3_op = self.convolution_layer( input_tsr = self.conv4_2_op, name = 'conv4_3', reuse = False )
+        #-----------------------------------------------------------------------------
+        self.conv4_1_op = self.convolution_layer( 
+                              input_tsr = self.pool3_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 256, n_output_channels = 512,
+                              name = "conv4_1",
+                              reuse = False
+                          )
+
+        self.conv4_2_op = self.convolution_layer( 
+                              input_tsr = self.conv4_1_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              name = "conv4_2",
+                              reuse = False
+                          )
+
+        self.conv4_3_op = self.convolution_layer( 
+                              input_tsr = self.conv4_2_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              name = "conv4_3",
+                              reuse = False
+                          )
+
         self.pool4_op = self.pooling_layer( input_tsr = self.conv4_3_op, name = "pool4", reuse = False )
 
+        #-----------------------------------------------------------------------------
         # layer 5
-        self.conv5_1_op = self.convolution_layer( input_tsr = self.pool4_op, name = 'conv5_1', reuse = False )
-        self.conv5_2_op = self.convolution_layer( input_tsr = self.conv5_1_op, name = 'conv5_2', reuse = False )
-        self.conv5_3_op = self.convolution_layer( input_tsr = self.conv5_2_op, name = 'conv5_3', reuse = False )
+        #-----------------------------------------------------------------------------
+        self.conv5_1_op = self.convolution_layer( 
+                              input_tsr = self.pool4_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              name = "conv5_1",
+                              reuse = False
+                          )
+
+        self.conv5_2_op = self.convolution_layer( 
+                              input_tsr = self.conv5_1_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              name = "conv5_2",
+                              reuse = False
+                          )
+
+        self.conv5_3_op = self.convolution_layer( 
+                              input_tsr = self.conv5_2_op, 
+                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              name = "conv5_3",
+                              reuse = False
+                          )
+
         self.pool5_op = self.pooling_layer( input_tsr = self.conv5_3_op, name = "pool5", reuse = False )
 
+        #-----------------------------------------------------------------------------
+        # fc layers
+        #-----------------------------------------------------------------------------
         # fc6
-        #self.fc6_op = self.fully_conntected_layer( input_tsr = self.pool5_op, nnActivation = Relu(), name = "fc6", reuse = False )
+        self.fc6_op = self.fully_conntected_layer( 
+                          input_tsr = self.pool5_op,
+                          n_output_units = 512,
+                          nnActivation = Relu(), 
+                          name = "fc6", 
+                          reuse = False
+                      )
+
+        """
+        self.fc6_op = self.fully_conntected_layer( 
+                          input_tsr = self.pool5_op,
+                          n_output_units = 4096,
+                          nnActivation = Relu(), 
+                          name = "fc6", 
+                          reuse = False
+                      )
+        """
 
         # fc7
-        #self.fc7_op = self.fully_conntected_layer( input_tsr = self.fc6_op, nnActivation = Relu(), name = "fc7", reuse = False )
+        """
+        self.fc7_op = self.fully_conntected_layer( 
+                          input_tsr = self.fc6_op,
+                          n_output_units = 1000,
+                          nnActivation = Relu(), 
+                          name = "fc7", 
+                          reuse = False
+                      )
+        """
 
         # fc8
-        #self.fc8_op = self.fully_conntected_layer( input_tsr = self.fc7_op, nnActivation = Softmax(), name = "fc8", reuse = False )
+        """
+        self.fc8_op = self.fully_conntected_layer( 
+                          input_tsr = self.fc7_op,
+                          n_output_units = 1000,
+                          nnActivation = Softmax(), 
+                          name = "fc8", 
+                          reuse = False
+                      )
+        """
 
+        #-----------------------------------------------------------------------------
+        # model output
+        #-----------------------------------------------------------------------------
+        self._y_out_op = self.fc6_op
         #self._y_out_op = self.fc8_op
 
         return self._y_out_op
