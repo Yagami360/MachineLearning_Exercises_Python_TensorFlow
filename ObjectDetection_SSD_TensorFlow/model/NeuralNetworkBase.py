@@ -109,8 +109,12 @@ class NeuralNetworkBase( BaseEstimator, ClassifierMixin ):
 
         print( "_session : \n", self._session )
         print( "_init_var_op : \n", self._init_var_op )
-        print( "_loss_op : \n", self._loss_op )
-        print( "_y_out_op : \n", self._y_out_op )
+
+        print( "_y_out_op :", self._y_out_op )
+
+        print( "_loss_op :", self._loss_op )
+        print( "_optimizer :", self._optimizer )
+        print( "_train_step :", self._train_step )
 
         return
 
