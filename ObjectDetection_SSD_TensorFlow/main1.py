@@ -47,7 +47,7 @@ from model.VGG16Network import VGG16Network
 def main():
     """
     TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装
-    VGG16単体での性能テスト
+    ベースネットワークとして使用する VGG16 単体での性能テスト
     """
     print("Enter main()")
 
@@ -55,7 +55,7 @@ def main():
     ops.reset_default_graph()
 
     # Session の設定
-    session = tf.Session()
+    #session = tf.Session()
 
     #======================================================================
     # データセットを読み込み or 生成
