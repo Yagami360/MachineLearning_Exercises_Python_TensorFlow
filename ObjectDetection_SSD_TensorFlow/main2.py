@@ -1,10 +1,13 @@
 # -*- coding:utf-8 -*-
-# Anaconda 5.0.1 環境 (TensorFlow 1.4.0 インストール済み)
+# Anaconda 5.0.1 環境 
+# + TensorFlow 1.4.0 インストール済み
 #     <Anaconda Prompt>
 #     conda create -n tensorflow python=3.5
 #     activate tensorflow
 #     pip install --ignore-installed --upgrade tensorflow
 #     pip install --ignore-installed --upgrade tensorflow-gpu
+# + OpenCV 3.3.1 インストール済み
+#     pip install opencv-python
 
 import numpy as np
 import pandas as pd
@@ -13,6 +16,9 @@ import matplotlib.pyplot as plt
 # TensorFlow ライブラリ
 import tensorflow as tf
 from tensorflow.python.framework import ops
+
+# OpenCV ライブラリ
+import cv2
 
 # 自作モジュール
 from util.MLPreProcess import MLPreProcess
@@ -59,6 +65,10 @@ def main():
     """
     print("Enter main()")
 
+    # ライブラリのバージョン確認
+    print( "TensorFlow version :", tf.__version__ )
+    print( "OpenCV version :", cv2.__version__ )
+
     # Reset graph
     ops.reset_default_graph()
 
@@ -71,8 +81,9 @@ def main():
     default_box1 = DefaultBox(
                       group_id = 1, id = 1,
                       center_x = 0.5, center_y = 0.5,
-                      width = 1, height = 1,
-                      scale = 1
+                      width = 1.5, height = 1,
+                      scale = 1,
+                      aspect = 1
                   )
     
     default_box1.print( "" )
@@ -85,8 +96,8 @@ def main():
                      )
 
     default_boxes1.print( "after __init__()" )
-    default_boxes1.add_default_box( default_box1 )
-    default_boxes1.print( "after add_default_box()" )
+    #default_boxes1.add_default_box( default_box1 )
+    #default_boxes1.print( "after add_default_box()" )
 
     #
     """
@@ -98,73 +109,31 @@ def main():
     bbox.print()
     """
 
+    image = np.full( (300, 300, 3), 256, dtype=np.uint8 )
+    image = default_box1.draw_rect( image, color = (0,0,255), thickness = 2 )
+
+    image = default_boxes1.draw_rects( image, group_id = 1 )
+
+    cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
+    cv2.imshow( "image", image )
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
     #======================================================================
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
-    # CIFAR-10 のラベル値とカテゴリーのディクショナリ
-    cifar10_labels_dict = {
-        0 : "airplane",
-        1 : "automoblie",
-        2 : "bird",
-        3 : "cat",
-        4 : "deer",
-        5 : "dog",
-        6 : "frog",
-        7 : "horse",
-        8 : "ship",
-        9 : "truck",
-    }
-    
-    # CIFAR-10 データが格納されているフォルダへのパス
-    cifar10_path = "C:\Data\MachineLearning_DataSet\CIFAR\cifar-10-batches-bin"
 
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
-    """
-    #X_train, y_train = MLPreProcess.load_cifar10_train( cifar10_path, fileName = "data_batch_1.bin" )
-    X_train, y_train = MLPreProcess.load_cifar10_trains( cifar10_path )
-    X_test, y_test = MLPreProcess.load_cifar10_test( cifar10_path )
-    """
-    # 処理負荷軽減のためデータ数カット（デバッグ用途）
-    """
-    n_train_data = 1000
-    n_test_data = 500
-    X_train = X_train[0:n_train_data]
-    y_train = y_train[0:n_train_data]
-    X_test = X_test[0:n_train_data]
-    y_test = y_test[0:n_train_data]
-    """
-    """
-    print( "X_train.shape : ", X_train.shape )
-    print( "y_train.shape : ", y_train.shape )
-    print( "X_test.shape : ", X_test.shape )
-    print( "y_test.shape : ", y_test.shape )
-
-    #print( "X_train[0] : \n", X_train[0] )
-    #print( "y_train[0] : \n", y_train[0] )
-    #print( "[y_train == 0] : \n", [ y_train == 0 ] )
-    """
 
     #======================================================================
     # データを変換、正規化
     # Transform and normalize data.
     # ex) data = tf.nn.batch_norm_with_global_normalization(...)
     #======================================================================
-    """
-    session = tf.Session()
-    encode_holder = tf.placeholder(tf.int64, [None])
-    y_oneHot_enoded_op = tf.one_hot( encode_holder, depth=10, dtype=tf.float32 )    # depth が 出力層のノード数に対応
-    session.run( tf.global_variables_initializer() )
-    y_train_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_train } )
-    y_test_encoded = session.run( y_oneHot_enoded_op, feed_dict = { encode_holder: y_test } )
-    print( "y_train_encoded.shape : ", y_train_encoded.shape )
-    print( "y_train_encoded.dtype : ", y_train_encoded.dtype )
-    print( "y_test_encoded.shape : ", y_test_encoded.shape )
-    session.close()
-    """
-
+    
     #======================================================================
     # アルゴリズム（モデル）のパラメータを設定
     # Set algorithm parameters.

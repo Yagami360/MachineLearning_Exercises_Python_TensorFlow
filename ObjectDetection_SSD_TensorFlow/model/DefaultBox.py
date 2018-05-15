@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
-# Anaconda 5.0.1 環境 (TensorFlow 1.4.0 インストール済み)
+# Anaconda 5.0.1 環境 
+# + TensorFlow 1.4.0 インストール済み
+# + OpenCV 3.3.1 インストール済み
 
 """
     更新情報
@@ -13,6 +15,9 @@ import numpy as np
 # TensorFlow ライブラリ
 import tensorflow as tf
 from tensorflow.python.framework import ops
+
+# openCV ライブラリ
+import cv2
 
 
 class DefaultBox( object ):
@@ -28,17 +33,19 @@ class DefaultBox( object ):
             デフォルトボックスの識別ID
 
         _center_x : float
-            デフォルトボックスの中心位置座標 x
+            デフォルトボックスの中心位置座標 x (0.0~1.0)
         _center_y : float
-            デフォルトボックスの中心位置座標 y
+            デフォルトボックスの中心位置座標 y (0.0~1.0)
 
-        _width : int
-            デフォルトボックスの幅（ピクセル数）
-        _height : int
-            デフォルトボックスの高さ（ピクセル数）
+        _width : float
+            デフォルトボックスの幅
+        _height : float
+            デフォルトボックスの高さ
 
         _scale : float
             デフォルトボックスのスケール値
+        _aspect : float
+            デフォルトボックスの縦横のアスペクト比
 
     [protedted] protedted な使用法を想定 
 
@@ -53,7 +60,8 @@ class DefaultBox( object ):
             center_y = 0.0,
             width = 1,
             height = 1,
-            scale = 1
+            scale = 1,
+            aspect = 1
         ):
 
         self._group_id = group_id        
@@ -63,9 +71,10 @@ class DefaultBox( object ):
         self._center_y = center_y
 
         self._width = width
-        self._height = width
+        self._height = height
 
         self._scale = scale
+        self._aspect = aspect
 
         return
 
@@ -75,20 +84,39 @@ class DefaultBox( object ):
         print( str )
         print( self )
 
-        print( "_group_id :", self._group_id )
-        print( "_id :", self._id )
-
-        print( "_center_x :", self._center_x )
-        print( "_center_y :", self._center_y )
-        print( "_width :", self._width )
-        print( "_height :", self._height )
-        print( "_scale :", self._scale )
+        print( "_group_id : %d, _id : %d" % ( self._group_id, self._id ) )
+        print( "_center_x : %0.5f, _center_y : %0.5f" % ( self._center_x, self._center_y ) )
+        print( "_width : %0.5f, _height : %0.5f" % ( self._width, self._height ) )
+        print( "_scale : %0.5f, _aspect : %0.5f" % ( self._scale, self._aspect ) )
 
         print( "----------------------------------" )
 
         return
 
 
+    def draw_rect( self, image, color = (0,0,255), thickness = 1 ):
+        """
+        デフォルトボックスの長方形を描写する。
+        """
+        center_x = image.shape[0] * self._center_x - 0.5
+        center_y = image.shape[1] * self._center_y - 0.5
+        width = image.shape[0] * self._width * self._scale * (1 / np.sqrt( self._aspect ) )
+        height = image.shape[1] * self._height * self._scale * np.sqrt( self._aspect )
+
+        point1_x = int( center_x - width/2 )   # 長方形の左上 x 座標
+        point1_y = int( center_y - height/2 )  # 長方形の左上 y 座標
+        point2_x = int( center_x + width/2 )   # 長方形の右下 x 座標
+        point2_y = int( center_y + height/2 )  # 長方形の右下 y 座標
+
+        image = cv2.rectangle(
+                    img = image,
+                    pt1 = ( point1_x, point1_y ),  # 長方形の左上座標
+                    pt2 = ( point2_x, point2_y ),  # 長方形の右下座標
+                    color = color,                 # BGR
+                    thickness = thickness          # 線の太さ（-1 の場合、color で設定した色で塗りつぶし）
+                )
+
+        return image
 
 
 class DefaultBoxes( object ):
@@ -129,17 +157,17 @@ class DefaultBoxes( object ):
         self._scale_max = scale_max
         self._default_boxes = []
 
-        # 各デフォルトボックスのアスペクト比
+        # 各特徴マップに対応した、各デフォルトボックスのアスペクト比
         self.aspects = [ 1.0, 2.0, 3.0, 1.0/2.0, 1.0/3.0 ]
 
         # 各特徴マップに対応した一連のデフォルトボックスを生成
         # extra feature maps
         self._fmap_shapes = [
-                          [ 19, 19, ],      # feature-map-shape 1
-                          [ 10, 10 ],       # feature-map-shape 3
-                          [ 5, 5, ],        # feature-map-shape 4
-                          [ 3, 3, ],        # feature-map-shape 5
-                          [ 1, 1, ],        # feature-map-shape 6
+                          [ 19, 19, ],      # feature-map-shape 1 [width, height]
+                          [ 10, 10 ],       # feature-map-shape 2
+                          [ 5, 5, ],        # feature-map-shape 3
+                          [ 3, 3, ],        # feature-map-shape 4
+                          [ 1, 1, ],        # feature-map-shape 5
                       ]
 
         """
@@ -227,28 +255,36 @@ class DefaultBoxes( object ):
                 generated default boxes list
 
         """
+        id = 0
         for k, map_shape in enumerate( fmap_shapes ):
             s_k = self.calc_scale( k )
-            aspect = self.aspects[k]
-            
-            width  = s_k * np.sqrt( aspect )
-            height = s_k / np.sqrt( aspect )
 
-            x = float( fmap_shapes[k][0] )
-            y = float( fmap_shapes[k][1] )
+            for i, aspect in enumerate( self.aspects ):
+                fmap_width  = fmap_shapes[k][0]
+                fmap_height = fmap_shapes[k][1]
 
-            center_x = ( x + 0.5 ) / float( width )
-            center_y = ( y + 0.5 ) / float( height )
+                # 特徴マップのセルのグリッド（1 pixcel）に関してのループ処理
+                for y in range( fmap_height ):
+                    # セルのグリッドの中央を 0.5 として計算 
+                    center_y = ( y + 0.5 ) / float( fmap_height )
 
-            default_box = DefaultBox(
-                              group_id = 1,
-                              id = k + 1,
-                              center_x = center_x, center_y = center_y,
-                              width = width, height = height, 
-                              scale = aspect
-                          )
+                    for x in range( fmap_width ):
+                        center_x = ( x + 0.5 ) / float( fmap_width )
 
-            self.add_default_box( default_box )
+                        box_width = s_k * np.sqrt( aspect )
+                        box_height = s_k / np.sqrt( aspect )
+
+                        id += 1
+                        default_box = DefaultBox(
+                                          group_id = k + 1,
+                                          id = id,
+                                          center_x = center_x, center_y = center_y,
+                                          width = box_width, height = box_height, 
+                                          scale = s_k,
+                                          aspect = aspect
+                                      )
+
+                        self.add_default_box( default_box )
 
         return self._default_boxes
 
@@ -266,3 +302,28 @@ class DefaultBoxes( object ):
         self._default_boxes.append( default_box )
 
         return
+
+
+    def draw_rects( self, image, group_id = 1 ):
+        """
+        指定されたグループ ID の各デフォルトボックスの長方形を描写する。
+
+        """
+        if( self._default_boxes == [] ):
+            return
+
+        colors_map = [ 
+                         (0,0,255),     # 特徴マップ１（グループID１）の色 BGR（赤）
+                         (0,255,0),     # 特徴マップ２（グループID２）の色 BGR（）
+                         (255,0,0), 
+                         (0,0,0), 
+                         (0,0,0), 
+                         (0,0,0)
+                     ]
+
+
+        for i, default_box in enumerate( self._default_boxes ):
+            if( default_box._group_id == group_id ):
+                image = default_box.draw_rect( image, color = colors_map[ group_id ], thickness = 1 )
+
+        return image
