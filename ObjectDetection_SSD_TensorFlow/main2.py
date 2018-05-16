@@ -47,16 +47,17 @@ from model.NNOptimizer import Adadelta
 from model.NNOptimizer import Adam
 
 from model.NeuralNetworkBase import NeuralNetworkBase
-#from model.VGG16Network import VGG16Network
-
-from model.DefaultBox import DefaultBox
-from model.DefaultBox import DefaultBoxes
-from model.BoundingBox import BoundingBox
+from model.VGG16Network import VGG16Network
 
 from model.BaseNetwork import BaseNetwork
 from model.BaseNetwork import BaseNetworkVGG16
 from model.BaseNetwork import BaseNetworkResNet
 
+from model.DefaultBox import DefaultBox
+from model.DefaultBox import DefaultBoxes
+from model.BoundingBox import BoundingBox
+
+from model.SingleShotMultiBoxDetector import SingleShotMultiBoxDetector
 
 
 def main():
@@ -95,7 +96,7 @@ def main():
                          scale_min = 0.2, scale_max = 0.9
                      )
 
-    default_boxes1.print( "after __init__()" )
+    #default_boxes1.print( "after __init__()" )
     #default_boxes1.add_default_box( default_box1 )
     #default_boxes1.print( "after add_default_box()" )
 
@@ -114,10 +115,10 @@ def main():
 
     image = default_boxes1.draw_rects( image, group_id = 1 )
 
-    cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
-    cv2.imshow( "image", image )
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
+    #cv2.imshow( "image", image )
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
     #======================================================================
     # データセットを読み込み or 生成
@@ -153,12 +154,32 @@ def main():
     #     x_input_holder = tf.placeholder(tf.float32, [None, input_size])
     #     y_input_holder = tf.placeholder(tf.fload32, [None, num_classes])
     #======================================================================
+    """
+    base_vgg16 = BaseNetworkVGG16(
+                     session = tf.Session(),
+                     image_height = 300,
+                     image_width = 300,
+                     n_channels = 3
+                 )
+    """
+
+    ssd = SingleShotMultiBoxDetector(
+              session = tf.Session(),
+              image_height = 300,
+              image_width = 300,
+              n_channels = 3
+          )
 
     #======================================================================
     # モデルの構造を定義する。
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
+    #base_vgg16.model()
+    #base_vgg16.print( "after model()" )
+
+    ssd.model()
+    ssd.print( "after model()" )
 
     #======================================================================
     # 損失関数を設定する。

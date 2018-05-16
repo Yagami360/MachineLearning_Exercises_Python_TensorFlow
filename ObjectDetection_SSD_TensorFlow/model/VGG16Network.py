@@ -273,9 +273,20 @@ class VGG16Network( NeuralNetworkBase ):
         畳み込み層を構築する。
 
         [Input]
+            input_tsr : Tensor / Placeholder
+                畳み込み層への入力 Tensor
+            filter_height : int
+                フィルターの高さ（カーネル行列の行数）
+            filter_width : int
+                フィルターの幅（カーネル行列の列数）
+            n_input_channels : int
+                入力データ（画像）のチャンネル数
+            n_output_channels : int
+                畳み込み処理後のデータのチャンネル数
 
         [Output]
-
+            out_op : Operator
+                畳み込み処理後の出力オペレーター
         """
         
         # Variable の名前空間（スコープ定義）
@@ -304,6 +315,13 @@ class VGG16Network( NeuralNetworkBase ):
     def pooling_layer( self, input_tsr, name = "pool", reuse = False ):
         """
         VGG16 のプーリング層を構築する。
+
+        [Input]
+            input_tsr : Tensor / Placeholder
+                畳み込み層への入力 Tensor
+        [Output]
+            pool_op : Operator
+                プーリング処理後の出力オペレーター
         """
         # Variable の名前空間（スコープ定義）
         with tf.variable_scope( name, reuse = reuse ):
@@ -329,6 +347,19 @@ class VGG16Network( NeuralNetworkBase ):
         ):
         """
         VGG16 の全結合層を構築する。
+
+        [Input]
+            input_tsr : Tensor / Placeholder
+                畳み込み層への入力 Tensor
+            n_output_units : int
+                全結合層の出力側のノード数
+            nnActivation : NNActivation
+                全結合層の出力に対しての活性化関数を表す NNActivation クラスのオブジェクト
+
+        [Output]
+            fc_out_op : Operator
+                全結合層での処理後の出力オペレーター
+
         """
         # Variable の名前空間（スコープ定義）
         with tf.variable_scope( name, reuse = reuse ):
