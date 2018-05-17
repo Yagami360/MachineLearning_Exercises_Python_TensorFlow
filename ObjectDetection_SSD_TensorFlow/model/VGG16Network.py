@@ -266,12 +266,14 @@ class VGG16Network( NeuralNetworkBase ):
     def convolution_layer( 
             self, 
             input_tsr, 
-            filter_height, filter_width, n_input_channels, n_output_channels, 
+            filter_height, filter_width, 
+            n_strides,
+            n_output_channels, 
             name = "conv", reuse = False
         ):
         """
         畳み込み層を構築する。
-
+        
         [Input]
             input_tsr : Tensor / Placeholder
                 畳み込み層への入力 Tensor
@@ -279,11 +281,8 @@ class VGG16Network( NeuralNetworkBase ):
                 フィルターの高さ（カーネル行列の行数）
             filter_width : int
                 フィルターの幅（カーネル行列の列数）
-            n_input_channels : int
-                入力データ（画像）のチャンネル数
             n_output_channels : int
                 畳み込み処理後のデータのチャンネル数
-
         [Output]
             out_op : Operator
                 畳み込み処理後の出力オペレーター
@@ -291,6 +290,10 @@ class VGG16Network( NeuralNetworkBase ):
         
         # Variable の名前空間（スコープ定義）
         with tf.variable_scope( name, reuse = reuse ):
+            # 入力データ（画像）のチャンネル数取得
+            input_shape = input_tsr.get_shape().as_list()
+            n_input_channels = input_shape[-1]
+
             # 畳み込み層の重み（カーネル）を追加
             # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
             # kernel_shape : [ [(filterの高さ) , (filterの幅) , (入力チャネル数) , (出力チャネル数) ]
@@ -301,7 +304,7 @@ class VGG16Network( NeuralNetworkBase ):
             conv_op = tf.nn.conv2d(
                           input = input_tsr,
                           filter = kernel,
-                          strides = [1, 1, 1, 1],
+                          strides = [1, n_strides, n_strides, 1],   # strides[0] = strides[3] = 1. とする必要がある
                           padding = "SAME",
                           name = name
                       )
@@ -310,6 +313,7 @@ class VGG16Network( NeuralNetworkBase ):
             out_op = tf.nn.relu( tf.add(conv_op,bias) )
 
         return out_op
+
 
 
     def pooling_layer( self, input_tsr, name = "pool", reuse = False ):
@@ -399,14 +403,18 @@ class VGG16Network( NeuralNetworkBase ):
         #-----------------------------------------------------------------------------
         self.conv1_1_op = self.convolution_layer( 
                               input_tsr = self.X_holder, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 3, n_output_channels = 64,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 64,
+                              n_strides = 1,
                               name = "conv1_1", 
                               reuse = False
                           )
 
         self.conv1_2_op = self.convolution_layer( 
                               input_tsr = self.conv1_1_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 64, n_output_channels = 64,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 64,
+                              n_strides = 1,
                               name = "conv1_2", 
                               reuse = False
                           )
@@ -418,14 +426,18 @@ class VGG16Network( NeuralNetworkBase ):
         #-----------------------------------------------------------------------------
         self.conv2_1_op = self.convolution_layer( 
                               input_tsr = self.pool1_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 64, n_output_channels = 128,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 128,
+                              n_strides = 1,
                               name = "conv2_1",
                               reuse = False
                           )
 
         self.conv2_2_op = self.convolution_layer( 
                               input_tsr = self.conv2_1_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 128, n_output_channels = 128,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 128,
+                              n_strides = 1,
                               name = "conv2_2",
                               reuse = False
                           )
@@ -437,21 +449,27 @@ class VGG16Network( NeuralNetworkBase ):
         #-----------------------------------------------------------------------------
         self.conv3_1_op = self.convolution_layer( 
                               input_tsr = self.pool2_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 128, n_output_channels = 256,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 256,
+                              n_strides = 1,
                               name = "conv3_1",
                               reuse = False
                           )
 
         self.conv3_2_op = self.convolution_layer( 
                               input_tsr = self.conv3_1_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 256, n_output_channels = 256,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 256,
+                              n_strides = 1,
                               name = "conv3_2",
                               reuse = False
                           )
 
         self.conv3_3_op = self.convolution_layer( 
                               input_tsr = self.conv3_2_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 256, n_output_channels = 256,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 256,
+                              n_strides = 1,
                               name = "conv3_3",
                               reuse = False
                           )
@@ -463,21 +481,27 @@ class VGG16Network( NeuralNetworkBase ):
         #-----------------------------------------------------------------------------
         self.conv4_1_op = self.convolution_layer( 
                               input_tsr = self.pool3_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 256, n_output_channels = 512,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
                               name = "conv4_1",
                               reuse = False
                           )
 
         self.conv4_2_op = self.convolution_layer( 
                               input_tsr = self.conv4_1_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
                               name = "conv4_2",
                               reuse = False
                           )
 
         self.conv4_3_op = self.convolution_layer( 
                               input_tsr = self.conv4_2_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
                               name = "conv4_3",
                               reuse = False
                           )
@@ -489,21 +513,27 @@ class VGG16Network( NeuralNetworkBase ):
         #-----------------------------------------------------------------------------
         self.conv5_1_op = self.convolution_layer( 
                               input_tsr = self.pool4_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
                               name = "conv5_1",
                               reuse = False
                           )
 
         self.conv5_2_op = self.convolution_layer( 
                               input_tsr = self.conv5_1_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
                               name = "conv5_2",
                               reuse = False
                           )
 
         self.conv5_3_op = self.convolution_layer( 
                               input_tsr = self.conv5_2_op, 
-                              filter_height = 3, filter_width = 3, n_input_channels = 512, n_output_channels = 512,
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
                               name = "conv5_3",
                               reuse = False
                           )

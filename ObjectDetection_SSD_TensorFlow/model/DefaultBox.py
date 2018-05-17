@@ -124,9 +124,6 @@ class DefaultBoxes( object ):
     一連のデフォルトボックス群を表すクラス。
 
     [public] public アクセス可能なインスタスンス変数には, 便宜上変数名の最後にアンダースコア _ を付ける.
-        _group_id : int
-            デフォルトボックス群の識別ID
-
         _n_fmaps : int
             特徴マップの数
         _scale_min : float
@@ -145,43 +142,22 @@ class DefaultBoxes( object ):
     """
     def __init__(
             self,
-            group_id = None,
-            n_fmaps = 5,
+            n_fmaps = 6,
+            fmap_shapes = [ 4, 6, 6, 6, 6, 6 ],
             scale_min = 0.2,
             scale_max = 0.9
         ):
 
-        self._group_id = group_id
         self._n_fmaps = n_fmaps
+        self._fmap_shapes = fmap_shapes
         self._scale_min = scale_min
         self._scale_max = scale_max
         self._default_boxes = []
 
-        # 各特徴マップに対応した、各デフォルトボックスのアスペクト比
+        # 各 extra feature maps に対応した、各デフォルトボックスのアスペクト比
         self.aspects = [ 1.0, 2.0, 3.0, 1.0/2.0, 1.0/3.0 ]
 
-        # 各特徴マップに対応した一連のデフォルトボックスを生成
-        # extra feature maps
-        self._fmap_shapes = [
-                          [ 19, 19, ],      # feature-map-shape 1 [width, height]
-                          [ 10, 10 ],       # feature-map-shape 2
-                          [ 5, 5, ],        # feature-map-shape 3
-                          [ 3, 3, ],        # feature-map-shape 4
-                          [ 1, 1, ],        # feature-map-shape 5
-                      ]
-
-        """
-        fmaps = []
-        fmaps.append( convolution(self.base, 'fmap1') )
-        fmaps.append( convolution(self.conv7, 'fmap2') )
-        fmaps.append( convolution(self.conv8_2, 'fmap3') )
-        fmaps.append( convolution(self.conv9_2, 'fmap4') )
-        fmaps.append( convolution(self.conv10_2, 'fmap5') )
-        fmaps.append( convolution(self.conv11_2, 'fmap6') )
-
-        fmap_shapes = [map.get_shape().as_list() for map in fmaps]
-        """
-
+        # 各 extra feature maps に対応した一連のデフォルトボックスを生成
         self.generate_boxes( self._fmap_shapes )
 
         return
@@ -192,7 +168,6 @@ class DefaultBoxes( object ):
         print( str )
         print( self )
 
-        print( "_group_id :", self._group_id )
         print( "_n_fmaps :", self._n_fmaps )
         print( "_scale_min :", self._scale_min )
         print( "_scale_max :", self._scale_max )
@@ -242,12 +217,12 @@ class DefaultBoxes( object ):
                 
                 feature map sizes per output such as...
                 [ 
-                    [ 19, 19, ],      # feature-map-shape 1
-                    [ 19, 19, ],      # feature-map-shape 2
-                    [ 10, 10 ],       # feature-map-shape 3
-                    [ 5, 5, ],        # feature-map-shape 4
-                    [ 3, 3, ],        # feature-map-shape 5
-                    [ 1, 1, ],        # feature-map-shape 6
+                    [ None, 19, 19, ],      # feature-map-shape 1 [batch_size, fmap_height, fmap_width]
+                    [ None, 19, 19, ],      # feature-map-shape 2
+                    [ None, 10, 10 ],       # feature-map-shape 3
+                    [ None, 5, 5, ],        # feature-map-shape 4
+                    [ None, 3, 3, ],        # feature-map-shape 5
+                    [ None, 1, 1, ],        # feature-map-shape 6
                 ]
 
         [Output]
@@ -260,8 +235,8 @@ class DefaultBoxes( object ):
             s_k = self.calc_scale( k )
 
             for i, aspect in enumerate( self.aspects ):
-                fmap_width  = fmap_shapes[k][0]
-                fmap_height = fmap_shapes[k][1]
+                fmap_width  = fmap_shapes[k][1]
+                fmap_height = fmap_shapes[k][2]
 
                 # 特徴マップのセルのグリッド（1 pixcel）に関してのループ処理
                 for y in range( fmap_height ):

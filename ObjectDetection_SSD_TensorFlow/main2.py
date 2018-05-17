@@ -75,51 +75,7 @@ def main():
 
     # Session の設定
     #session = tf.Session()
-
-    #-----------------------------------------------------------
-    # 各自作クラスの動作確認（デバッグ用）
-    #-----------------------------------------------------------
-    default_box1 = DefaultBox(
-                      group_id = 1, id = 1,
-                      center_x = 0.5, center_y = 0.5,
-                      width = 1.5, height = 1,
-                      scale = 1,
-                      aspect = 1
-                  )
     
-    default_box1.print( "" )
-
-    #
-    default_boxes1 = DefaultBoxes(
-                         group_id = 1,
-                         n_fmaps = 6,
-                         scale_min = 0.2, scale_max = 0.9
-                     )
-
-    #default_boxes1.print( "after __init__()" )
-    #default_boxes1.add_default_box( default_box1 )
-    #default_boxes1.print( "after add_default_box()" )
-
-    #
-    """
-    bbox = BoundingBox(
-               label = 1,
-               position = [ 1, 1 ]
-           )
-
-    bbox.print()
-    """
-
-    image = np.full( (300, 300, 3), 256, dtype=np.uint8 )
-    image = default_box1.draw_rect( image, color = (0,0,255), thickness = 2 )
-
-    image = default_boxes1.draw_rects( image, group_id = 1 )
-
-    #cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
-    #cv2.imshow( "image", image )
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
-
     #======================================================================
     # データセットを読み込み or 生成
     # Import or generate data.
@@ -141,6 +97,8 @@ def main():
     # ex) learning_rate = 0.01  iterations = 1000
     #======================================================================
     learning_rate1 = 0.001
+    adam_beta1 = 0.9            # For the Adam optimizer
+    adam_beta2 = 0.999          # For the Adam optimizer
 
     #======================================================================
     # 変数とプレースホルダを設定
@@ -154,20 +112,13 @@ def main():
     #     x_input_holder = tf.placeholder(tf.float32, [None, input_size])
     #     y_input_holder = tf.placeholder(tf.fload32, [None, num_classes])
     #======================================================================
-    """
-    base_vgg16 = BaseNetworkVGG16(
-                     session = tf.Session(),
-                     image_height = 300,
-                     image_width = 300,
-                     n_channels = 3
-                 )
-    """
-
     ssd = SingleShotMultiBoxDetector(
               session = tf.Session(),
               image_height = 300,
               image_width = 300,
-              n_channels = 3
+              n_channels = 3,
+              n_classes = 21,
+              n_boxes = [ 4, 6, 6, 6, 6, 6 ]
           )
 
     #======================================================================
@@ -175,16 +126,34 @@ def main():
     # Define the model structure.
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
-    #base_vgg16.model()
-    #base_vgg16.print( "after model()" )
-
     ssd.model()
     ssd.print( "after model()" )
+
+    # 特徴マップに対応した一連のデフォルト群の生成
+    ssd.generate_default_boxes_in_fmaps()
+    ssd.print( "after generate_default_boxes_in_fmaps()" )
+
+    # 生成したデフォルトボックス群の表示
+    image = np.full( (300, 300, 3), 256, dtype=np.uint8 )
+    image = ssd._default_boxes.draw_rects( image, group_id = 1 )
+    
+    cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
+    cv2.imshow( "image", image )
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     #======================================================================
     # 損失関数を設定する。
     # Declare the loss functions.
     #======================================================================
+    ssd.loss( nnLoss = None )
+
+
+    #======================================================================
+    # モデルの最適化アルゴリズム Optimizer を設定する。
+    # Declare Optimizer.
+    #======================================================================
+    #ssd.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
