@@ -12,6 +12,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import pickle
 
 # TensorFlow ライブラリ
 import tensorflow as tf
@@ -54,10 +55,27 @@ from model.BaseNetwork import BaseNetworkVGG16
 from model.BaseNetwork import BaseNetworkResNet
 
 from model.DefaultBox import DefaultBox
-from model.DefaultBox import DefaultBoxes
+from model.DefaultBox import DefaultBoxSet
 from model.BoundingBox import BoundingBox
 
 from model.SingleShotMultiBoxDetector import SingleShotMultiBoxDetector
+
+
+def load_image_voc2007( path ):
+    """
+    load specified image
+
+    Args: image path
+    Return: resized image, its size and channel
+    """
+    from scipy.misc import imread, imresize
+
+    img = imread( path )
+    h, w, c = img.shape
+    img = imresize( img, (300, 300) )
+    img = img[:, :, ::-1].astype('float32')
+    img /= 255.
+    return img, w, h, c
 
 
 def main():
@@ -80,10 +98,72 @@ def main():
     # データセットを読み込み or 生成
     # Import or generate data.
     #======================================================================
+    # VOC2007 のデータセットへのパス
+    dataset_path = "C:\Data\MachineLearning_DataSet\VOC2007\\"
+
+    #------------------------------------------------------------------------------------------------------
+    # load pickle data set annotation
+    # data : [ image_filename, N x 24 の 2 次元配列 ] 0.0 ~ 1.0
+    # N は、画像の中にある物体の数で、画像によって異なる。
+    # 24 というのは、位置とクラス名のデータを合わせたデータを表すベクトルになっていて、
+    # (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置を表し、残りの 20 次元でクラス名を表します。
+    # クラス名が20次元あるということは20種類の物体を見分けたい、ということになります。
+    # 教師データ : data[ keys[idxes] ]
+    #------------------------------------------------------------------------------------------------------
+    with open(dataset_path + 'VOC2007.pkl', 'rb') as f:
+        data = pickle.load(f)
+        keys = sorted(data.keys())
+
+    print( "len( data ) :", len( data ) )   # 4952
+    print( "keys :", keys[0:10] )
+
+    # 処理負荷軽減のためデータ数カット（デバッグ用途）
+    #data = data[0:1000]
 
     #======================================================================
     # データセットをトレーニングデータ、テストデータ、検証データセットに分割
     #======================================================================
+    # 80% をトレーニングデータにする。
+    n_trains = int( round(0.8 * len(keys)) )
+
+    # トレーニングデータとテストデータの key
+    train_keys = keys[:n_trains]
+    test_keys = keys[n_trains:]
+    n_tests = len( test_keys )
+    print( "len(train_keys) :", len(train_keys) )
+    print( "len(test_keys) :", len(test_keys) )
+
+    # 計算負荷軽減（デバッグ用途）
+    n_trains = 200
+    n_tests = int( round(0.8 * n_trains) )
+    print( "n_trains :", n_trains )
+    print( "n_tests :", n_tests )
+
+    # トレーニングデータとテストデータの抽出 
+    X_train = []
+    y_train = []
+    for key in train_keys[0:n_trains]:
+        # image dataのみ取得。高さ、幅、チャンネル数情報は除外
+        image, _, _, _ = load_image_voc2007(  dataset_path + key )
+        
+        X_train.append( image )
+        y_train.append( data[key] )
+
+    X_test = []
+    y_test = []
+    for key in test_keys[0:n_tests]:
+        image = load_image_voc2007(  dataset_path + key )
+        X_test.append( image )
+        y_test.append( data[key] )
+
+    # list → numpy に変換
+    #X_train = np.array( X_train )
+    #X_test = np.array( X_test )
+
+    # X_train.shape : [ n_trains, (img, w, h, c) ]
+    print( "X_train.shape : (%d,%d)" % ( len(X_train), len(X_train[0]) ) )        # (n_trains, 4)
+    print( "y_train.shape : (%d,%d)" % ( len( y_train ), len( y_train[0] ) ) )    # (n_trains, 2, 24)
+    #print( "X_test.shape : (%d,%d)" % ( len( X_test ), len( X_test[0] ) ) )
 
     #======================================================================
     # データを変換、正規化
@@ -114,6 +194,10 @@ def main():
     #======================================================================
     ssd = SingleShotMultiBoxDetector(
               session = tf.Session(),
+              epochs = 20,
+              batch_size = 10,
+              eval_step = 1,
+              save_step = 100,
               image_height = 300,
               image_width = 300,
               n_channels = 3,
@@ -127,20 +211,11 @@ def main():
     # ex) add_op = tf.add(tf.mul(x_input_holder, weight_matrix), b_matrix)
     #======================================================================
     ssd.model()
-    ssd.print( "after model()" )
+    #ssd.print( "after model()" )
 
     # 特徴マップに対応した一連のデフォルト群の生成
     ssd.generate_default_boxes_in_fmaps()
-    ssd.print( "after generate_default_boxes_in_fmaps()" )
-
-    # 生成したデフォルトボックス群の表示
-    image = np.full( (300, 300, 3), 256, dtype=np.uint8 )
-    image = ssd._default_boxes.draw_rects( image, group_id = 1 )
-    
-    cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
-    cv2.imshow( "image", image )
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #ssd.print( "after generate_default_boxes_in_fmaps()" )
 
     #======================================================================
     # 損失関数を設定する。
@@ -148,12 +223,25 @@ def main():
     #======================================================================
     ssd.loss( nnLoss = None )
 
-
     #======================================================================
     # モデルの最適化アルゴリズム Optimizer を設定する。
     # Declare Optimizer.
     #======================================================================
-    #ssd.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    ssd.optimizer( Adam( learning_rate = learning_rate1, beta1 = adam_beta1, beta2 = adam_beta2 ) )
+    ssd.print( "after optimizer()" )
+
+    #-------------------------------------------------------------------
+    # 生成したデフォルトボックス群の表示（学習処理前）
+    #-------------------------------------------------------------------
+    """
+    image = np.full( (300, 300, 3), 256, dtype=np.uint8 )
+    image = ssd._default_box_set.draw_rects( image, group_id = 1 )
+    
+    cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
+    cv2.imshow( "image", image )
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    """
 
     #======================================================================
     # モデルの初期化と学習（トレーニング）
@@ -169,12 +257,26 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
+    ssd.fit( X_train, y_train )
+    ssd.print( "after fitting" )
 
     #======================================================================
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
+    #ssd.write_tensorboard_graph()
+
+    #-------------------------------------------------------------------
+    # 生成したデフォルトボックス群の表示（学習処理後）
+    #-------------------------------------------------------------------
+    image = np.full( (300, 300, 3), 256, dtype=np.uint8 )
+    image = ssd._default_box_set.draw_rects( image, group_id = 1 )
     
+    cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
+    cv2.imshow( "image", image )
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
     #======================================================================
     # ハイパーパラメータのチューニング (Optional)
     #======================================================================
