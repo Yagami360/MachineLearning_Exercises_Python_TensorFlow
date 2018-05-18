@@ -781,15 +781,8 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         # （学習済みモデルの）チェックポイントファイルの作成
         #self.save_model()
 
-        #----------------------------------------------------------
-        # eval 項目の設定
-        #----------------------------------------------------------
+        # 
         self._matcher = BBoxMatcher( n_classes = self.n_classes, default_box_set = self._default_box_set )
-
-        positives = []      # self.pos_holder に供給するデータ : 正解ボックスとデフォルトボックスの一致
-        negatives = []      # self.neg_holder に供給するデータ : 正解ボックスとデフォルトボックスの不一致
-        ex_gt_labels = []   # self.gt_labels_holder に供給するデータ : 正解ボックスの所属クラスのラベル
-        ex_gt_boxes = []    # self.gt_boxes_holder に供給するデータ : 正解ボックス
 
         #----------------------------------------------------------
         # 学習処理
@@ -804,13 +797,20 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
             for i ,(batch_x, batch_y) in enumerate( gen_minibatch, 1 ):
                 n_minibatch_iteration += 1
 
+                # reset eval
+                positives = []      # self.pos_holder に供給するデータ : 正解ボックスとデフォルトボックスの一致
+                negatives = []      # self.neg_holder に供給するデータ : 正解ボックスとデフォルトボックスの不一致
+                ex_gt_labels = []   # self.gt_labels_holder に供給するデータ : 正解ボックスの所属クラスのラベル
+                ex_gt_boxes = []    # self.gt_boxes_holder に供給するデータ : 正解ボックス
+
                 #-------------------------------------------------------------------------------------
                 # 特徴マップに含まれる物体のクラス所属の確信度、長方形位置を取得
                 #-------------------------------------------------------------------------------------
-                f_maps, pred_confs, pred_locs = self._session.run(
-                                                    [ self.fmaps, self.pred_confidences, self.pred_locations ], 
-                                                    feed_dict = { self.base_vgg16.X_holder: batch_x }
-                                                )
+                f_maps, pred_confs, pred_locs = \
+                self._session.run(
+                    [ self.fmaps, self.pred_confidences, self.pred_locations ], 
+                    feed_dict = { self.base_vgg16.X_holder: batch_x }
+                )
 
                 #print( "fmaps :", f_maps )
                 #print( "pred_confs :", pred_confs )
@@ -846,9 +846,10 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
                     #-------------------------------------------------------------------------------------
                     # デフォルトボックスと正解ボックスのマッチング処理（マッチング戦略）
                     #-------------------------------------------------------------------------------------
-                    pos_list, neg_list, expanded_gt_labels, expanded_gt_locs = self._matcher.match( 
-                                                                                   pred_confs, pred_locs, actual_labels, actual_loc_rects
-                                                                               )
+                    pos_list, neg_list, expanded_gt_labels, expanded_gt_locs = \
+                    self._matcher.match( 
+                        pred_confs, pred_locs, actual_labels, actual_loc_rects
+                    )
 
                     # マッチング結果を追加
                     positives.append( pos_list )
@@ -886,3 +887,160 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
         return self._y_out_op
 
+
+    def predict( self, image ):
+        """
+        """
+        feature_maps, pred_confs, pred_locs = \
+        self._session.run( 
+            [ self.fmaps, self.pred_confidences, self.pred_locations ], 
+            feed_dict = { self.base_vgg16.X_holder: image }
+        )
+
+        return pred_confs, pred_locs
+
+
+    def detect_objects( self, pred_confs, pred_locs ):
+        """
+        this method returns detected objects list (means high confidences locs and its labels)
+        Args is computed Tensor.
+
+        Args:
+            pred_confs: predicated confidences ( output of matching() )
+            pred_locs: predicated locations ( output of matching() )
+        Returns:
+            detected locs and its labels
+        """
+        detected_locs = []
+        detected_labels = []
+        
+        # ? 履歴
+        hist = [ 0 for _ in range(self.n_classes) ]
+        for conf, loc in zip( pred_confs[0], pred_locs[0] ):
+            hist[np.argmax(conf)] += 1
+        
+        print(hist)
+
+        #------------------------------------------
+        # ハードネガティブマイニング
+        # クラス所属の確信度の上位 200 個を抽出
+        #------------------------------------------
+        # np.amax(...) :
+        possibilities = [ np.amax(np.exp(conf)) / (np.sum(np.exp(conf)) + 1e-3) for conf in pred_confs[0] ]
+        print( "possibilities :", possibilities )
+
+        # np.argpartition(...) : 値が大きい上位K件の配列インデックスを取得
+        indicies = np.argpartition( possibilities, -200 )[-200:]
+        print( "indicies :", indicies )
+
+        # np.asarray(...) :
+        top200 = np.asarray(possibilities)[indicies]
+        slicer = indicies[0.9 < top200]
+        print( "top200 :", top200 )
+        print( "slicer :", slicer )
+
+        # ? exclude extra boxes.
+        locations, labels = self._filter( pred_confs[0][slicer], pred_locs[0][slicer] )
+
+        locations, labels = pred_locs[0][slicer], np.argmax( pred_confs[0][slicer], axis = 1 )
+        labels = np.asarray(labels).reshape(len(labels), 1)
+        with_labels = np.concatenate((locations, labels), axis=1)
+        
+        # labels, locations = image.non_max_suppression(boxes, possibilities, 10)
+        filtered = self.non_maximum_suppression(with_labels, 0.1)
+        # locations, labels = pred_confs[0][indices], pred_locs[0][indices]
+        if len(filtered) == 0:
+            filtered = np.zeros((4, 5))
+
+        return filtered[:,:4], filtered[:,4]
+        #return locations, labels
+
+    def _filter( self, pconfs, plocs ):
+        """
+        exclude extra boxes.
+
+        Args:
+            pconfs, plocs:
+                confidences and locations whose confidence is in top 200 and filtered by threshold min 0.1.
+        Returns:
+            filtered locations and its labels
+        """
+
+        jacc_th = 0.3
+        det_locs = []
+        det_labels = []
+
+        def jacc_filter(plabel, ploc):
+            for dlabel, dloc in zip(det_labels, det_locs):
+                jacc = jaccard(center2corner(dloc), center2corner(ploc))
+
+                # meaning this is same object
+                if dlabel == plabel and jacc_th < jacc:
+                    return False
+            return True
+
+        for pconf, ploc in zip(pconfs, plocs):
+            plabel = np.argmax(pconf)
+
+            if plabel != classes-1 and jacc_filter(plabel, ploc):
+                det_locs.append(ploc)
+                det_labels.append(plabel)
+
+        return det_locs, det_labels
+
+
+    def non_maximum_suppression(self, candidates, overlap_threshold):
+        """
+        this is nms(non maximum_suppression) which filters predicted objects.
+
+        Args:
+            predicted bounding boxes
+        Returns:
+            detected bounding boxes and its label
+        """
+
+        label = candidates[:,4]
+        boxes = candidates[label<classes-1]
+
+        if len(boxes) == 0:
+            return []
+
+        picked = []
+
+        x1 = boxes[:,0]
+        y1 = boxes[:,1]
+        x2 = boxes[:,2] + x1
+        y2 = boxes[:,3] + y1
+
+        area = (boxes[:,2]) * (boxes[:,3])
+        idxs = np.argsort(x1)
+
+        while len(idxs) > 0:
+            last = len(idxs) - 1
+            i = idxs[last]
+            picked.append(i)
+            suppress = [last]
+    
+            for pos in range(0, last):
+                j = idxs[pos]
+    
+                # extract smallest and largest bouding boxes
+                xx1 = max(x1[i], x1[j])
+                yy1 = max(y1[i], y1[j])
+                xx2 = min(x2[i], x2[j])
+                yy2 = min(y2[i], y2[j])
+    
+                w = max(0, xx2 - xx1)
+                h = max(0, yy2 - yy1)
+
+                # overlap of current box and those in area list
+                overlap = float(w * h) / area[j]
+    
+                # suppress current box
+                if overlap > overlap_threshold:
+                    suppress.append(pos)
+    
+            # delete suppressed indexes
+            idxs = np.delete(idxs, suppress)
+    
+        return boxes[picked]
