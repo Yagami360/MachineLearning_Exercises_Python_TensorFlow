@@ -14,6 +14,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
 
+from scipy.misc import imread, imresize
+
+import datetime
+
 # TensorFlow ライブラリ
 import tensorflow as tf
 from tensorflow.python.framework import ops
@@ -153,7 +157,7 @@ def main():
     y_test = []
     for key in test_keys[0:n_tests]:
         # image dataのみ取得。高さ、幅、チャンネル数情報は除外
-        image, _, _ = load_image_voc2007(  dataset_path + key )
+        image, _, _, _ = load_image_voc2007( dataset_path + key )
 
         X_test.append( image )
         y_test.append( data[key] )
@@ -259,8 +263,8 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
-    ssd.fit( X_train, y_train )
-    ssd.print( "after fitting" )
+    #ssd.fit( X_train, y_train )
+    #ssd.print( "after fitting" )
 
     ssd.load_model()
 
@@ -289,7 +293,7 @@ def main():
     plt.grid()
     plt.tight_layout()
     MLPlot.saveFigure( fileName = "SSD_2-1.png" )
-    plt.show()
+    #plt.show()
 
     #-------------------------------------------------------------------
     # 生成したデフォルトボックス群の表示（学習処理後）
@@ -301,7 +305,7 @@ def main():
 
     #
     image = X_test[0]
-    pred_confs, pred_locs = ssd.predict( images = image )
+    pred_confs, pred_locs = ssd.predict( image = [image] )  # [] でくくって、shape を [300,300,3] → [,300,300,3]
     locs, labels = ssd.detect_objects( pred_confs, pred_locs )
 
     # image のフォーマットを元の高さ、幅情報付きに戻す。
@@ -324,8 +328,8 @@ def main():
 
             cv2.rectangle(
                 image, 
-                (int(loc[0]*w), int(loc[1]*h)), 
-                (int(loc[2]*w), int(loc[3]*h)), 
+                ( int(loc[0]*300), int(loc[1]*300) ), 
+                ( int(loc[2]*300), int(loc[3]*300) ), 
                 (0, 0, 255),
                 1
             )
@@ -333,14 +337,15 @@ def main():
             cv2.putText(
                 image, 
                 str(int(label)), 
-                (int(loc[0]*w), int(loc[1]*h)), 
+                ( int(loc[0]*300), int(loc[1]*300) ), 
                 fontType, 
                 0.7, 
                 (0, 0, 255), 
                 1
             )
+    #str( datetime.datetime.now() )
     
-    cv2.imwrite( "./evaluated/", image )
+    cv2.imwrite( "./evaluated/test.jpg", image )
     cv2.namedWindow( "image", cv2.WINDOW_NORMAL)
     cv2.imshow( "image", image )
     cv2.waitKey(0)

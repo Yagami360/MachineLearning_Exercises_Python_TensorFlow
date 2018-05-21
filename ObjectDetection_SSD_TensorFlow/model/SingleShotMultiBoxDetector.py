@@ -914,7 +914,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         detected_locs = []
         detected_labels = []
         
-        # ? 履歴
+        # 全デフォルトボックスに対して、所属クラスをカウント（要素番号が、クラス番号に対応）
         hist = [ 0 for _ in range(self.n_classes) ]
         for conf, loc in zip( pred_confs[0], pred_locs[0] ):
             hist[np.argmax(conf)] += 1
@@ -925,7 +925,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         # ハードネガティブマイニング
         # クラス所属の確信度の上位 200 個を抽出
         #------------------------------------------
-        # np.amax(...) :
+        # np.amax(...) : 最大値の要素を抽出
         possibilities = [ np.amax(np.exp(conf)) / (np.sum(np.exp(conf)) + 1e-3) for conf in pred_confs[0] ]
         print( "possibilities :", possibilities )
 
@@ -933,8 +933,10 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         indicies = np.argpartition( possibilities, -200 )[-200:]
         print( "indicies :", indicies )
 
-        # np.asarray(...) :
+        # np.asarray(...) : 
         top200 = np.asarray(possibilities)[indicies]
+        
+        # 確信度が 0.1 未満の候補は除外する。
         slicer = indicies[0.9 < top200]
         print( "top200 :", top200 )
         print( "slicer :", slicer )
@@ -955,6 +957,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         return filtered[:,:4], filtered[:,4]
         #return locations, labels
 
+
     def _filter( self, pconfs, plocs ):
         """
         exclude extra boxes.
@@ -972,17 +975,30 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
         def jacc_filter(plabel, ploc):
             for dlabel, dloc in zip(det_labels, det_locs):
-                jacc = jaccard(center2corner(dloc), center2corner(ploc))
+                # 中心座標 → コーナー座標に変換
+                # ? dloc
+                dloc_corner_x = dloc[0] - dloc[2] * 0.5
+                dloc_corner_y = dloc[1] - dloc[3] * 0.5
+                dloc_corner = np.array( [dloc_corner_x, dloc_corner_y, abs(dloc[2]), abs(dloc[3])] )
+
+                # ? ploc
+                ploc_corner_x = ploc[0] - ploc[2] * 0.5
+                ploc_corner_y = ploc[1] - ploc[3] * 0.5
+                ploc_corner = np.array( [ploc_corner_x, ploc_corner_y, abs(ploc[2]), abs(ploc[3])] )
+
+                # jacc 値を計算する。
+                jacc = jaccard( dloc_corner, ploc_corner )
 
                 # meaning this is same object
                 if dlabel == plabel and jacc_th < jacc:
                     return False
+
             return True
 
         for pconf, ploc in zip(pconfs, plocs):
             plabel = np.argmax(pconf)
 
-            if plabel != classes-1 and jacc_filter(plabel, ploc):
+            if plabel != self.n_classes-1 and jacc_filter(plabel, ploc):
                 det_locs.append(ploc)
                 det_labels.append(plabel)
 
@@ -991,6 +1007,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
     def non_maximum_suppression(self, candidates, overlap_threshold):
         """
+        Non-Maximum Suppression アルゴリズム
         this is nms(non maximum_suppression) which filters predicted objects.
 
         Args:
@@ -1000,7 +1017,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         """
 
         label = candidates[:,4]
-        boxes = candidates[label<classes-1]
+        boxes = candidates[ label < self.n_classes - 1 ]
 
         if len(boxes) == 0:
             return []
