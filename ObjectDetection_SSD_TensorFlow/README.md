@@ -1,33 +1,40 @@
 ## TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装と簡単な応用
 
-> 実装中...
+> **実装中...（別レポジトリに移行予定）**
 
-ニューラルネットワークによる一般物体検出アルゴリズムの１つである、SSD [Single Shot muitibox Detector] を TensorFlow で実装。
+ニューラルネットワークによる一般物体検出アルゴリズムの１つである、SSD [Single Shot muitibox Detector] を TensorFlow で実装。（ChainerCV や OpenCV 等にある実装済み or 学習済み SSD モジュールのような高レベル API 使用せずに、TensorFlow でイチから実装している。）<br>
 
-この `README.md` ファイルには、各コードの実行結果、概要、SSD の背景理論の説明を記載しています。
-分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。
+この `README.md` ファイルには、各コードの実行結果、コードの内容の説明を記載しています。<br>
+分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。<br>
 
-尚、SSD [Single Shot muitibox Detector] に関しての、背景理論は以下のサイトに記載してあります。
+尚、SSD [Single Shot muitibox Detector] に関しての、背景理論は以下のサイトに記載してあります。<br>
 
 - [星の本棚 : ニューラルネットワーク / ディープラーニング](http://yagami12.hatenablog.com/entry/2017/09/17/111935#ID_11-4)
 
 
 ### 項目 [Contents]
 
-1. [使用するライブラリ](#ID_1)
 1. [使用するデータセット](#ID_2)
 1. [コード説明＆実行結果](#ID_3)
-    1. [コード説明＆実行結果 : `main2.py`](#ID_3-2)
-    1. [](#)
+    1. [TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装 : `main2.py`](#ID_3-2)
+        1. [使用するライブラリ](#3-2-1)
+        1. [コードの内容説明](#3-2-2)
+            1. [Poscal VOC2007 データセットにある、画像、物体情報の読み込み＆抽出](#3-2-2-1)
+            1. [SSD モデルの各種パラメーターの設定](#3-2-2-2)
+            1. [SSD モデルの構築](#3-2-2-3)
+            1. [デフォルトボックスの生成](#3-2-2-4)
+            1. [損失関数の設定](#3-2-2-5)
+            1. [Optimizer の設定](#3-2-2-6)
+            1. [構築した SSD モデルの学習](#3-2-2-7)
+            1. [学習済み SSD モデルによる推論フェイズ](#3-2-2-8)
+        1. [コードの実行結果](#3-2-3)
 1. [背景理論](#ID_4)
-    1. [背景理論１](#ID_4-1)
-    1. [](#)
 1. [参考サイト](#ID_5)
 
 
 <a id="ID_1"></a>
 
-
+---
 
 <a id="ID_2"></a>
 
@@ -42,11 +49,12 @@
     この内、長方形の左上と右下座標である (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置を表し、<br>
     残りの 20 次元で物体のクラスラベルを表す。<br>
 
-
 <!--
 - Open Images Dataset V4
     - https://storage.googleapis.com/openimages/web/download.html
 -->
+
+---
 
 <a id="ID_3"></a>
 
@@ -55,14 +63,14 @@
 <a id="ID_3-2"></a>
 
 ## TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装 : `main2.py`
-> 実装中...
+> **実装中...**
 
 TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装。<br>
-ChainerCV や OpenCV にある実装済み or 学習済み SSD モジュールのような高レベル API 使用せずに、TensorFlow で実装している。<br>
+ChainerCV や OpenCV 等にある実装済み or 学習済み SSD モジュールのような高レベル API 使用せずに、TensorFlow で実装している。<br>
 
 <a id="ID_3-2-1"></a>
 
-### 使用するライブラリ
+### ☆ 使用するライブラリ
 
 - TensorFlow ライブラリ
     - xxx
@@ -72,13 +80,13 @@ ChainerCV や OpenCV にある実装済み or 学習済み SSD モジュール�
 
 <br>
 
+
 <a id="ID_3-2-2"></a>
 
-### コードの内容説明
-
-<a id="ID_3-2-1"></a>
-
+### **☆ コードの内容説明**
 以下、コードの説明。<br>
+
+<a id="ID_3-2-2-1"></a>
 
 #### 1. Poscal VOC2007 データセットにある、画像、物体情報の読み込み＆抽出
 
@@ -101,45 +109,51 @@ def main():
 残りの 20 次元で、この矩形の所属クラス名を表す。<br>
 - なお、20 種類の物体を識別する場合、これら 20 種類のどれにも該当しないというクラスも必要になるので、出力層の出力は21次元だけ必要となる。<br>
 
+<br>
+
+<a id="ID_3-2-2-2"></a>
 
 #### 2. SSD モデルの各種パラメーターの設定
-
 SSD モデルの各種パラメーターの設定を行う。<br>
-    
-- この設定は、`SingleShotMultiBoxDetector` クラスのインスタンス作成時の引数にて行う。<br>
+この設定は、`SingleShotMultiBoxDetector` クラスのインスタンス作成時の引数にて行う。<br>
+
 ```python
 [main2.py]
 def main():
     ...
     ssd = SingleShotMultiBoxDetector(
               session = tf.Session(),
-              epochs = 20,                      # モデルの学習時のエポック数
-              batch_size = 10,                  # モデルの学習時の、ミニバッチサイズ
-              eval_step = 1,                    #
-              save_step = 100,                  #
-              image_height = 300,               # 入力画像の高さ（ピクセル数）
-              image_width = 300,                #
-              n_channels = 3,                   #
-              n_classes = 21,                   # 識別クラス数（物体の種類＋１）
-              n_boxes = [ 4, 6, 6, 6, 6, 6 ]    # 
+              epochs = 20,                      
+              batch_size = 10,                  
+              eval_step = 1,                    
+              save_step = 100,                  
+              image_height = 300,               
+              image_width = 300,                
+              n_channels = 3,                   
+              n_classes = 21,                   
+              n_boxes = [ 4, 6, 6, 6, 6, 6 ]     
       )
 ```
-- `epochs` は、学習時 `ssd.fit(...)` での総エポック数。
-- `batch_size` は、学習時 `ssd.fit(...)` でのミニバッチサイズ。
-- `image_height` は、入力画像データの高さ（ピクセル単位）<br>
-- `image_width` は、入力画像データの幅（ピクセル単位）<br>
-- `n_channels` は、入力画像データのチャンネル数（ピクセル単位）<br>
+- 引数 `epochs` は、後の学習時 `ssd.fit(...)` での総エポック数。
+- 引数 `batch_size` は、後の学習時 `ssd.fit(...)` でのミニバッチサイズ。
+- 引数 `image_height` は、入力画像データの高さ（ピクセル単位）<br>
+- 引数 `image_width` は、入力画像データの幅（ピクセル単位）<br>
+- 引数 `n_channels` は、入力画像データのチャンネル数（ピクセル単位）<br>
   ⇒ 本コードでは、300 × 300 の画像で実施。
-- `n_classes` は、
-- `n_boxes` は、
+- 引数 `n_classes` は、識別クラス数。<br>
+  但し、どの物体にも属さないこと示す値として、識別物体数に + 1 された値となることに注意。<br>
+- 引数 `n_boxes` は、各特徴マップにおけるデフォルトボックス数。<br>
+
+<br>
+
+<a id="ID_3-2-2-3"></a>
 
 ### 3. SSD モデルの構築
-
-以下のアーキテクチャ図に従って、SSD モデルを構築する。<br>
-この処理は、`SingleShotMultiBoxDetector` クラスの `model()` メソッドで行う。 <br>
-
+SSD モデルを構築する。<br>
+より詳細には、以下のアーキテクチャ図に従って、マルチスケール特徴マップのための各種畳み込み層の構築を行う。<br>
 ![image](https://user-images.githubusercontent.com/25688193/39536606-0e4f1416-4e72-11e8-91e2-82b516706bae.png)<br>
 
+この処理は、`SingleShotMultiBoxDetector` クラスの `model()` メソッドで行う。 <br>
 - SSD モデルの構築では、まず初めにベースネットワークとなる VGG-16 モデルを構築する。<br>
     ```python
     [SingleShotMultiBoxDetector.py]
@@ -152,13 +166,12 @@ def main():
         self.base_vgg16.model()
         ...
     ```
-    - この SSD のベースネットワークとしての VGG16 は、全結合層を畳み込み層に置き換えたモデルであり、<br>
-    この処理は `BaseNetworkVGG16.model()` メソッドで行う。<br>
+    - この SSD のベースネットワークとしての VGG16 は、従来の VGG16 における全結合層を、畳み込み層に置き換えたモデルであり、`BaseNetworkVGG16` クラスの `model()` メソッドで定義されたモデルである。<br>
     ```python
     [BaseNetwork.py]
     class BaseNetworkVGG16( BaseNetwork ):
     ...
-    def model():
+    def model( self ):
         #-----------------------------------------------------------------------------
         # layer 1
         #-----------------------------------------------------------------------------
@@ -265,6 +278,7 @@ def main():
 
         return self._y_out_op
     ```
+    - 尚、上記 `model()` メソッド内でコールされている畳み込み処理関数 `convolution_layer(...)` は、以下のように定義されている。
     ```python
     [BaseNetwork.py]
     class BaseNetworkVGG16( BaseNetwork ):
@@ -320,6 +334,7 @@ def main():
 
         return out_op
     ```
+    - 同様に、上記 `model()` メソッド内でコールされているプーリング処理関数 `pooling_layer(...)` は、以下のように定義されている。
     ```python
     [BaseNetwork.py]
     class BaseNetworkVGG16( BaseNetwork ):
@@ -584,32 +599,227 @@ def main():
         self.pred_locations = fmap_concatenated[ :, :, self.n_classes: ]
         ...
     ```
+<br>
+
+<a id="ID_3-2-2-3"></a>
 
 #### 4. デフォルトボックスの生成
-各 extra feature map に対応したデフォルトボックスを生成する。<br>
+各 extra feature map に対応した一連のデフォルトボックス群を生成する。<br>
 この処理は、`SingleShotMultiBoxDetector` クラスの `generate_default_boxes_in_fmaps(...)` メソッドで行う。 <br>
 
-- 
 ```python
 [SingleShotMultiBoxDetector.py]
-class 
+class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def generate_default_boxes_in_fmaps( self ):
+        """
+        各 extra feature map に対応したデフォルトボックスを生成する。
+
+        [Output]
+            self._default_box_set : DefaultBoxSet
+                生成した 一連のデフォルトボックス群を表すクラス DefaultBoxSet のオブジェクト
+        """
+        # extra feature map の形状（ピクセル単位）
+        fmap_shapes = [ fmap.get_shape().as_list() for fmap in self.fmaps ]
+
+        # 各 extra feature maps に対応した、各デフォルトボックスのアスペクト比
+        aspect_set = [
+                         [1.0, 1.0, 2.0, 1.0/2.0],                 # extra fmap 1
+                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],   # extra fmap 2
+                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],   #
+                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                     ]
+
+        # 一連のデフォルトボックス群を表すクラス DefaultBoxSet のオブジェクトを生成
+        self._default_box_set = DefaultBoxSet( scale_min = 0.2, scale_max = 0.9 )
+        
+        # 一連のデフォルトボックス群を生成
+        self._default_box_set.generate_boxes( fmaps_shapes = fmap_shapes, aspect_set = aspect_set )
+
+        return self._default_box_set
 ```
+
+この各特徴マップ、アスペクト比、スケール値に対応した一連のデフォルトボックス群は、`DefaultBoxSet` クラスのオブジェクト `self._default_box_set` として表現され、<br>
+実際の一連のデフォルトボックス群の生成は、このクラス `DefaultBoxSet` の `generate_boxes(...)` メソッドで行なう。
+
+```python
+[DefaultBox.py]
+class DefaultBoxSet( object ):
+    ...
+    def generate_boxes( self, fmaps_shapes, aspect_set ):
+        """
+        generate default boxes based on defined number
+        
+        [Input]
+            fmaps_shapes : nadarry( [][] )
+                extra feature map の形状（ピクセル単位）
+                the shape is [  first-feature-map-boxes ,
+                                second-feature-map-boxes ,
+                                    ...
+                                sixth-feature-map-boxes , ]
+                    ==> ( total_boxes_number x defined_size )
+                
+                feature map sizes per output such as...
+                [ 
+                    [ None, 19, 19, ],      # extra feature-map-shape 1 [batch_size, fmap_height, fmap_width]
+                    [ None, 19, 19, ],      # extra feature-map-shape 2
+                    [ None, 10, 10 ],       # extra feature-map-shape 3
+                    [ None, 5, 5, ],        # extra feature-map-shape 4
+                    [ None, 3, 3, ],        # extra feature-map-shape 5
+                    [ None, 1, 1, ],        # extra feature-map-shape 6
+                ]
+
+            aspect_set : nadarry( [][] )
+                extra feature map に対してのアスペクト比
+                such as...
+                [1.0, 1.0, 2.0, 1.0/2.0],                   # extra feature map 1
+                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],     # extra feature map 2
+                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+
+        [Output]
+            self._default_boxes : list<DefaultBox>
+                generated default boxes list
+
+        """
+        self._n_fmaps = len( fmaps_shapes )
+
+        id = 0
+        for k, fmap_shape in enumerate( fmaps_shapes ):
+            s_k = self.calc_scale( k )
+
+            fmap_width  = fmap_shape[1]
+            fmap_height = fmap_shape[2]
+            
+            aspects = aspect_set[k]
+
+            for aspect in aspects:
+                # 特徴マップのセルのグリッド（1 pixcel）に関してのループ処理
+                for y in range( fmap_height ):
+                    # セルのグリッドの中央を 0.5 として計算 
+                    center_y = ( y + 0.5 ) / float( fmap_height )
+
+                    for x in range( fmap_width ):
+                        center_x = ( x + 0.5 ) / float( fmap_width )
+
+                        box_width = s_k * np.sqrt( aspect )
+                        box_height = s_k / np.sqrt( aspect )
+
+                        id += 1
+                        default_box = DefaultBox(
+                                          group_id = k + 1,
+                                          id = id,
+                                          center_x = center_x, center_y = center_y,
+                                          width = box_width, height = box_height, 
+                                          scale = s_k,
+                                          aspect = aspect
+                                      )
+
+                        self.add_default_box( default_box )
+
+        return self._default_boxes
+```
+
+- このメソッドでは、以下の処理が行われる。<br>
+    1. 各特徴マップ（のサイズ `fmaps_shape` ）`k` に対して 、スケール値 `s_k` を計算。<br>
+    ```python
+    for k, fmap_shape in enumerate( fmaps_shapes ):
+        s_k = self.calc_scale( k )
+    ```
+        
+    2. 各アスペクト比 `aspects` と、各特徴マップ k の高さ `fmap_height`、幅 `fmap_width` から構成される各セルのグリッド（１×１ピクセル）`x`, `y` に対して、長方形の中心座標、アスペクト比を抽出＆計算。<br>
+
+        ![image](https://user-images.githubusercontent.com/25688193/40353511-a20ebee8-5dec-11e8-99d2-8b5d8bb8e96f.png)<br>
+
+    3. これら中心座標 `center_x`,`center_y`、ボックスの高さ `box_hight` 、幅 `ox_width` 、スケール値 `s_k`、アスペクト比 `aspect` を属性にもつデフォルトボックス `default_box` を生成する。<br>
+        
+    4. 生成したデフォルトボックスをリスト `self._default_boxes` に追加する。<br>
+        
+
+- 尚、バウンディングボックスの形状回帰のためのスケール値は、`DefaultBoxSet` クラスのメソッド `calc_scale(...)` で行われる。<br>
+このメソッドでは、具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール s_k は、以下のようにして計算される。<br>
+    ![image](https://user-images.githubusercontent.com/25688193/40351479-7a5fe87c-5de7-11e8-89bf-192c07e89e0a.png)<br>
+
+```python
+[DefaultBox.py]
+class DefaultBoxSet( object ):
+    ...
+    def calc_scale( self, k ):
+        """
+        BBOX の形状回帰のためのスケール値を計算する。
+        具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール s_k は、以下のようにして計算される。
+        s_k = s_min + (s_max - s_min) * (k - 1.0) / (m - 1.0), m = 6
+
+        [Input]
+            k : int
+                特徴マップ fmap の番号。1 ~ self._n_fmaps の間の数
+        [Output]
+            s_k : float
+                指定された番号の特徴マップのスケール値
+        """
+        s_k = self._scale_min + ( self._scale_max - self._scale_min ) * k / ( self._n_fmaps - 1.0 )
+        
+        return s_k
+```
+
+- 又、この一連のデフォルトボックス群の、各デフォルトボックスは、`DefaultBox` クラスのオブジェクトのリスト `` の各要素として表現される。<br>
+    - 尚、本コードのパラメータにおけるデフォルトボックスの総数は、`8752` 個となる。<br>
+
+
+<br>
+
+
+<a id="ID_3-2-2-5"></a>
 
 #### 5. 損失関数の設定
 SSD モデルの損失関数を設定する。<br>
 この設定は、`SingleShotMultiBoxDetector` クラスの `loss(...)` メソッドにて行う。
 
-
-
-#### 6. 構築した SSD モデルによる学習
-
-
-#### 7. 学習済み SSD モデルによる推論フェイズ
-
+- 位置特定誤差 L_loc
+- 確信度誤差 L_conf
+- Smooth L1 損失関数
 
 <br>
 
-### コードの実行結果
+<a id="ID_3-2-2-6"></a>
+
+#### 6. Optimizer の設定
+
+- Adam
+- 学習率 : `learning_rate = 0.0001`
+- 減衰項 : `adam1 = 0.9` , `adam2 = 0.999`
+
+<br>
+
+<a id="ID_3-2-2-7"></a>
+
+#### 7. 構築した SSD モデルによる学習
+
+- ミニバッチ処理
+- 教師データに含まれる、物体数、所属クラス、長方形位置座標の抽出とコンバート処理
+- （デフォルトボックスと正解ボックスの）マッチング戦略
+
+<br>
+
+<a id="ID_3-2-2-8"></a>
+
+#### 8. 学習済み SSD モデルによる推論フェイズ
+
+- ハードネガティブマイニング
+- non-maximum suppression アルゴリズム
+    - 推論されたデータに対し、バウンディングボックスのかぶり防止のために non-maximum suppression アルゴリズムを適用する。
+
+<br>
+
+---
+
+<a id="ID_3-2-3"></a>
+
+### ☆ コードの実行結果
 
 |パラメータ名|値（実行条件１）|
 |---|---|
@@ -624,9 +834,8 @@ SSD モデルの損失関数を設定する。<br>
 
 ## 背景理論
 
-<a id="ID_4-1"></a>
+- [星の本棚 : ニューラルネットワーク / ディープラーニング](http://yagami12.hatenablog.com/entry/2017/09/17/111935#ID_11-4)
 
-## 背景理論１
 
 ---
 
