@@ -27,6 +27,41 @@
 
 <a id="ID_1"></a>
 
+
+
+<a id="ID_2"></a>
+
+### 使用するデータセット
+- [Pascal VOC2007](http://host.robots.ox.ac.uk/pascal/VOC/)<br>
+    ![image](https://user-images.githubusercontent.com/25688193/40175526-55b9d1fe-5a13-11e8-8829-8c5791383ffb.png)<br>
+    - 物体検出用のデータセット。<br>
+    - [ 画像ファイル名, N x 24 の 2 次元配列 ]<br>
+    - 画像のRGB値は 0.0 ~ 1.0 の範囲での値<br>
+    - N は、画像の中にある検出物体の数で、画像によって異なる。<br>
+    - 24 というのは、位置とクラス名のデータを合わせたデータを表すベクトルになっていて、<br>
+    この内、長方形の左上と右下座標である (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置を表し、<br>
+    残りの 20 次元で物体のクラスラベルを表す。<br>
+
+
+<!--
+- Open Images Dataset V4
+    - https://storage.googleapis.com/openimages/web/download.html
+-->
+
+<a id="ID_3"></a>
+
+## コード説明＆実行結果
+
+<a id="ID_3-2"></a>
+
+## TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装 : `main2.py`
+> 実装中...
+
+TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装。<br>
+ChainerCV や OpenCV にある実装済み or 学習済み SSD モジュールのような高レベル API 使用せずに、TensorFlow で実装している。<br>
+
+<a id="ID_3-2-1"></a>
+
 ### 使用するライブラリ
 
 - TensorFlow ライブラリ
@@ -35,32 +70,551 @@
 - その他ライブラリ
     - xxx
 
+<br>
 
-<a id="ID_2"></a>
+<a id="ID_3-2-2"></a>
 
-### 使用するデータセット
-- [Pascal VOC2007](http://host.robots.ox.ac.uk/pascal/VOC/)<br>
-    ![image](https://user-images.githubusercontent.com/25688193/40175526-55b9d1fe-5a13-11e8-8829-8c5791383ffb.png)<br>
-    - [ 画像ファイル名, N x 24 の 2 次元配列 ]<br>
-    - 画像のRGB値は 0.0 ~ 1.0 の範囲での値<br>
-    - N は、画像の中にある検出物体の数で、画像によって異なる。<br>
-    - 24 というのは、位置とクラス名のデータを合わせたデータを表すベクトルになっていて、<br>
-    この内、(xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置を表し、残りの 20 次元でクラス名を表す。<br>
+### コードの内容説明
 
-- Open Images Dataset V4
-    - https://storage.googleapis.com/openimages/web/download.html
+<a id="ID_3-2-1"></a>
+
+以下、コードの説明。<br>
+
+#### 1. Poscal VOC2007 データセットにある、画像、物体情報の読み込み＆抽出
+
+まず、物体検出用のデータセットである Poscal VOC2007 データセットにある、画像、物体情報の読み込み＆抽出処理を行う。<br>
+
+- これらのデータセットは、pickle 形式 `VOC2007.pkl` で保管されているので、以下の処理で読み込みを行う。<br>
+```python
+[main2.py]
+def main():
+    ...
+    with open( dataset_path + 'VOC2007.pkl', 'rb' ) as file:
+        data = pickle.load( file )
+        keys = sorted( data.keys() )
+```
+- pickle ファイルの中身は、ファイル名 `['000001.jpg', '000002.jpg', '000003.jpg', '000004.jpg', '000006.jpg', '000008.jpg', '000010.jpg', ...]` を key とする辞書型の構造になっている。<br>
+- この処理により、`data` には、`[ファイル名 , N × 24 次元の配列]` の情報が格納される。<br>
+- この内、`N` は、画像の中にある検出物体の数で、画像によって異なる。<br>
+- 又、`24 次元` は、位置とクラス名のデータを合わせたデータを表すベクトルになっていて、<br>
+この内、長方形の左上、右下座標 (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置を表し、<br>
+残りの 20 次元で、この矩形の所属クラス名を表す。<br>
+- なお、20 種類の物体を識別する場合、これら 20 種類のどれにも該当しないというクラスも必要になるので、出力層の出力は21次元だけ必要となる。<br>
 
 
-<a id="ID_3"></a>
+#### 2. SSD モデルの各種パラメーターの設定
 
-## コード説明＆実行結果
+SSD モデルの各種パラメーターの設定を行う。<br>
+    
+- この設定は、`SingleShotMultiBoxDetector` クラスのインスタンス作成時の引数にて行う。<br>
+```python
+[main2.py]
+def main():
+    ...
+    ssd = SingleShotMultiBoxDetector(
+              session = tf.Session(),
+              epochs = 20,                      # モデルの学習時のエポック数
+              batch_size = 10,                  # モデルの学習時の、ミニバッチサイズ
+              eval_step = 1,                    #
+              save_step = 100,                  #
+              image_height = 300,               # 入力画像の高さ（ピクセル数）
+              image_width = 300,                #
+              n_channels = 3,                   #
+              n_classes = 21,                   # 識別クラス数（物体の種類＋１）
+              n_boxes = [ 4, 6, 6, 6, 6, 6 ]    # 
+      )
+```
+- `epochs` は、学習時 `ssd.fit(...)` での総エポック数。
+- `batch_size` は、学習時 `ssd.fit(...)` でのミニバッチサイズ。
+- `image_height` は、入力画像データの高さ（ピクセル単位）<br>
+- `image_width` は、入力画像データの幅（ピクセル単位）<br>
+- `n_channels` は、入力画像データのチャンネル数（ピクセル単位）<br>
+  ⇒ 本コードでは、300 × 300 の画像で実施。
+- `n_classes` は、
+- `n_boxes` は、
 
-<a id="ID_3-2"></a>
+### 3. SSD モデルの構築
 
-## コード説明＆実行結果２ : `main2.py`
-> 実装中...
+以下のアーキテクチャ図に従って、SSD モデルを構築する。<br>
+この処理は、`SingleShotMultiBoxDetector` クラスの `model()` メソッドで行う。 <br>
 
 ![image](https://user-images.githubusercontent.com/25688193/39536606-0e4f1416-4e72-11e8-91e2-82b516706bae.png)<br>
+
+- SSD モデルの構築では、まず初めにベースネットワークとなる VGG-16 モデルを構築する。<br>
+    ```python
+    [SingleShotMultiBoxDetector.py]
+    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def model():
+        #-----------------------------------------------------------------------------
+        # ベースネットワーク
+        #-----------------------------------------------------------------------------
+        self.base_vgg16.model()
+        ...
+    ```
+    - この SSD のベースネットワークとしての VGG16 は、全結合層を畳み込み層に置き換えたモデルであり、<br>
+    この処理は `BaseNetworkVGG16.model()` メソッドで行う。<br>
+    ```python
+    [BaseNetwork.py]
+    class BaseNetworkVGG16( BaseNetwork ):
+    ...
+    def model():
+        #-----------------------------------------------------------------------------
+        # layer 1
+        #-----------------------------------------------------------------------------
+        self.conv1_1_op = self.convolution_layer( 
+                              input_tsr = self.X_holder, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 64,
+                              n_strides = 1,
+                              name = "conv1_1", 
+                              reuse = False
+                          )
+
+        self.conv1_2_op = self.convolution_layer( 
+                              input_tsr = self.conv1_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 64,
+                              n_strides = 1,
+                              name = "conv1_2", 
+                              reuse = False
+                          )
+
+        self.pool1_op = self.pooling_layer( input_tsr = self.conv1_2_op, name = "pool1", reuse = False )
+
+        #-----------------------------------------------------------------------------
+        # layer 2
+        #-----------------------------------------------------------------------------
+        self.conv2_1_op = self.convolution_layer( 
+                              input_tsr = self.pool1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 128,
+                              n_strides = 1,
+                              name = "conv2_1",
+                              reuse = False
+                          )
+
+        self.conv2_2_op = self.convolution_layer( 
+                              input_tsr = self.conv2_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 128,
+                              n_strides = 1,
+                              name = "conv2_2",
+                              reuse = False
+                          )
+
+        self.pool2_op = self.pooling_layer( input_tsr = self.conv2_2_op, name = "pool2", reuse = False )
+
+        #-----------------------------------------------------------------------------
+        # layer 3
+        #-----------------------------------------------------------------------------
+        self.conv3_1_op = self.convolution_layer( 
+                              input_tsr = self.pool2_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 256,
+                              n_strides = 1,
+                              name = "conv3_1",
+                              reuse = False
+                          )
+
+        self.conv3_2_op = self.convolution_layer( 
+                              input_tsr = self.conv3_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 256,
+                              n_strides = 1,
+                              name = "conv3_2",
+                              reuse = False
+                          )
+
+        self.conv3_3_op = self.convolution_layer( 
+                              input_tsr = self.conv3_2_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 256,
+                              n_strides = 1,
+                              name = "conv3_3",
+                              reuse = False
+                          )
+
+        self.pool3_op = self.pooling_layer( input_tsr = self.conv3_3_op, name = "pool3", reuse = False )
+
+        #-----------------------------------------------------------------------------
+        # layer 4
+        #-----------------------------------------------------------------------------
+        self.conv4_1_op = self.convolution_layer( 
+                              input_tsr = self.pool3_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
+                              name = "conv4_1",
+                              reuse = False
+                          )
+
+        self.conv4_2_op = self.convolution_layer( 
+                              input_tsr = self.conv4_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_output_channels = 512,
+                              n_strides = 1,
+                              name = "conv4_2",
+                              reuse = False
+                          )
+
+        #-----------------------------------------------------------------------------
+        # model output
+        #-----------------------------------------------------------------------------
+        self._y_out_op = self.conv4_2_op
+
+        return self._y_out_op
+    ```
+    ```python
+    [BaseNetwork.py]
+    class BaseNetworkVGG16( BaseNetwork ):
+    ...
+    def convolution_layer( 
+            self, 
+            input_tsr, 
+            filter_height, filter_width, 
+            n_strides,
+            n_output_channels, 
+            name = "conv", reuse = False
+        ):
+        """
+        畳み込み層を構築する。
+        
+        [Input]
+            input_tsr : Tensor / Placeholder
+                畳み込み層への入力 Tensor
+            filter_height : int
+                フィルターの高さ（カーネル行列の行数）
+            filter_width : int
+                フィルターの幅（カーネル行列の列数）
+            n_output_channels : int
+                畳み込み処理後のデータのチャンネル数
+        [Output]
+            out_op : Operator
+                畳み込み処理後の出力オペレーター
+        """
+        
+        # Variable の名前空間（スコープ定義）
+        with tf.variable_scope( name, reuse = reuse ):
+            # 入力データ（画像）のチャンネル数取得
+            input_shape = input_tsr.get_shape().as_list()
+            n_input_channels = input_shape[-1]
+
+            # 畳み込み層の重み（カーネル）を追加
+            # この重みは、畳み込み処理の画像データに対するフィルタ処理（特徴マップ生成）に使うカーネルを表す Tensor のことである。
+            # kernel_shape : [ [(filterの高さ) , (filterの幅) , (入力チャネル数) , (出力チャネル数) ]
+            kernel = self.init_weight_variable( input_shape = [filter_height, filter_width, n_input_channels, n_output_channels] )
+            bias = self.init_bias_variable( input_shape = [n_output_channels] )
+
+            # 畳み込み演算
+            conv_op = tf.nn.conv2d(
+                          input = input_tsr,
+                          filter = kernel,
+                          strides = [1, n_strides, n_strides, 1],   # strides[0] = strides[3] = 1. とする必要がある
+                          padding = "SAME",
+                          name = name
+                      )
+            
+            # 活性化関数として Relu で出力
+            out_op = tf.nn.relu( tf.add(conv_op,bias) )
+
+        return out_op
+    ```
+    ```python
+    [BaseNetwork.py]
+    class BaseNetworkVGG16( BaseNetwork ):
+    ...
+    def pooling_layer( self, input_tsr, name = "pool", reuse = False ):
+        """
+        VGG16 のプーリング層を構築する。
+
+        [Input]
+            input_tsr : Tensor / Placeholder
+                畳み込み層への入力 Tensor
+        [Output]
+            pool_op : Operator
+                プーリング処理後の出力オペレーター
+        """
+        # Variable の名前空間（スコープ定義）
+        with tf.variable_scope( name, reuse = reuse ):
+            # Max Pooling 演算
+            pool_op = tf.nn.max_pool(
+                          value = input_tsr,
+                          ksize = [1, 2, 2, 1],
+                          strides = [1, 2, 2, 1],
+                          padding = "SAME",
+                          name = name
+                      )
+
+        return pool_op
+    ```
+
+- 次に、ベースネットワークの後段に続くレイヤーを構築する。<br>
+    ```python
+    [SingleShotMultiBoxDetector.py]
+    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def model():
+        ...
+        #-----------------------------------------------------------------------------
+        # layer 6
+        #-----------------------------------------------------------------------------
+        self.conv6_op = self.convolution_layer( 
+                            input_tsr = self.base_vgg16._y_out_op, 
+                            filter_height = 3, filter_width = 3,
+                            n_strides = 1,
+                            n_output_channels = 1024,
+                            name = "conv6", 
+                            reuse = False
+                        )
+
+        self.pool6_op = self.pooling_layer( input_tsr = self.conv6_op, name = "pool6", reuse = False )
+
+        #-----------------------------------------------------------------------------
+        # layer 7
+        #-----------------------------------------------------------------------------
+        self.conv7_op = self.convolution_layer( 
+                            input_tsr = self.pool6_op, 
+                            filter_height = 1, filter_width = 1,
+                            n_strides = 1,
+                            n_output_channels = 1024,
+                            name = "conv7", 
+                            reuse = False
+                        )
+
+        #-----------------------------------------------------------------------------
+        # layer 8
+        #-----------------------------------------------------------------------------
+        self.conv8_1_op = self.convolution_layer( 
+                              input_tsr = self.conv7_op, 
+                              filter_height = 1, filter_width = 1,
+                              n_strides = 1,
+                              n_output_channels = 256,
+                              name = "conv8_1", 
+                              reuse = False
+                          )
+
+        self.conv8_2_op = self.convolution_layer( 
+                              input_tsr = self.conv8_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_strides = 2,
+                              n_output_channels = 512,
+                              name = "conv8_2", 
+                              reuse = False
+                          )
+
+        #-----------------------------------------------------------------------------
+        # layer 9
+        #-----------------------------------------------------------------------------
+        self.conv9_1_op = self.convolution_layer( 
+                              input_tsr = self.conv8_2_op, 
+                              filter_height = 1, filter_width = 1,
+                              n_strides = 1,
+                              n_output_channels = 128,
+                              name = "conv9_1", 
+                              reuse = False
+                          )
+
+        self.conv9_2_op = self.convolution_layer( 
+                              input_tsr = self.conv9_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_strides = 2,
+                              n_output_channels = 256,
+                              name = "conv9_2", 
+                              reuse = False
+                          )
+
+        #-----------------------------------------------------------------------------
+        # layer 10
+        #-----------------------------------------------------------------------------
+        self.conv10_1_op = self.convolution_layer( 
+                               input_tsr = self.conv9_2_op, 
+                               filter_height = 1, filter_width = 1,
+                               n_strides = 1,
+                               n_output_channels = 128,
+                               name = "conv10_1", 
+                               reuse = False
+                           )
+
+        self.conv10_2_op = self.convolution_layer( 
+                              input_tsr = self.conv10_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_strides = 2,
+                              n_output_channels = 256,
+                              name = "conv10_2", 
+                              reuse = False
+                          )
+
+        #-----------------------------------------------------------------------------
+        # layer 11
+        #-----------------------------------------------------------------------------
+        self.conv11_1_op = self.convolution_layer( 
+                               input_tsr = self.conv10_2_op, 
+                               filter_height = 1, filter_width = 1,
+                               n_strides = 1,
+                               n_output_channels = 128,
+                               name = "conv11_1", 
+                               reuse = False
+                           )
+
+        self.conv11_2_op = self.convolution_layer( 
+                              input_tsr = self.conv11_1_op, 
+                              filter_height = 3, filter_width = 3,
+                              n_strides = 3,
+                              n_output_channels = 256,
+                              name = "conv11_2", 
+                              reuse = False
+                          )
+        ...
+    ```
+
+- 更に、Extra Feature Maps のレイヤーを構築する。<br>
+    - この Extra Feature Maps は、各畳み込み層の出力から物体検出モジュールへの畳み込みで、<br>
+    上記アーキテクチャ図の青線部分に対応したものである。<br>
+    ```python
+    [SingleShotMultiBoxDetector.py]
+    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def model():
+        ...
+        #-----------------------------------------------------------------------------
+        # Extra Feature Maps （アーキテクチャ図の青線部分＜各層 → Detections per Classes＞）
+        #-----------------------------------------------------------------------------
+        self.fmaps = []
+
+        # extra feature map 1
+        self.fmaps.append( 
+            self.convolution_layer(
+                input_tsr = self.base_vgg16._y_out_op,
+                filter_height = 3, filter_width = 3,
+                n_strides = 1,
+                n_output_channels = self.n_boxes[0] * ( self.n_classes + 4 ),
+                name = "fmap1", 
+                reuse = False
+            )
+        )
+
+        # extra feature map 2
+        self.fmaps.append( 
+            self.convolution_layer(
+                input_tsr = self.conv7_op,
+                filter_height = 3, filter_width = 3,
+                n_strides = 1,
+                n_output_channels = self.n_boxes[1] * ( self.n_classes + 4 ),
+                name = "fmap2", 
+                reuse = False
+            )
+        )
+
+        # extra feature map 3
+        self.fmaps.append( 
+            self.convolution_layer(
+                input_tsr = self.conv8_2_op,
+                filter_height = 3, filter_width = 3,
+                n_strides = 1,
+                n_output_channels = self.n_boxes[2] * ( self.n_classes + 4 ),
+                name = "fmap3", 
+                reuse = False
+            )
+        )
+
+        # extra feature map 4
+        self.fmaps.append( 
+            self.convolution_layer(
+                input_tsr = self.conv9_2_op,
+                filter_height = 3, filter_width = 3,
+                n_strides = 1,
+                n_output_channels = self.n_boxes[3] * ( self.n_classes + 4 ),
+                name = "fmap4", 
+                reuse = False
+            )
+        )
+
+        # extra feature map 5
+        self.fmaps.append( 
+            self.convolution_layer(
+                input_tsr = self.conv10_2_op,
+                filter_height = 3, filter_width = 3,
+                n_strides = 1,
+                n_output_channels = self.n_boxes[4] * ( self.n_classes + 4 ),
+                name = "fmap5", 
+                reuse = False
+            )
+        )
+
+        # extra feature map 6
+        self.fmaps.append( 
+            self.convolution_layer(
+                input_tsr = self.conv11_2_op,
+                filter_height = 1, filter_width = 1,
+                n_strides = 1,
+                n_output_channels = self.n_boxes[5] * ( self.n_classes + 4 ),
+                name = "fmap6", 
+                reuse = False
+            )
+        )
+
+        #-----------------------------------------------------------------------------
+        # extra feature maps による物体の所属クラスとスコア値の算出
+        #-----------------------------------------------------------------------------
+        fmaps_reshaped = []
+        for i, fmap in zip( range(len(self.fmaps)), self.fmaps ):
+            # [batch_size=None, image_height, image_width, n_channles]
+            output_shape = fmap.get_shape().as_list()
+            
+            # extra feature map の高さ、幅
+            fmap_height = output_shape[1]
+            fmap_width = output_shape[2]
+            
+            # [batch_size=None, image_height, image_width, n_channles] → [batch_size=None, xxx, self.n_classes + 4 ] に　reshape
+            fmap_reshaped = tf.reshape( fmap, [-1, fmap_width * fmap_height * self.n_boxes[i], self.n_classes + 4] )
+
+            #
+            fmaps_reshaped.append( fmap_reshaped )
+
+        # reshape した fmap を結合
+        # Tensor("concat:0", shape=(?, 8752, 25), dtype=float32)
+        # 25 = 21(クラス数) + 4( (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置 )
+        fmap_concatenated = tf.concat( fmaps_reshaped, axis = 1 )
+
+        # 特徴マップが含む物体の確信度と予想位置（形状のオフセット）
+        # pred_confidences.shape = [None, 8752, 21] | 21: クラス数
+        # pred_locations.shape = [None, 8752, 4]  | 4 : (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置
+        self.pred_confidences = fmap_concatenated[ :, :, :self.n_classes ]
+        self.pred_locations = fmap_concatenated[ :, :, self.n_classes: ]
+        ...
+    ```
+
+#### 4. デフォルトボックスの生成
+各 extra feature map に対応したデフォルトボックスを生成する。<br>
+この処理は、`SingleShotMultiBoxDetector` クラスの `generate_default_boxes_in_fmaps(...)` メソッドで行う。 <br>
+
+- 
+```python
+[SingleShotMultiBoxDetector.py]
+class 
+```
+
+#### 5. 損失関数の設定
+SSD モデルの損失関数を設定する。<br>
+この設定は、`SingleShotMultiBoxDetector` クラスの `loss(...)` メソッドにて行う。
+
+
+
+#### 6. 構築した SSD モデルによる学習
+
+
+#### 7. 学習済み SSD モデルによる推論フェイズ
+
+
+<br>
+
+### コードの実行結果
+
+|パラメータ名|値（実行条件１）|
+|---|---|
+|xxx|xxx|
+|xxx|xxx|
 
 <br>
 
@@ -78,91 +632,7 @@
 
 ## デバッグメモ
 
-[18/05/14]
-
 ```python
-tensorflow.python.framework.errors_impl.InvalidArgumentError:
- Incompatible shapes: [100] vs. [100,512]
-	 [[Node: Loss_CrossEntropy_op/mul = Mul[T=DT_FLOAT, _device="/job:localhost/replica:0/task:0/device:CPU:0"](_arg_Placeholder_2_0_1, Loss_CrossEntropy_op/Log)]]
-
-```
-
-```Python
-@conv6 layer
-Current input size in convolution layer is: [None, 38, 38, 512]
-kernel_size : [3, 3, 512, 1024]
-strides : [1, 1, 1, 1]
-    ===> output size is: [None, 38, 38, 1024]
-@conv7 layer
-Current input size in convolution layer is: [None, 19, 19, 1024]
-kernel_size : [1, 1, 1024, 1024]
-strides : [1, 1, 1, 1]
-    ===> output size is: [None, 19, 19, 1024]
-@conv8_1 layer
-Current input size in convolution layer is: [None, 19, 19, 1024]
-kernel_size : [1, 1, 1024, 256]
-strides : [1, 1, 1, 1]
-    ===> output size is: [None, 19, 19, 256]
-@conv8_2 layer
-Current input size in convolution layer is: [None, 19, 19, 256]
-kernel_size : [3, 3, 256, 512]
-strides : [1, 2, 2, 1]
-    ===> output size is: [None, 10, 10, 512]
-@conv9_1 layer
-Current input size in convolution layer is: [None, 10, 10, 512]
-kernel_size : [1, 1, 512, 128]
-strides : [1, 1, 1, 1]
-    ===> output size is: [None, 10, 10, 128]
-@conv9_2 layer
-Current input size in convolution layer is: [None, 10, 10, 128]
-kernel_size : [3, 3, 128, 256]
-strides : [1, 2, 2, 1]
-    ===> output size is: [None, 5, 5, 256]
-@conv10_1 layer
-Current input size in convolution layer is: [None, 5, 5, 256]
-kernel_size : [1, 1, 256, 128]
-strides : [1, 1, 1, 1]
-    ===> output size is: [None, 5, 5, 128]
-@conv10_2 layer
-Current input size in convolution layer is: [None, 5, 5, 128]
-kernel_size : [3, 3, 128, 256]
-strides : [1, 2, 2, 1]
-    ===> output size is: [None, 3, 3, 256]
-@conv11_1 layer
-Current input size in convolution layer is: [None, 3, 3, 256]
-kernel_size : [1, 1, 256, 128]
-strides : [1, 1, 1, 1]
-    ===> output size is: [None, 3, 3, 128]
-@conv11_2 layer
-Current input size in convolution layer is: [None, 3, 3, 128]
-kernel_size : [3, 3, 128, 256]
-strides : [1, 3, 3, 1]
-    ===> output size is: [None, 1, 1, 256]
-
-concatenated: Tensor("concat:0", shape=(?, 8752, 25), dtype=float32)
-confs: [None, 8752, 21]
-locs: [None, 8752, 4]
-
-fmap shapes is 
-[
-    [None, 38, 38, 100], [None, 19, 19, 150], [None, 10, 10, 150], 
-    [None, 5, 5, 150], [None, 3, 3, 150], [None, 1, 1, 150]
-]
-
---------
-
-conv6_op : Tensor("conv6/Relu:0", shape=(?, 38, 38, 1024), dtype=float32)
-pool6_op : Tensor("pool6/pool6:0", shape=(?, 19, 19, 1024), dtype=float32)
-conv7_op : Tensor("conv7/Relu:0", shape=(?, 19, 19, 1024), dtype=float32)
-conv8_1_op : Tensor("conv8_1/Relu:0", shape=(?, 19, 19, 256), dtype=float32)
-conv8_2_op : Tensor("conv8_2/Relu:0", shape=(?, 10, 10, 512), dtype=float32)
-conv9_1_op : Tensor("conv9_1/Relu:0", shape=(?, 10, 10, 128), dtype=float32)
-conv9_2_op : Tensor("conv9_2/Relu:0", shape=(?, 5, 5, 256), dtype=float32)
-conv10_1_op : Tensor("conv10_1/Relu:0", shape=(?, 5, 5, 128), dtype=float32)
-conv10_2_op : Tensor("conv10_2/Relu:0", shape=(?, 3, 3, 256), dtype=float32)
-conv11_1_op : Tensor("conv11_1/Relu:0", shape=(?, 3, 3, 128), dtype=float32)
-conv11_2_op : Tensor("conv11_2/Relu:0", shape=(?, 1, 1, 256), dtype=float32)
-
 fmaps :
     fmaps[0] : Tensor("fmap1/Relu:0", shape=(?, 38, 38, 100), dtype=float32)
     fmaps[1] : Tensor("fmap2/Relu:0", shape=(?, 19, 19, 150), dtype=float32)
@@ -181,10 +651,7 @@ fmap_concatenated : Tensor("concat:0", shape=(?, 8752, 25), dtype=float32)
 
 pred_confidences : Tensor("strided_slice:0", shape=(?, 8752, 21), dtype=float32)
 pred_locations : Tensor("strided_slice_1:0", shape=(?, 8752, 4), dtype=float32)
-
 ```
-
-
 ```python
 [ssd300.py]
 def train(...):
@@ -249,24 +716,7 @@ pred_locs : list
 [1] / shape (10, 8752, 4)
 ...
 [9] / shape (10, 8752, 4)
-
-
 ```
-
-```
-X_train : list
-[0] / shape 
-    [0][0] : numapy
-    [0][1] : 
-[1]
-...
-[199]
-
-batch_x : list
-
-
-```
-
 
 ```python
 BATCH: 1 / EPOCH: 1, LOSS: 77.99568176269531
@@ -274,45 +724,7 @@ BATCH: 2 / EPOCH: 1, LOSS: 72.53934478759766
 BATCH: 3 / EPOCH: 1, LOSS: 66.68212127685547
 BATCH: 4 / EPOCH: 1, LOSS: 57.453941345214844
 BATCH: 5 / EPOCH: 1, LOSS: 65.49876403808594
-BATCH: 6 / EPOCH: 1, LOSS: 62.12317657470703
-BATCH: 7 / EPOCH: 1, LOSS: 58.043888092041016
-BATCH: 8 / EPOCH: 1, LOSS: 53.789306640625
-BATCH: 9 / EPOCH: 1, LOSS: 66.81963348388672
-BATCH: 10 / EPOCH: 1, LOSS: 51.86540985107422
-BATCH: 11 / EPOCH: 1, LOSS: 55.48357391357422
-BATCH: 12 / EPOCH: 1, LOSS: 54.44649124145508
-BATCH: 13 / EPOCH: 1, LOSS: 49.0512580871582
-BATCH: 14 / EPOCH: 1, LOSS: 49.96155548095703
-BATCH: 15 / EPOCH: 1, LOSS: 57.35893630981445
-BATCH: 16 / EPOCH: 1, LOSS: 58.429710388183594
-BATCH: 17 / EPOCH: 1, LOSS: 59.454132080078125
-BATCH: 18 / EPOCH: 1, LOSS: 50.92224884033203
-BATCH: 19 / EPOCH: 1, LOSS: 52.530296325683594
-BATCH: 20 / EPOCH: 1, LOSS: 54.49018096923828
-BATCH: 21 / EPOCH: 1, LOSS: 53.80031204223633
-BATCH: 22 / EPOCH: 1, LOSS: 55.987430572509766
-BATCH: 23 / EPOCH: 1, LOSS: 49.911922454833984
-BATCH: 24 / EPOCH: 1, LOSS: 46.470672607421875
-BATCH: 25 / EPOCH: 1, LOSS: 44.198753356933594
-BATCH: 26 / EPOCH: 1, LOSS: 49.226768493652344
-BATCH: 27 / EPOCH: 1, LOSS: 50.17113494873047
-BATCH: 28 / EPOCH: 1, LOSS: 46.77484893798828
-BATCH: 29 / EPOCH: 1, LOSS: 44.91448974609375
-BATCH: 30 / EPOCH: 1, LOSS: 54.14591979980469
-BATCH: 31 / EPOCH: 1, LOSS: 50.675567626953125
-BATCH: 32 / EPOCH: 1, LOSS: 53.774436950683594
-BATCH: 33 / EPOCH: 1, LOSS: 46.288475036621094
-BATCH: 34 / EPOCH: 1, LOSS: 45.0712890625
-BATCH: 35 / EPOCH: 1, LOSS: 44.72560119628906
-BATCH: 36 / EPOCH: 1, LOSS: 47.078311920166016
-BATCH: 37 / EPOCH: 1, LOSS: 43.437782287597656
-BATCH: 38 / EPOCH: 1, LOSS: 55.951690673828125
-BATCH: 39 / EPOCH: 1, LOSS: 45.72810363769531
-BATCH: 40 / EPOCH: 1, LOSS: 52.4937744140625
-BATCH: 41 / EPOCH: 1, LOSS: 51.1361083984375
-BATCH: 42 / EPOCH: 1, LOSS: 53.22508239746094
-BATCH: 43 / EPOCH: 1, LOSS: 58.21778869628906
-BATCH: 44 / EPOCH: 1, LOSS: 44.99196243286133
+...
 BATCH: 45 / EPOCH: 1, LOSS: 47.436241149902344
 BATCH: 46 / EPOCH: 1, LOSS: 51.595970153808594
 BATCH: 47 / EPOCH: 1, LOSS: 58.18979263305664
@@ -328,52 +740,35 @@ BATCH: 2 / EPOCH: 2, LOSS: 55.19695281982422
 BATCH: 3 / EPOCH: 2, LOSS: 52.012481689453125
 BATCH: 4 / EPOCH: 2, LOSS: 46.90318298339844
 BATCH: 5 / EPOCH: 2, LOSS: 46.00563430786133
-BATCH: 6 / EPOCH: 2, LOSS: 46.569419860839844
-BATCH: 7 / EPOCH: 2, LOSS: 77.05448913574219
-BATCH: 8 / EPOCH: 2, LOSS: 45.550270080566406
-BATCH: 9 / EPOCH: 2, LOSS: 43.39899444580078
-BATCH: 10 / EPOCH: 2, LOSS: 45.24702453613281
-BATCH: 11 / EPOCH: 2, LOSS: 45.976402282714844
-BATCH: 12 / EPOCH: 2, LOSS: 40.169986724853516
-BATCH: 13 / EPOCH: 2, LOSS: 52.714759826660156
-BATCH: 14 / EPOCH: 2, LOSS: 41.76013946533203
-BATCH: 15 / EPOCH: 2, LOSS: 38.50575256347656
-BATCH: 16 / EPOCH: 2, LOSS: 44.95689392089844
-BATCH: 17 / EPOCH: 2, LOSS: 46.28858184814453
-BATCH: 18 / EPOCH: 2, LOSS: 44.6292724609375
-BATCH: 19 / EPOCH: 2, LOSS: 43.51865768432617
-BATCH: 20 / EPOCH: 2, LOSS: 41.56088638305664
-BATCH: 21 / EPOCH: 2, LOSS: 39.68405532836914
-BATCH: 22 / EPOCH: 2, LOSS: 36.9792366027832
-BATCH: 23 / EPOCH: 2, LOSS: 49.263885498046875
-BATCH: 24 / EPOCH: 2, LOSS: 46.06732177734375
-BATCH: 25 / EPOCH: 2, LOSS: 49.49059295654297
-BATCH: 26 / EPOCH: 2, LOSS: 46.59154510498047
-BATCH: 27 / EPOCH: 2, LOSS: 44.79001235961914
-BATCH: 28 / EPOCH: 2, LOSS: 45.509796142578125
-BATCH: 29 / EPOCH: 2, LOSS: 44.42538833618164
-BATCH: 30 / EPOCH: 2, LOSS: 42.84892272949219
-BATCH: 31 / EPOCH: 2, LOSS: 42.58990478515625
-BATCH: 32 / EPOCH: 2, LOSS: 47.5404052734375
-BATCH: 33 / EPOCH: 2, LOSS: 44.9470100402832
-BATCH: 34 / EPOCH: 2, LOSS: 47.209877014160156
+...
 BATCH: 35 / EPOCH: 2, LOSS: 43.423709869384766
 BATCH: 36 / EPOCH: 2, LOSS: 44.227413177490234
 BATCH: 37 / EPOCH: 2, LOSS: 41.00377655029297
 BATCH: 38 / EPOCH: 2, LOSS: 50.184600830078125
-
-
 ```
 
 ```python
-Epoch: 1/20 | minibatch iteration: 1/400 | loss = 42.00503 |
-tensorflow.python.framework.errors_impl.InvalidArgumentError: Incompatible shapes: [20,8752,4] vs. [10,8752,4]
-	 [[Node: gradients/sub_grad/BroadcastGradientArgs = BroadcastGradientArgs[T=DT_INT32, _device="/job:localhost/replica:0/task:0/device:CPU:0"](gradients/sub_grad/Shape, gradients/sub_grad/Shape_1)]]
+pred_confs : ndarray
+shape [1,8752,21]   [1, デフォルトボックスの総数, クラス数]
+    [0][0] デフォルトボックス１の各クラスの所属の確信度
+    array([-0.14629412,  0.38752401,  0.63575637, -0.41271916,  0.23870134,
+            0.31687331,  0.21811765, -0.03108937,  0.10936093,  0.0263918 ,        0.13831818,  0.24440765, -0.31142211, -0.10909909, -0.46765071,        0.09381628, -0.04382503, -0.42369995,  0.43960947,  0.26494616,       -0.33809745], 
+        dtype=float32)
 
+hist : list<クラス数>
+    [144, 211, 395, 440, 130, 123, 605, 448, 686, 275, 404, 228, 181, 256, ...]
 
-```
+possibilities : list<float64>
+    [0] 0.082660712503914727, 
+    [1] 0.065760134891456545, 
+    ...
+    [8751] 0.051121967036249438
 
-
-```python
+indicies : ndarray
+    shape = [200]
+    [0] 3521
+    [1] 1865
+    ...
+    [199] 5146
 
 ```
