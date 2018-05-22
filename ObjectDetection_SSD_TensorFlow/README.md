@@ -606,6 +606,7 @@ SSD モデルを構築する。<br>
 #### 4. デフォルトボックスの生成
 各 extra feature map に対応した一連のデフォルトボックス群を生成する。<br>
 この処理は、`SingleShotMultiBoxDetector` クラスの `generate_default_boxes_in_fmaps(...)` メソッドで行う。 <br>
+（デフォルトボックスに関するアスペクト比のマップ `aspect_set` 、及びスケール値の最大値 `scale_max`、最小値 `scale_min` といったパラメータの設定も、このメソッド内で行っている。）<br>
 
 ```python
 [SingleShotMultiBoxDetector.py]
@@ -727,23 +728,95 @@ class DefaultBoxSet( object ):
 - このメソッドでは、以下の処理が行われる。<br>
     1. 各特徴マップ（のサイズ `fmaps_shape` ）`k` に対して 、スケール値 `s_k` を計算。<br>
     ```python
-    for k, fmap_shape in enumerate( fmaps_shapes ):
-        s_k = self.calc_scale( k )
+    [DefaultBox.py]
+    class DefaultBoxSet( object ):
+    ...
+    def generate_boxes( self, fmaps_shapes, aspect_set ):
+        ...
+        for k, fmap_shape in enumerate( fmaps_shapes ):
+            s_k = self.calc_scale( k )
     ```
         
-    2. 各アスペクト比 `aspects` と、各特徴マップ k の高さ `fmap_height`、幅 `fmap_width` から構成される各セルのグリッド（１×１ピクセル）`x`, `y` に対して、長方形の中心座標、アスペクト比を抽出＆計算。<br>
-
+    2. 各アスペクト比 `aspects` と、各特徴マップ k の高さ `fmap_height`、幅 `fmap_width` から構成される各セルのグリッド（１×１ピクセル）`x`, `y` に対して、長方形の中心座標 `center_x`, `center_y`、アスペクト比 `aspect`、デフォルトボックスの高さ `box_height`、幅 `box_width` を抽出 or 計算する。<br>
+    ここで、デフォルトボックスの各特徴マップ `k` 、及び各スケール値 `s_k` に対する、幅と高さは、以下の式で算出する。<br>
         ![image](https://user-images.githubusercontent.com/25688193/40353511-a20ebee8-5dec-11e8-99d2-8b5d8bb8e96f.png)<br>
+    ```python
+    [DefaultBox.py]
+    class DefaultBoxSet( object ):
+    ...
+    def generate_boxes( self, fmaps_shapes, aspect_set ):
+        ...
+        # fmap_shape[0] にはバッチサイズが入力されている。
+        fmap_width  = fmap_shape[1]
+        fmap_height = fmap_shape[2]
 
-    3. これら中心座標 `center_x`,`center_y`、ボックスの高さ `box_hight` 、幅 `ox_width` 、スケール値 `s_k`、アスペクト比 `aspect` を属性にもつデフォルトボックス `default_box` を生成する。<br>
-        
+        # 引数で指定されたアスペクト比の集合 aspect_set から、
+        # 特徴マップ k に対してのアスペクト比のリスト aspects を抽出        
+        aspects = aspect_set[k]
+
+        # 特徴マップ k に対してのアスペクト比のリスト aspects から各アスペクト値 aspect を抽出
+        for aspect in aspects:
+            # 特徴マップのセルのグリッド（1 pixcel）に関してのループ処理
+            for y in range( fmap_height ):
+                # セルのグリッドの中央を 0.5 として計算 
+                center_y = ( y + 0.5 ) / float( fmap_height )
+
+                for x in range( fmap_width ):
+                    center_x = ( x + 0.5 ) / float( fmap_width )
+
+                    # 各特徴マップ k とスケール値 s_k から、デフォルトボックスの幅と高さを計算
+                    box_width = s_k * np.sqrt( aspect )
+                    box_height = s_k / np.sqrt( aspect )
+    ```
+
+    3. これら中心座標 `center_x`,`center_y`、ボックスの高さ `box_hight` 、幅 `box_width` 、スケール値 `s_k`、アスペクト比 `aspect` を属性にもつデフォルトボックス `default_box` を生成する。<br>（ここで、`group_id` と `id` は、各デフォルトボックスを識別するための便宜上の ID で、`id` 値は各デフォルトボックスに固有の値、同様の `group_id` 値は、同様の特徴マップ `k` を元に生成したデフォルトボックスであることを示している。）<br>
+    ```python
+    [DefaultBox.py]
+    class DefaultBoxSet( object ):
+    ...
+    def generate_boxes( self, fmaps_shapes, aspect_set ):
+        ...
+        default_box = DefaultBox(
+                          group_id = k + 1,
+                          id = id,
+                          center_x = center_x, center_y = center_y,
+                          width = box_width, height = box_height, 
+                          scale = s_k,
+                        aspect = aspect
+                      )
+    ```
+
     4. 生成したデフォルトボックスをリスト `self._default_boxes` に追加する。<br>
+    ```python
+    [DefaultBox.py]
+    class DefaultBoxSet( object ):
+    ...
+    def generate_boxes( self, fmaps_shapes, aspect_set ):
+        ...
+        self.add_default_box( default_box )
+    ```
+    ```python
+    [DefaultBox.py]
+    class DefaultBoxSet( object ):
+    ...
+    def add_default_box( self, default_box ):
+        """
+        引数で指定されたデフォルトボックスを、一連のデフォルトボックスのリストに追加する。
+
+        [Input]
+            default_box : DefaultBox
+                デフォルトボックスのクラス DefaultBox のオブジェクト
+
+        """
+        self._default_boxes.append( default_box )
+
+        return
+    ```
         
 
-- 尚、バウンディングボックスの形状回帰のためのスケール値は、`DefaultBoxSet` クラスのメソッド `calc_scale(...)` で行われる。<br>
-このメソッドでは、具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール s_k は、以下のようにして計算される。<br>
+- ここで、バウンディングボックスの形状回帰のためのスケール値 `s_k` の計算は、`DefaultBoxSet` クラスのメソッド `calc_scale(...)` で行われる。<br>
+    具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール `s_k` を、以下のようにして計算している。<br>
     ![image](https://user-images.githubusercontent.com/25688193/40351479-7a5fe87c-5de7-11e8-89bf-192c07e89e0a.png)<br>
-
 ```python
 [DefaultBox.py]
 class DefaultBoxSet( object ):
@@ -766,8 +839,7 @@ class DefaultBoxSet( object ):
         return s_k
 ```
 
-- 又、この一連のデフォルトボックス群の、各デフォルトボックスは、`DefaultBox` クラスのオブジェクトのリスト `` の各要素として表現される。<br>
-    - 尚、本コードのパラメータにおけるデフォルトボックスの総数は、`8752` 個となる。<br>
+- 尚、本コードのパラメータにおけるデフォルトボックスの総数は、`8752` 個となる。<br>
 
 
 <br>
@@ -779,9 +851,176 @@ class DefaultBoxSet( object ):
 SSD モデルの損失関数を設定する。<br>
 この設定は、`SingleShotMultiBoxDetector` クラスの `loss(...)` メソッドにて行う。
 
-- 位置特定誤差 L_loc
-- 確信度誤差 L_conf
-- Smooth L1 損失関数
+```python
+[SingleShotMultiBoxDetector.py]
+class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def loss( self, nnLoss ):
+        """
+        損失関数（誤差関数、コスト関数）の定義を行う。
+        SSD の損失関数は、位置特定誤差（loc）と確信度誤差（conf）の重み付き和であり、
+        （SSD の学習は、複数の物体カテゴリーを扱うことを考慮して行われるため２つの線形和をとる。）
+        以下の式で与えられる。
+        
+        Loss = (Loss_conf + a*Loss_loc) / N
+
+        [Input]
+            nnLoss : NNLoss クラスのオブジェクト
+            
+        [Output]
+            self._loss_op : Operator
+                損失関数を表すオペレーター
+        """
+        def smooth_L1( x ):
+            """
+            smooth L1 loss func
+
+            smoothL1 = 0.5 * x^2 ( if |x| < 1 )
+                     = |x| -0.5 (otherwise)
+            """
+            # 0.5 * x^2
+            sml1 = tf.multiply( 0.5, tf.pow(x, 2.0) )
+
+            # |x| - 0.5
+            sml2 = tf.subtract( tf.abs(x), 0.5 )
+            
+            # 条件 : |x| < 1
+            cond = tf.less( tf.abs(x), 1.0 )
+
+            return tf.where( cond, sml1, sml2 )
+
+        # 生成したデフォルトボックスの総数
+        total_boxes = len( self._default_box_set._default_boxes )
+        #print( "total_boxes", total_boxes )     # 8752
+
+        #---------------------------------------------------------------------------
+        # 各種 Placeholder の生成
+        #---------------------------------------------------------------------------
+        # ground truth label （正解ボックスの所属クラス）の placeholder
+        self.gt_labels_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.int32, name = "gt_labels_holder" )
+
+        # ground truth boxes （正解ボックス）の placeholder
+        self.gt_boxes_holder = tf.placeholder( shape = [None, total_boxes, 4], dtype = tf.float32, name = "gt_boxes_holder"  )
+
+        # positive (デフォルトボックスと正解ボックスのマッチングが正) list の placeholder
+        # negative (デフォルトボックスと正解ボックスのマッチングが負) list の placeholder
+        self.pos_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.float32, name = "pos_holder"  )
+        self.neg_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.float32, name = "neg_holder"  )
+
+        #---------------------------------------------------------------------------
+        # 位置特定誤差 L_loc
+        # L_loc = Σ_(i∈pos) Σ_(m) { x_ij^k * smoothL1( predbox_i^m - gtbox_j^m ) }
+        #---------------------------------------------------------------------------
+        smoothL1_op = smooth_L1( x = ( self.gt_boxes_holder - self.pred_locations ) )
+        loss_loc_op = tf.reduce_sum( smoothL1_op, reduction_indices = 2 ) * self.pos_holder
+        
+        loss_loc_op = tf.reduce_sum( loss_loc_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( self.pos_holder, reduction_indices = 1 ) )
+        
+        #---------------------------------------------------------------------------
+        # 確信度誤差 L_conf
+        # L_conf = Σ_(i∈pos) { x_ij^k * log( softmax(c) ) }, c = カテゴリ、ラベル
+        #---------------------------------------------------------------------------
+        loss_conf_op = tf.nn.sparse_softmax_cross_entropy_with_logits( 
+                           logits = self.pred_confidences, 
+                           labels = self.gt_labels_holder 
+                       )
+
+        loss_conf_op = loss_conf_op * ( self.pos_holder + self.neg_holder )
+        
+        loss_conf_op = tf.reduce_sum( loss_conf_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( ( self.pos_holder + self.neg_holder ), reduction_indices = 1) )
+
+        #---------------------------------------------------------------------------
+        # 合計誤差 L
+        #---------------------------------------------------------------------------
+        self._loss_op = tf.reduce_sum( loss_conf_op + loss_loc_op )
+
+        return self._loss_op
+
+```
+
+- SSD の損失関数 `self._loss_op` は、位置特定誤差 `loss_loc_op` と確信度誤差 `loss_conf_op` の重み付き和であり、<br>
+    （SSD の学習は、複数の物体カテゴリーを扱うことを考慮して行われるため２つの線形和をとる。）<br>
+    以下の式で与えられる。<br>
+    ![image](https://user-images.githubusercontent.com/25688193/40358172-605e3548-5df9-11e8-8f75-4cdedb9cc931.png)<br>
+    ```python
+    [SingleShotMultiBoxDetector.py]
+    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def loss(...):
+        ...
+        #---------------------------------------------------------------------------
+        # 合計誤差 L
+        #---------------------------------------------------------------------------
+        self._loss_op = tf.reduce_sum( loss_conf_op + loss_loc_op )
+    ```
+
+- 位置特定誤差 `loss_loc_op` は、予想されたボックス（l）と正解ボックス（g）の間の Smooth L1 誤差（関数）であり、<br>
+    以下の式で与えられる。<br>
+    ![image](https://user-images.githubusercontent.com/25688193/40358451-424b88b6-5dfa-11e8-935e-a36eaba9d4b1.png)<br>
+    ```python
+    [SingleShotMultiBoxDetector.py]
+    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def loss(...):
+        ...
+        #---------------------------------------------------------------------------
+        # 位置特定誤差 L_loc
+        # L_loc = Σ_(i∈pos) Σ_(m) { x_ij^k * smoothL1( predbox_i^m - gtbox_j^m ) }
+        #---------------------------------------------------------------------------
+        smoothL1_op = smooth_L1( x = ( self.gt_boxes_holder - self.pred_locations ) )
+        loss_loc_op = tf.reduce_sum( smoothL1_op, reduction_indices = 2 ) * self.pos_holder
+        
+        loss_loc_op = tf.reduce_sum( loss_loc_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( self.pos_holder, reduction_indices = 1 ) )
+    ```
+
+    - ここで、Smooth L1 損失関数は、このメソッド `loss(...)` 内で以下のように定義されている。
+    ```python
+    [SingleShotMultiBoxDetector.py]
+    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def loss(...):
+        def smooth_L1( x ):
+            """
+            smooth L1 loss func
+
+            smoothL1 = 0.5 * x^2 ( if |x| < 1 )
+                     = |x| -0.5 (otherwise)
+            """
+            # 0.5 * x^2
+            sml1 = tf.multiply( 0.5, tf.pow(x, 2.0) )
+
+            # |x| - 0.5
+            sml2 = tf.subtract( tf.abs(x), 0.5 )
+            
+            # 条件 : |x| < 1
+            cond = tf.less( tf.abs(x), 1.0 )
+
+            return tf.where( cond, sml1, sml2 )    
+    ```
+
+- 確信度誤差 `loss_conf_op` は、所属クラスのカテゴリ（c）に対する softmax cross entropy 誤差（関数）であり、<br>
+    以下の式で与えられる。<br>
+    ![image](https://user-images.githubusercontent.com/25688193/40358707-238920e0-5dfb-11e8-9a83-84808c19a875.png)<br>
+    ```python
+    [SingleShotMultiBoxDetector.py]
+    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def loss(...):
+        ...
+        #---------------------------------------------------------------------------
+        # 確信度誤差 L_conf
+        # L_conf = Σ_(i∈pos) { x_ij^k * log( softmax(c) ) }, c = カテゴリ、ラベル
+        #---------------------------------------------------------------------------
+        loss_conf_op = tf.nn.sparse_softmax_cross_entropy_with_logits( 
+                           logits = self.pred_confidences, 
+                           labels = self.gt_labels_holder 
+                       )
+
+        loss_conf_op = loss_conf_op * ( self.pos_holder + self.neg_holder )
+        
+        loss_conf_op = tf.reduce_sum( loss_conf_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( ( self.pos_holder + self.neg_holder ), reduction_indices = 1) )
+    ```
+
 
 <br>
 
@@ -802,6 +1041,8 @@ SSD モデルの損失関数を設定する。<br>
 - ミニバッチ処理
 - 教師データに含まれる、物体数、所属クラス、長方形位置座標の抽出とコンバート処理
 - （デフォルトボックスと正解ボックスの）マッチング戦略
+- トレーニングステップでの学習
+- loss 値の計算 & 取得
 
 <br>
 
