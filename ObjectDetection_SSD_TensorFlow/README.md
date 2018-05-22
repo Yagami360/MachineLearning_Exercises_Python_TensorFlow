@@ -63,8 +63,6 @@
 <a id="ID_3-2"></a>
 
 ## TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装 : `main2.py`
-> **実装中...**
-
 TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装。<br>
 ChainerCV や OpenCV 等にある実装済み or 学習済み SSD モジュールのような高レベル API 使用せずに、TensorFlow で実装している。<br>
 
@@ -1030,16 +1028,202 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 <a id="ID_3-2-2-6"></a>
 
 #### 6. Optimizer の設定
+最適化アルゴリズム Optimizer として、Adam アルゴリズム を使用する。<br>
 
-- Adam
-- 学習率 : `learning_rate = 0.0001`
-- 減衰項 : `adam1 = 0.9` , `adam2 = 0.999`
+- Optimizer の設定は、`SingleShotMultiBoxDetector` クラスの `optimizer(...)` メソッドで行う。
+- 学習率 : `learning_rate = 0.0001`で検証。減衰項は、`adam_beta1 = 0.9` , `adam_beta2 = 0.999`
+
+```python
+[main2.py]
+def main():
+    ...
+    ssd.optimizer( Adam( learning_rate = 0.001, beta1 = 0.9, beta2 = 0.999 ) )
+```
 
 <br>
 
 <a id="ID_3-2-2-7"></a>
 
 #### 7. 構築した SSD モデルによる学習
+- トレーニング用データ `X_train`, `y_train` に対し、fitting 処理（モデルのトレーニングデータでの学習）を行う。
+- この fitting 処理は、`SingleShotMultiBoxDetector` クラスの `fit(...)` メソッドで行う。
+
+```python
+[main2.py]
+def main():
+    ...
+    ssd.fit( X_train, y_train )
+```
+
+```python
+[SingleShotMultiBoxDetector.py]
+class SingleShotMultiBoxDetector( NeuralNetworkBase ):
+    ...
+    def fit( self, X_train, y_train ):
+        """
+        指定されたトレーニングデータで、モデルの fitting 処理を行う。
+        [Input]
+            X_train : list ( shape = [n_samples, (image,h,w,c)] )
+                トレーニングデータ（特徴行列）
+            
+            y_train : numpy.ndarray ( shape = [n_samples] )
+                トレーニングデータ用のクラスラベル（教師データ）のリスト
+        [Output]
+            self : 自身のオブジェクト
+        """
+        def generate_minibatch( X, y, batch_size, bSuffle = True, random_seed = 12 ):
+            """
+            指定された（トレーニング）データから、ミニバッチ毎のデータを生成する。
+            （各 Epoch 処理毎に呼び出されることを想定している。）
+            """
+            # 各 Epoch 度に shuffle し直す。
+            if( bSuffle == True ):
+                idxes = np.arange( len(y) )   # 0 ~ y.shape[0] の連番 idxes を生成
+
+                # メルセンヌツイスターというアルゴリズムを使った擬似乱数生成器。
+                # コンストラクタに乱数の種(シード)を設定。
+                random_state = np.random.RandomState( random_seed )
+                random_state.shuffle( idxes )
+                
+                # shuffle された連番 idxes 値のデータに置き換える。
+                X_ = [] 
+                y_ = []
+                for idx in idxes:
+                    X_.append( X[idx] )
+                    y_.append( y[idx] )
+
+            # 0 ~ 行数まで batch_size 間隔でループ
+            for i in range( 0, len(X_), batch_size ):
+                # mini batch data
+                batch_X_ = X_[i:i+batch_size]
+                batch_y_ = y_[i:i+batch_size]
+
+                # yield 文で逐次データを return（関数の処理を一旦停止し、値を返す）
+                # メモリ効率向上のための処理
+                yield ( batch_X_, batch_y_ )
+
+        #----------------------------------------------------------
+        # 学習開始処理
+        #----------------------------------------------------------
+        # Variable の初期化オペレーター
+        self._init_var_op = tf.global_variables_initializer()
+
+        # Session の run（初期化オペレーター）
+        self._session.run( self._init_var_op )
+
+        # ミニバッチの繰り返し回数
+        n_batches = len( X_train ) // self._batch_size       # バッチ処理の回数
+        n_minibatch_iterations = self._epochs * n_batches    # ミニバッチの総繰り返し回数
+        n_minibatch_iteration = 0                            # ミニバッチの現在の繰り返し回数
+        
+        print( "n_batches :", n_batches )
+        print( "n_minibatch_iterations :", n_minibatch_iterations )
+
+        # （学習済みモデルの）チェックポイントファイルの作成
+        #self.save_model()
+
+        # 
+        self._matcher = BBoxMatcher( n_classes = self.n_classes, default_box_set = self._default_box_set )
+
+        #----------------------------------------------------------
+        # 学習処理
+        #----------------------------------------------------------
+        # for ループでエポック数分トレーニング
+        for epoch in range( 1, self._epochs+1 ):
+            # ミニバッチサイズ単位で for ループ
+            # エポック毎に shuffle し直す。
+            gen_minibatch = generate_minibatch( X = X_train, y = y_train , batch_size = self._batch_size, bSuffle = True, random_seed = 12 )
+
+            # n_batches = X_train.shape[0] // self._batch_size 回のループ
+            for i ,(batch_x, batch_y) in enumerate( gen_minibatch, 1 ):
+                n_minibatch_iteration += 1
+
+                # reset eval
+                positives = []      # self.pos_holder に供給するデータ : 正解ボックスとデフォルトボックスの一致
+                negatives = []      # self.neg_holder に供給するデータ : 正解ボックスとデフォルトボックスの不一致
+                ex_gt_labels = []   # self.gt_labels_holder に供給するデータ : 正解ボックスの所属クラスのラベル
+                ex_gt_boxes = []    # self.gt_boxes_holder に供給するデータ : 正解ボックス
+
+                #-------------------------------------------------------------------------------------
+                # 特徴マップに含まれる物体のクラス所属の確信度、長方形位置を取得
+                #-------------------------------------------------------------------------------------
+                f_maps, pred_confs, pred_locs = \
+                self._session.run(
+                    [ self.fmaps, self.pred_confidences, self.pred_locations ], 
+                    feed_dict = { self.base_vgg16.X_holder: batch_x }
+                )
+
+                # batch_size 文のループ
+                for i in range( len(batch_x) ):
+                    actual_labels = []
+                    actual_loc_rects = []
+
+                    #-------------------------------------------------------------------------------------
+                    # 教師データの物体のクラス所属の確信度、長方形位置のフォーマットを変換
+                    #-------------------------------------------------------------------------------------                    
+                    # 教師データから物体のクラス所属の確信度、長方形位置情報を取り出し
+                    # 画像に存在する物体の数分ループ処理
+                    for obj in batch_y[i]:
+                        # 長方形の位置情報を取り出し
+                        loc_rect = obj[:4]
+
+                        # 所属クラス情報を取り出し＆ argmax でクラス推定
+                        label = np.argmax( obj[4:] )
+
+                        # 位置情報のフォーマットをコンバート
+                        # [ top_left_x, top_left_y, bottom_right_x, bottom_right_y ] → [ top_left_x, top_left_y, width, height ]
+                        # [ top_left_x, top_left_y, width, height ] → [ center_x, center_y, width, height ]
+                        loc_rect = np.array( [ loc_rect[0], loc_rect[1], loc_rect[2]-loc_rect[0], loc_rect[3]-loc_rect[1] ] )
+                        loc_rect = np.array( [ loc_rect[0] - loc_rect[2] * 0.5, loc_rect[1] - loc_rect[3] * 0.5, abs(loc_rect[2]), abs(loc_rect[3]) ] )
+
+                        #
+                        actual_loc_rects.append( loc_rect )
+                        actual_labels.append( label )
+
+                    #-------------------------------------------------------------------------------------
+                    # デフォルトボックスと正解ボックスのマッチング処理（マッチング戦略）
+                    #-------------------------------------------------------------------------------------
+                    pos_list, neg_list, expanded_gt_labels, expanded_gt_locs = \
+                    self._matcher.match( 
+                        pred_confs, pred_locs, actual_labels, actual_loc_rects
+                    )
+
+                    # マッチング結果を追加
+                    positives.append( pos_list )
+                    negatives.append( neg_list )
+                    ex_gt_labels.append( expanded_gt_labels )
+                    ex_gt_boxes.append( expanded_gt_locs )
+
+                #-------------------------------------------------------------------------------------
+                # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
+                #-------------------------------------------------------------------------------------
+                loss, _, = self._session.run(
+                               [ self._loss_op, self._train_step ],
+                               feed_dict = {
+                                   self.base_vgg16.X_holder: batch_x,
+                                   self.pos_holder: positives,
+                                   self.neg_holder: negatives,
+                                   self.gt_labels_holder: ex_gt_labels,
+                                   self.gt_boxes_holder: ex_gt_boxes
+
+                               }
+                           )
+
+                self._losses_train.append( loss )
+
+                print( "Epoch: %d/%d | minibatch iteration: %d/%d | loss = %0.5f |" % 
+                      ( epoch, self._epochs, n_minibatch_iteration, n_minibatch_iterations, loss ) )
+
+                # モデルの保存処理を行う loop か否か
+                # % : 割り算の余りが 0 で判断
+                if ( ( (n_minibatch_iteration) % self._save_step ) == 0 ):
+                    self.save_model()
+
+        # fitting 処理終了後、モデルのパラメータを保存しておく。
+        self.save_model()
+
+        return self._y_out_op
+```
 
 - ミニバッチ処理
 - 教師データに含まれる、物体数、所属クラス、長方形位置座標の抽出とコンバート処理
@@ -1052,10 +1236,11 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 <a id="ID_3-2-2-8"></a>
 
 #### 8. 学習済み SSD モデルによる推論フェイズ
+> **実装中...**
+
 
 - ハードネガティブマイニング
-- non-maximum suppression アルゴリズム
-    - 推論されたデータに対し、バウンディングボックスのかぶり防止のために non-maximum suppression アルゴリズムを適用する。
+- 推論されたデータに対し、バウンディングボックスの重複防止のために non-maximum suppression アルゴリズムを適用する。
 
 <br>
 
