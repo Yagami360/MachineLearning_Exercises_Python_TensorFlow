@@ -166,7 +166,7 @@ SSD モデルを構築する。<br>
         self.base_vgg16.model()
         ...
     ```
-    - この SSD のベースネットワークとしての VGG16 は、従来の VGG16 における全結合層を、畳み込み層に置き換えたモデルであり、`BaseNetworkVGG16` クラスの `model()` メソッドで定義されたモデルである。<br>
+    - この SSD のベースネットワークとしての VGG16 は、従来の VGG16 における全結合層を、畳み込み層に置き換えたモデルであり、以下のように `BaseNetworkVGG16` クラスの `model()` メソッドで定義されたモデルである。<br>
     ```python
     [BaseNetwork.py]
     class BaseNetworkVGG16( BaseNetwork ):
@@ -815,7 +815,7 @@ class DefaultBoxSet( object ):
         
 
 - ここで、バウンディングボックスの形状回帰のためのスケール値 `s_k` の計算は、`DefaultBoxSet` クラスのメソッド `calc_scale(...)` で行われる。<br>
-    具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール `s_k` を、以下のようにして計算している。<br>
+    具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール `s_k` を、特徴マップ `k` 、及び、`DefaultBoxSet` クラスのオブジェクト作成時に設定したスケール値の最大値 `scale_max`、最小値 `scale_min` に基づき、以下のように計算している。<br>
     ![image](https://user-images.githubusercontent.com/25688193/40351479-7a5fe87c-5de7-11e8-89bf-192c07e89e0a.png)<br>
 ```python
 [DefaultBox.py]
@@ -841,6 +841,9 @@ class DefaultBoxSet( object ):
 
 - 尚、本コードのパラメータにおけるデフォルトボックスの総数は、`8752` 個となる。<br>
 
+- 動作確認として、生成したデフォルトボックスの内、同様の `group_id` をもつデフォルトボックスを表示。
+    - 特徴マップのセル（グリッド）に従って、特徴マップを隙間なく敷き詰め [tile] されていることが分かる。
+    ![image](https://user-images.githubusercontent.com/25688193/40359986-7dc090c6-5dff-11e8-9f36-17a63b0f714a.png)<br>
 
 <br>
 
