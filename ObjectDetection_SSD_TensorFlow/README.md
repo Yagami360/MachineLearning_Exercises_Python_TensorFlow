@@ -5,7 +5,7 @@
 ニューラルネットワークによる一般物体検出アルゴリズムの１つである、SSD [Single Shot muitibox Detector] を TensorFlow で実装。（ChainerCV や OpenCV 等にある実装済み or 学習済み SSD モジュールのような高レベル API 使用せずに、TensorFlow でイチから実装している。）<br>
 
 この `README.md` ファイルには、各コードの実行結果、コードの内容の説明を記載しています。<br>
-分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。<br>
+又、分かりやすいように `main.py` ファイル毎に１つの完結した実行コードにしています。<br>
 
 尚、SSD [Single Shot muitibox Detector] に関しての、背景理論は以下のサイトに記載してあります。<br>
 
