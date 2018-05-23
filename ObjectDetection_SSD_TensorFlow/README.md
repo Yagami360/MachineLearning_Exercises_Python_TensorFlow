@@ -1238,11 +1238,49 @@ def fit( self, X_train, y_train ):
 #### 8. 学習済み SSD モデルによる推論フェイズ
 > **実装中...**
 
+- 学習済み SSD モデルから、各デフォルトボックスの属するクラス、及び、各デフォルトボックスの座標値の推論(予想）データを取得する。<br>
+```python
+[SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+def predict( self, image ):
+    """
+    学習済み SSD モデルから、各デフォルトボックスの所属クラスと位置座標の推論（予想）を行う。
 
-- ハードネガティブマイニング
-- 推論されたデータに対し、バウンディングボックスの重複防止のために non-maximum suppression アルゴリズムを適用する。
+    [Input]
+        image : ndarray / shape = [image_haight, image_width, n_channels]
+            物体検出の推論をしたい画像データ
+    [Output]
+        pred_confs : ndarry / shape = [デフォルトボックスの総数, クラス数]
+            デフォルトボックスの属するクラスの予想値
+        pred_locs : ndarry / shape = [デフォルトボックスの総数, 座標値の４次元]
+            デフォルトボックスの座標の予想値
+    """
+    feature_maps, pred_confs, pred_locs = \
+    self._session.run( 
+        [ self.fmaps, self.pred_confidences, self.pred_locations ], 
+        feed_dict = { self.base_vgg16.X_holder: [image] }   # [] でくくって、shape を [300,300,3] → [,300,300,3] に reshape
+    )
+
+    # 余計な次元を削除して、
+    # [1, デフォルトボックスの総数, クラス数] → [デフォルトボックスの総数, クラス数] に reshape
+    # [1, デフォルトボックスの総数, 座標値の４次元] → [デフォルトボックスの総数, 座標値の４次元] に reshape
+    pred_confs = np.squeeze( pred_confs )
+    pred_locs = np.squeeze( pred_locs )
+
+    return pred_confs, pred_locs
+```
+
+- クラスの確信度が高いデフォルトボックスを検出する。<br>
+    - クラス所属の確信度の上位 200 個を抽出する。<br>
+    - 推論されたデータに対し、バウンディングボックスの重複防止のために non-maximum suppression アルゴリズムを適用する。<br>
 
 <br>
+
+#### 9. TensorBoard の計算グラフ
+このモデルの TensorBorad で描写した計算グラフは以下のようになる。<br>
+
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run](https://user-images.githubusercontent.com/25688193/40402857-fe5f8ece-5e88-11e8-8e44-911914433eed.png)<br>
+
+![graph_large_attrs_key _too_large_attrs limit_attr_size 1024 run 1](https://user-images.githubusercontent.com/25688193/40402956-a2efc99a-5e89-11e8-91a7-2bf31b8cf0b6.png)<br>
 
 ---
 
@@ -1408,5 +1446,14 @@ indicies : ndarray
     [1] 1865
     ...
     [199] 5146
+
+```
+
+[18/05/23]
+```python
+loc : [ 0.03156713  1.83142224  0.72907385  2.41800079]
+pt1 : (11,915)
+pt2 : (273,1209)
+
 
 ```

@@ -114,9 +114,9 @@ def main():
     # クラス名が20次元あるということは20種類の物体を見分けたい、ということになります。
     # 教師データ : data[ keys[idxes] ]
     #------------------------------------------------------------------------------------------------------
-    with open(dataset_path + 'VOC2007.pkl', 'rb') as f:
-        data = pickle.load(f)
-        keys = sorted(data.keys())
+    with open( dataset_path + 'VOC2007.pkl', 'rb' ) as file:
+        data = pickle.load( file )      # [ ファイル名, N * 24 次元の配列 ]
+        keys = sorted( data.keys() )    # ファイル名のリスト : []
 
     print( "len( data ) :", len( data ) )   # 4952
     print( "keys :", keys[0:10] )
@@ -200,15 +200,15 @@ def main():
     #======================================================================
     ssd = SingleShotMultiBoxDetector(
               session = tf.Session(),
-              epochs = 2,
-              batch_size = 10,
-              eval_step = 1,
-              save_step = 100,
-              image_height = 300,
-              image_width = 300,
-              n_channels = 3,
-              n_classes = 21,
-              n_boxes = [ 4, 6, 6, 6, 6, 6 ]
+              epochs = 2,                       # モデルの学習時のエポック数
+              batch_size = 10,                  # モデルの学習時の、ミニバッチサイズ
+              eval_step = 1,                    #
+              save_step = 100,                  #
+              image_height = 300,               # 入力画像の高さ（ピクセル数）
+              image_width = 300,                #
+              n_channels = 3,                   #
+              n_classes = 21,                   # 識別クラス数（物体の種類＋１）
+              n_boxes = [ 4, 6, 6, 6, 6, 6 ]    # 
           )
 
     #======================================================================
@@ -272,7 +272,7 @@ def main():
     # モデルの評価
     # (Optional) Evaluate the model.
     #======================================================================
-    ssd.write_tensorboard_graph()
+    #ssd.write_tensorboard_graph()
 
     #---------------------------------------------------------
     # 損失関数を plot
@@ -305,8 +305,8 @@ def main():
 
     #
     image = X_test[0]
-    pred_confs, pred_locs = ssd.predict( image = [image] )  # [] でくくって、shape を [300,300,3] → [,300,300,3]
-    locs, labels = ssd.detect_objects( pred_confs, pred_locs )
+    pred_confs, pred_locs = ssd.predict( image = image )
+    locs, labels = ssd.detect_objects( pred_confs, pred_locs, prob_min = 0.7, overlap_threshold = 0.1 )
 
     # image のフォーマットを元の高さ、幅情報付きに戻す。
     # x = x[:, :, ::-1]

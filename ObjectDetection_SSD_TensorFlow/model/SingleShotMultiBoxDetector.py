@@ -890,122 +890,104 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
     def predict( self, image ):
         """
+        学習済み SSD モデルから、各デフォルトボックスの所属クラスと位置座標の推論（予想）を行う。
+
+        [Input]
+            image : ndarray / shape = [image_haight, image_width, n_channels]
+                物体検出の推論をしたい画像データ
+        [Output]
+            pred_confs : ndarry / shape = [デフォルトボックスの総数, クラス数]
+                デフォルトボックスの属するクラスの予想値
+            pred_locs : ndarry / shape = [デフォルトボックスの総数, 座標値の４次元]
+                デフォルトボックスの座標の予想値
         """
         feature_maps, pred_confs, pred_locs = \
         self._session.run( 
             [ self.fmaps, self.pred_confidences, self.pred_locations ], 
-            feed_dict = { self.base_vgg16.X_holder: image }
+            feed_dict = { self.base_vgg16.X_holder: [image] }   # [] でくくって、shape を [300,300,3] → [,300,300,3] に reshape
         )
 
+        # 余計な次元を削除して、
+        # [1, デフォルトボックスの総数, クラス数] → [デフォルトボックスの総数, クラス数] に reshape
+        # [1, デフォルトボックスの総数, 座標値の４次元] → [デフォルトボックスの総数, 座標値の４次元] に reshape
+        pred_confs = np.squeeze( pred_confs )
+        pred_locs = np.squeeze( pred_locs )
+        
         return pred_confs, pred_locs
 
 
-    def detect_objects( self, pred_confs, pred_locs ):
+    def detect_objects( self, pred_confs, pred_locs, prob_min = 0.9, overlap_threshold = 0.1 ):
         """
         this method returns detected objects list (means high confidences locs and its labels)
         Args is computed Tensor.
 
-        Args:
-            pred_confs: predicated confidences ( output of matching() )
-            pred_locs: predicated locations ( output of matching() )
-        Returns:
+        [Input]
+            pred_confs : ndarry / shape = [デフォルトボックスの総数, クラス数]
+                デフォルトボックスの属するクラスの予想値（確信度）
+                predicated confidences ( output of matching() )
+
+            pred_locs : ndarry / shape = [デフォルトボックスの総数, 座標値の４次元]
+                デフォルトボックスの座標の予想値
+                predicated locations ( output of matching() )
+
+            prob_min : float
+                候補となりうる最小の確率値
+            overlap_threshold : float
+                重なりで除外するデフォルトボックスのスレッショルド値
+        [Output]
             detected locs and its labels
         """
         detected_locs = []
         detected_labels = []
         
-        # 全デフォルトボックスに対して、所属クラスをカウント（要素番号が、クラス番号に対応）
+        # 全デフォルトボックスに対して、所属クラスをカウント（hist の要素番号が、クラス番号に対応）
         hist = [ 0 for _ in range(self.n_classes) ]
-        for conf, loc in zip( pred_confs[0], pred_locs[0] ):
-            hist[np.argmax(conf)] += 1
+        for conf, loc in zip( pred_confs, pred_locs ):
+            hist[ np.argmax(conf) ] += 1
         
-        print(hist)
+        print( "hist", hist )
 
         #------------------------------------------
-        # ハードネガティブマイニング
         # クラス所属の確信度の上位 200 個を抽出
         #------------------------------------------
+        # クラス所属の確信度 pred_confs を softmax して確率値 possibilities に変換。
         # np.amax(...) : 最大値の要素を抽出
-        possibilities = [ np.amax(np.exp(conf)) / (np.sum(np.exp(conf)) + 1e-3) for conf in pred_confs[0] ]
+        possibilities = [ np.amax(np.exp(conf)) / (np.sum(np.exp(conf)) + 1e-3) for conf in pred_confs ]
         print( "possibilities :", possibilities )
 
+        # 確率値 possibilities の値が大きい上位 200 件を抽出
         # np.argpartition(...) : 値が大きい上位K件の配列インデックスを取得
         indicies = np.argpartition( possibilities, -200 )[-200:]
         print( "indicies :", indicies )
 
+        # 配列化
         # np.asarray(...) : 
         top200 = np.asarray(possibilities)[indicies]
         
-        # 確信度が 0.1 未満の候補は除外する。
-        slicer = indicies[0.9 < top200]
+        # 確率値 possibilities が prob_min 未満の候補は除外する。
+        slicer = indicies[prob_min < top200]
         print( "top200 :", top200 )
         print( "slicer :", slicer )
 
-        # ? exclude extra boxes.
-        locations, labels = self._filter( pred_confs[0][slicer], pred_locs[0][slicer] )
+        # DBOX の内、確率値が上位 200 件のみを抽出
+        locations, labels = pred_locs[slicer], np.argmax( pred_confs[slicer], axis = 1 )
+        labels = np.asarray(labels).reshape( len(labels), 1 )
 
-        locations, labels = pred_locs[0][slicer], np.argmax( pred_confs[0][slicer], axis = 1 )
-        labels = np.asarray(labels).reshape(len(labels), 1)
-        with_labels = np.concatenate((locations, labels), axis=1)
-        
-        # labels, locations = image.non_max_suppression(boxes, possibilities, 10)
-        filtered = self.non_maximum_suppression(with_labels, 0.1)
-        # locations, labels = pred_confs[0][indices], pred_locs[0][indices]
-        if len(filtered) == 0:
-            filtered = np.zeros((4, 5))
+        #----------------------------------------------------------------------
+        # DBOX の重複防止のために non-maximum suppression アルゴリズムを適用する。
+        #----------------------------------------------------------------------
+        with_labels = np.concatenate( (locations, labels), axis = 1 )
+        filtered = self.non_maximum_suppression( with_labels, 0.1 )
 
-        return filtered[:,:4], filtered[:,4]
-        #return locations, labels
+        if len( filtered ) == 0:
+            filtered = np.zeros( (4, 5) )
 
-
-    def _filter( self, pconfs, plocs ):
-        """
-        exclude extra boxes.
-
-        Args:
-            pconfs, plocs:
-                confidences and locations whose confidence is in top 200 and filtered by threshold min 0.1.
-        Returns:
-            filtered locations and its labels
-        """
-
-        jacc_th = 0.3
-        det_locs = []
-        det_labels = []
-
-        def jacc_filter(plabel, ploc):
-            for dlabel, dloc in zip(det_labels, det_locs):
-                # 中心座標 → コーナー座標に変換
-                # ? dloc
-                dloc_corner_x = dloc[0] - dloc[2] * 0.5
-                dloc_corner_y = dloc[1] - dloc[3] * 0.5
-                dloc_corner = np.array( [dloc_corner_x, dloc_corner_y, abs(dloc[2]), abs(dloc[3])] )
-
-                # ? ploc
-                ploc_corner_x = ploc[0] - ploc[2] * 0.5
-                ploc_corner_y = ploc[1] - ploc[3] * 0.5
-                ploc_corner = np.array( [ploc_corner_x, ploc_corner_y, abs(ploc[2]), abs(ploc[3])] )
-
-                # jacc 値を計算する。
-                jacc = jaccard( dloc_corner, ploc_corner )
-
-                # meaning this is same object
-                if dlabel == plabel and jacc_th < jacc:
-                    return False
-
-            return True
-
-        for pconf, ploc in zip(pconfs, plocs):
-            plabel = np.argmax(pconf)
-
-            if plabel != self.n_classes-1 and jacc_filter(plabel, ploc):
-                det_locs.append(ploc)
-                det_labels.append(plabel)
-
-        return det_locs, det_labels
+        # 
+        #return filtered[:,:4], filtered[:,4]
+        return locations, labels
 
 
-    def non_maximum_suppression(self, candidates, overlap_threshold):
+    def non_maximum_suppression(self, candidates, overlap_threshold ):
         """
         Non-Maximum Suppression アルゴリズム
         this is nms(non maximum_suppression) which filters predicted objects.
