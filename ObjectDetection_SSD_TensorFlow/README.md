@@ -154,9 +154,7 @@ SSD モデルを構築する。<br>
 この処理は、`SingleShotMultiBoxDetector` クラスの `model()` メソッドで行う。 <br>
 - SSD モデルの構築では、まず初めにベースネットワークとなる VGG-16 モデルを構築する。<br>
     ```python
-    [SingleShotMultiBoxDetector.py]
-    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
     def model():
         #-----------------------------------------------------------------------------
         # ベースネットワーク
@@ -166,9 +164,7 @@ SSD モデルを構築する。<br>
     ```
     - この SSD のベースネットワークとしての VGG16 は、従来の VGG16 における全結合層を、畳み込み層に置き換えたモデルであり、以下のように `BaseNetworkVGG16` クラスの `model()` メソッドで定義されたモデルである。<br>
     ```python
-    [BaseNetwork.py]
-    class BaseNetworkVGG16( BaseNetwork ):
-    ...
+    [BaseNetwork.py / class BaseNetworkVGG16]
     def model( self ):
         #-----------------------------------------------------------------------------
         # layer 1
@@ -278,9 +274,7 @@ SSD モデルを構築する。<br>
     ```
     - 尚、上記 `model()` メソッド内でコールされている畳み込み処理関数 `convolution_layer(...)` は、以下のように定義されている。
     ```python
-    [BaseNetwork.py]
-    class BaseNetworkVGG16( BaseNetwork ):
-    ...
+    [BaseNetwork.py / class BaseNetworkVGG16]
     def convolution_layer( 
             self, 
             input_tsr, 
@@ -334,9 +328,7 @@ SSD モデルを構築する。<br>
     ```
     - 同様に、上記 `model()` メソッド内でコールされているプーリング処理関数 `pooling_layer(...)` は、以下のように定義されている。
     ```python
-    [BaseNetwork.py]
-    class BaseNetworkVGG16( BaseNetwork ):
-    ...
+    [BaseNetwork.py / class BaseNetworkVGG16]
     def pooling_layer( self, input_tsr, name = "pool", reuse = False ):
         """
         VGG16 のプーリング層を構築する。
@@ -364,9 +356,7 @@ SSD モデルを構築する。<br>
 
 - 次に、ベースネットワークの後段に続くレイヤーを構築する。<br>
     ```python
-    [SingleShotMultiBoxDetector.py]
-    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
     def model():
         ...
         #-----------------------------------------------------------------------------
@@ -485,9 +475,7 @@ SSD モデルを構築する。<br>
     - この Extra Feature Maps は、各畳み込み層の出力から物体検出モジュールへの畳み込みで、<br>
     上記アーキテクチャ図の青線部分に対応したものである。<br>
     ```python
-    [SingleShotMultiBoxDetector.py]
-    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
     def model():
         ...
         #-----------------------------------------------------------------------------
@@ -607,128 +595,121 @@ SSD モデルを構築する。<br>
 （デフォルトボックスに関するアスペクト比のマップ `aspect_set` 、及びスケール値の最大値 `scale_max`、最小値 `scale_min` といったパラメータの設定も、このメソッド内で行っている。）<br>
 
 ```python
-[SingleShotMultiBoxDetector.py]
-class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
-    def generate_default_boxes_in_fmaps( self ):
-        """
-        各 extra feature map に対応したデフォルトボックスを生成する。
+[SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+def generate_default_boxes_in_fmaps( self ):
+    """
+    各 extra feature map に対応したデフォルトボックスを生成する。
 
-        [Output]
-            self._default_box_set : DefaultBoxSet
-                生成した 一連のデフォルトボックス群を表すクラス DefaultBoxSet のオブジェクト
-        """
-        # extra feature map の形状（ピクセル単位）
-        fmap_shapes = [ fmap.get_shape().as_list() for fmap in self.fmaps ]
+    [Output]
+        self._default_box_set : DefaultBoxSet
+            生成した 一連のデフォルトボックス群を表すクラス DefaultBoxSet のオブジェクト
+    """
+    # extra feature map の形状（ピクセル単位）
+    fmap_shapes = [ fmap.get_shape().as_list() for fmap in self.fmaps ]
 
-        # 各 extra feature maps に対応した、各デフォルトボックスのアスペクト比
-        aspect_set = [
-                         [1.0, 1.0, 2.0, 1.0/2.0],                 # extra fmap 1
-                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],   # extra fmap 2
-                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],   #
-                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
-                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
-                         [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
-                     ]
+    # 各 extra feature maps に対応した、各デフォルトボックスのアスペクト比
+    aspect_set = [
+                     [1.0, 1.0, 2.0, 1.0/2.0],                 # extra fmap 1
+                     [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],   # extra fmap 2
+                     [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],   #
+                     [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                     [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                     [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+                 ]
 
-        # 一連のデフォルトボックス群を表すクラス DefaultBoxSet のオブジェクトを生成
-        self._default_box_set = DefaultBoxSet( scale_min = 0.2, scale_max = 0.9 )
+    # 一連のデフォルトボックス群を表すクラス DefaultBoxSet のオブジェクトを生成
+    self._default_box_set = DefaultBoxSet( scale_min = 0.2, scale_max = 0.9 )
         
-        # 一連のデフォルトボックス群を生成
-        self._default_box_set.generate_boxes( fmaps_shapes = fmap_shapes, aspect_set = aspect_set )
+    # 一連のデフォルトボックス群を生成
+    self._default_box_set.generate_boxes( fmaps_shapes = fmap_shapes, aspect_set = aspect_set )
 
-        return self._default_box_set
+    return self._default_box_set
 ```
 
 この各特徴マップ、アスペクト比、スケール値に対応した一連のデフォルトボックス群は、`DefaultBoxSet` クラスのオブジェクト `self._default_box_set` として表現され、<br>
 実際の一連のデフォルトボックス群の生成は、このクラス `DefaultBoxSet` の `generate_boxes(...)` メソッドで行なう。
 
 ```python
-[DefaultBox.py]
-class DefaultBoxSet( object ):
-    ...
-    def generate_boxes( self, fmaps_shapes, aspect_set ):
-        """
-        generate default boxes based on defined number
+[DefaultBox.py / class DefaultBoxSet]
+def generate_boxes( self, fmaps_shapes, aspect_set ):
+    """
+    generate default boxes based on defined number
         
-        [Input]
-            fmaps_shapes : nadarry( [][] )
-                extra feature map の形状（ピクセル単位）
-                the shape is [  first-feature-map-boxes ,
-                                second-feature-map-boxes ,
-                                    ...
-                                sixth-feature-map-boxes , ]
-                    ==> ( total_boxes_number x defined_size )
+    [Input]
+        fmaps_shapes : nadarry( [][] )
+            extra feature map の形状（ピクセル単位）
+            the shape is [  first-feature-map-boxes ,
+                            second-feature-map-boxes ,
+                            ...
+                            sixth-feature-map-boxes , ]
+            ==> ( total_boxes_number x defined_size )
                 
-                feature map sizes per output such as...
-                [ 
-                    [ None, 19, 19, ],      # extra feature-map-shape 1 [batch_size, fmap_height, fmap_width]
-                    [ None, 19, 19, ],      # extra feature-map-shape 2
-                    [ None, 10, 10 ],       # extra feature-map-shape 3
-                    [ None, 5, 5, ],        # extra feature-map-shape 4
-                    [ None, 3, 3, ],        # extra feature-map-shape 5
-                    [ None, 1, 1, ],        # extra feature-map-shape 6
-                ]
+            feature map sizes per output such as...
+            [ 
+                [ None, 19, 19, ],      # extra feature-map-shape 1 [batch_size, fmap_height, fmap_width]
+                [ None, 19, 19, ],      # extra feature-map-shape 2
+                [ None, 10, 10 ],       # extra feature-map-shape 3
+                [ None, 5, 5, ],        # extra feature-map-shape 4
+                [ None, 3, 3, ],        # extra feature-map-shape 5
+                [ None, 1, 1, ],        # extra feature-map-shape 6
+            ]
 
-            aspect_set : nadarry( [][] )
-                extra feature map に対してのアスペクト比
-                such as...
-                [1.0, 1.0, 2.0, 1.0/2.0],                   # extra feature map 1
-                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],     # extra feature map 2
-                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
-                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
-                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
-                [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+        aspect_set : nadarry( [][] )
+            extra feature map に対してのアスペクト比
+            such as...
+            [1.0, 1.0, 2.0, 1.0/2.0],                   # extra feature map 1
+            [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],     # extra feature map 2
+            [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+            [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+            [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
+            [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],
 
-        [Output]
-            self._default_boxes : list<DefaultBox>
-                generated default boxes list
+    [Output]
+        self._default_boxes : list<DefaultBox>
+            generated default boxes list
+    """
+    self._n_fmaps = len( fmaps_shapes )
 
-        """
-        self._n_fmaps = len( fmaps_shapes )
+    id = 0
+    for k, fmap_shape in enumerate( fmaps_shapes ):
+        s_k = self.calc_scale( k )
 
-        id = 0
-        for k, fmap_shape in enumerate( fmaps_shapes ):
-            s_k = self.calc_scale( k )
-
-            fmap_width  = fmap_shape[1]
-            fmap_height = fmap_shape[2]
+        fmap_width  = fmap_shape[1]
+        fmap_height = fmap_shape[2]
             
-            aspects = aspect_set[k]
+        aspects = aspect_set[k]
 
-            for aspect in aspects:
-                # 特徴マップのセルのグリッド（1 pixcel）に関してのループ処理
-                for y in range( fmap_height ):
-                    # セルのグリッドの中央を 0.5 として計算 
-                    center_y = ( y + 0.5 ) / float( fmap_height )
+        for aspect in aspects:
+            # 特徴マップのセルのグリッド（1 pixcel）に関してのループ処理
+            for y in range( fmap_height ):
+                # セルのグリッドの中央を 0.5 として計算 
+                center_y = ( y + 0.5 ) / float( fmap_height )
 
-                    for x in range( fmap_width ):
-                        center_x = ( x + 0.5 ) / float( fmap_width )
+                for x in range( fmap_width ):
+                    center_x = ( x + 0.5 ) / float( fmap_width )
 
-                        box_width = s_k * np.sqrt( aspect )
-                        box_height = s_k / np.sqrt( aspect )
+                    box_width = s_k * np.sqrt( aspect )
+                    box_height = s_k / np.sqrt( aspect )
 
-                        id += 1
-                        default_box = DefaultBox(
-                                          group_id = k + 1,
-                                          id = id,
-                                          center_x = center_x, center_y = center_y,
-                                          width = box_width, height = box_height, 
-                                          scale = s_k,
-                                          aspect = aspect
-                                      )
+                    id += 1
+                    default_box = DefaultBox(
+                                      group_id = k + 1,
+                                      id = id,
+                                      center_x = center_x, center_y = center_y,
+                                      width = box_width, height = box_height, 
+                                      scale = s_k,
+                                      aspect = aspect
+                                  )
 
-                        self.add_default_box( default_box )
+                    self.add_default_box( default_box )
 
-        return self._default_boxes
+    return self._default_boxes
 ```
 
 - このメソッドでは、以下の処理が行われる。<br>
     1. 各特徴マップ（のサイズ `fmaps_shape` ）`k` に対して 、スケール値 `s_k` を計算。<br>
     ```python
-    [DefaultBox.py]
-    class DefaultBoxSet( object ):
-    ...
+    [DefaultBox.py / class DefaultBoxSet]
     def generate_boxes( self, fmaps_shapes, aspect_set ):
         ...
         for k, fmap_shape in enumerate( fmaps_shapes ):
@@ -739,9 +720,7 @@ class DefaultBoxSet( object ):
     ここで、デフォルトボックスの各特徴マップ `k` 、及び各スケール値 `s_k` に対する、幅と高さは、以下の式で算出する。<br>
         ![image](https://user-images.githubusercontent.com/25688193/40353511-a20ebee8-5dec-11e8-99d2-8b5d8bb8e96f.png)<br>
     ```python
-    [DefaultBox.py]
-    class DefaultBoxSet( object ):
-    ...
+    [DefaultBox.py / class DefaultBoxSet]
     def generate_boxes( self, fmaps_shapes, aspect_set ):
         ...
         # fmap_shape[0] にはバッチサイズが入力されている。
@@ -769,9 +748,7 @@ class DefaultBoxSet( object ):
 
     3. これら中心座標 `center_x`,`center_y`、ボックスの高さ `box_hight` 、幅 `box_width` 、スケール値 `s_k`、アスペクト比 `aspect` を属性にもつデフォルトボックス `default_box` を生成する。<br>（ここで、`group_id` と `id` は、各デフォルトボックスを識別するための便宜上の ID で、`id` 値は各デフォルトボックスに固有の値、同様の `group_id` 値は、同様の特徴マップ `k` を元に生成したデフォルトボックスであることを示している。）<br>
     ```python
-    [DefaultBox.py]
-    class DefaultBoxSet( object ):
-    ...
+    [DefaultBox.py / class DefaultBoxSet]
     def generate_boxes( self, fmaps_shapes, aspect_set ):
         ...
         default_box = DefaultBox(
@@ -786,17 +763,13 @@ class DefaultBoxSet( object ):
 
     4. 生成したデフォルトボックスをリスト `self._default_boxes` に追加する。<br>
     ```python
-    [DefaultBox.py]
-    class DefaultBoxSet( object ):
-    ...
+    [DefaultBox.py / class DefaultBoxSet]
     def generate_boxes( self, fmaps_shapes, aspect_set ):
         ...
         self.add_default_box( default_box )
     ```
     ```python
-    [DefaultBox.py]
-    class DefaultBoxSet( object ):
-    ...
+    [DefaultBox.py / class DefaultBoxSet]
     def add_default_box( self, default_box ):
         """
         引数で指定されたデフォルトボックスを、一連のデフォルトボックスのリストに追加する。
@@ -816,25 +789,23 @@ class DefaultBoxSet( object ):
     具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール `s_k` を、特徴マップ `k` 、及び、`DefaultBoxSet` クラスのオブジェクト作成時に設定したスケール値の最大値 `scale_max`、最小値 `scale_min` に基づき、以下のように計算している。<br>
     ![image](https://user-images.githubusercontent.com/25688193/40351479-7a5fe87c-5de7-11e8-89bf-192c07e89e0a.png)<br>
 ```python
-[DefaultBox.py]
-class DefaultBoxSet( object ):
-    ...
-    def calc_scale( self, k ):
-        """
-        BBOX の形状回帰のためのスケール値を計算する。
-        具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール s_k は、以下のようにして計算される。
-        s_k = s_min + (s_max - s_min) * (k - 1.0) / (m - 1.0), m = 6
+[DefaultBox.py / class DefaultBoxSet]
+def calc_scale( self, k ):
+    """
+    BBOX の形状回帰のためのスケール値を計算する。
+    具体的には、各特徴マップ k (=1~6) についてのデフォルトボックスのスケール s_k は、以下のようにして計算される。
+    s_k = s_min + (s_max - s_min) * (k - 1.0) / (m - 1.0), m = 6
 
-        [Input]
-            k : int
-                特徴マップ fmap の番号。1 ~ self._n_fmaps の間の数
-        [Output]
-            s_k : float
-                指定された番号の特徴マップのスケール値
-        """
-        s_k = self._scale_min + ( self._scale_max - self._scale_min ) * k / ( self._n_fmaps - 1.0 )
+    [Input]
+        k : int
+            特徴マップ fmap の番号。1 ~ self._n_fmaps の間の数
+    [Output]
+        s_k : float
+            指定された番号の特徴マップのスケール値
+    """
+    s_k = self._scale_min + ( self._scale_max - self._scale_min ) * k / ( self._n_fmaps - 1.0 )
         
-        return s_k
+    return s_k
 ```
 
 - 尚、本コードのパラメータにおけるデフォルトボックスの総数は、`8752` 個となる。<br>
@@ -853,90 +824,86 @@ SSD モデルの損失関数を設定する。<br>
 この設定は、`SingleShotMultiBoxDetector` クラスの `loss(...)` メソッドにて行う。
 
 ```python
-[SingleShotMultiBoxDetector.py]
-class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
-    def loss( self, nnLoss ):
-        """
-        損失関数（誤差関数、コスト関数）の定義を行う。
-        SSD の損失関数は、位置特定誤差（loc）と確信度誤差（conf）の重み付き和であり、
-        （SSD の学習は、複数の物体カテゴリーを扱うことを考慮して行われるため２つの線形和をとる。）
-        以下の式で与えられる。
+[SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+def loss( self, nnLoss ):
+    """
+    損失関数（誤差関数、コスト関数）の定義を行う。
+    SSD の損失関数は、位置特定誤差（loc）と確信度誤差（conf）の重み付き和であり、
+    （SSD の学習は、複数の物体カテゴリーを扱うことを考慮して行われるため２つの線形和をとる。）
+    以下の式で与えられる。
         
-        Loss = (Loss_conf + a*Loss_loc) / N
+    Loss = (Loss_conf + a*Loss_loc) / N
 
-        [Input]
-            nnLoss : NNLoss クラスのオブジェクト
+    [Input]
+        nnLoss : NNLoss クラスのオブジェクト
             
-        [Output]
-            self._loss_op : Operator
-                損失関数を表すオペレーター
+    [Output]
+        self._loss_op : Operator
+            損失関数を表すオペレーター
+    """
+    def smooth_L1( x ):
         """
-        def smooth_L1( x ):
-            """
-            smooth L1 loss func
+        smooth L1 loss func
 
-            smoothL1 = 0.5 * x^2 ( if |x| < 1 )
-                     = |x| -0.5 (otherwise)
-            """
-            # 0.5 * x^2
-            sml1 = tf.multiply( 0.5, tf.pow(x, 2.0) )
+        smoothL1 = 0.5 * x^2 ( if |x| < 1 )
+                 = |x| -0.5 (otherwise)
+        """
+        # 0.5 * x^2
+        sml1 = tf.multiply( 0.5, tf.pow(x, 2.0) )
 
-            # |x| - 0.5
-            sml2 = tf.subtract( tf.abs(x), 0.5 )
+        # |x| - 0.5
+        sml2 = tf.subtract( tf.abs(x), 0.5 )
             
-            # 条件 : |x| < 1
-            cond = tf.less( tf.abs(x), 1.0 )
+        # 条件 : |x| < 1
+        cond = tf.less( tf.abs(x), 1.0 )
 
-            return tf.where( cond, sml1, sml2 )
+        return tf.where( cond, sml1, sml2 )
 
-        # 生成したデフォルトボックスの総数
-        total_boxes = len( self._default_box_set._default_boxes )
-        #print( "total_boxes", total_boxes )     # 8752
+    # 生成したデフォルトボックスの総数
+    total_boxes = len( self._default_box_set._default_boxes )
 
-        #---------------------------------------------------------------------------
-        # 各種 Placeholder の生成
-        #---------------------------------------------------------------------------
-        # ground truth label （正解ボックスの所属クラス）の placeholder
-        self.gt_labels_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.int32, name = "gt_labels_holder" )
+    #---------------------------------------------------------------------------
+    # 各種 Placeholder の生成
+    #---------------------------------------------------------------------------
+    # ground truth label （正解ボックスの所属クラス）の placeholder
+    self.gt_labels_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.int32, name = "gt_labels_holder" )
 
-        # ground truth boxes （正解ボックス）の placeholder
-        self.gt_boxes_holder = tf.placeholder( shape = [None, total_boxes, 4], dtype = tf.float32, name = "gt_boxes_holder"  )
+    # ground truth boxes （正解ボックス）の placeholder
+    self.gt_boxes_holder = tf.placeholder( shape = [None, total_boxes, 4], dtype = tf.float32, name = "gt_boxes_holder"  )
 
-        # positive (デフォルトボックスと正解ボックスのマッチングが正) list の placeholder
-        # negative (デフォルトボックスと正解ボックスのマッチングが負) list の placeholder
-        self.pos_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.float32, name = "pos_holder"  )
-        self.neg_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.float32, name = "neg_holder"  )
+    # positive (デフォルトボックスと正解ボックスのマッチングが正) list の placeholder
+    # negative (デフォルトボックスと正解ボックスのマッチングが負) list の placeholder
+    self.pos_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.float32, name = "pos_holder"  )
+    self.neg_holder = tf.placeholder( shape = [None, total_boxes], dtype = tf.float32, name = "neg_holder"  )
 
-        #---------------------------------------------------------------------------
-        # 位置特定誤差 L_loc
-        # L_loc = Σ_(i∈pos) Σ_(m) { x_ij^k * smoothL1( predbox_i^m - gtbox_j^m ) }
-        #---------------------------------------------------------------------------
-        smoothL1_op = smooth_L1( x = ( self.gt_boxes_holder - self.pred_locations ) )
-        loss_loc_op = tf.reduce_sum( smoothL1_op, reduction_indices = 2 ) * self.pos_holder
+    #---------------------------------------------------------------------------
+    # 位置特定誤差 L_loc
+    # L_loc = Σ_(i∈pos) Σ_(m) { x_ij^k * smoothL1( predbox_i^m - gtbox_j^m ) }
+    #---------------------------------------------------------------------------
+    smoothL1_op = smooth_L1( x = ( self.gt_boxes_holder - self.pred_locations ) )
+    loss_loc_op = tf.reduce_sum( smoothL1_op, reduction_indices = 2 ) * self.pos_holder
         
-        loss_loc_op = tf.reduce_sum( loss_loc_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( self.pos_holder, reduction_indices = 1 ) )
+    loss_loc_op = tf.reduce_sum( loss_loc_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( self.pos_holder, reduction_indices = 1 ) )
         
-        #---------------------------------------------------------------------------
-        # 確信度誤差 L_conf
-        # L_conf = Σ_(i∈pos) { x_ij^k * log( softmax(c) ) }, c = カテゴリ、ラベル
-        #---------------------------------------------------------------------------
-        loss_conf_op = tf.nn.sparse_softmax_cross_entropy_with_logits( 
-                           logits = self.pred_confidences, 
-                           labels = self.gt_labels_holder 
-                       )
+    #---------------------------------------------------------------------------
+    # 確信度誤差 L_conf
+    # L_conf = Σ_(i∈pos) { x_ij^k * log( softmax(c) ) }, c = カテゴリ、ラベル
+    #---------------------------------------------------------------------------
+    loss_conf_op = tf.nn.sparse_softmax_cross_entropy_with_logits( 
+                       logits = self.pred_confidences, 
+                       labels = self.gt_labels_holder 
+                   )
 
-        loss_conf_op = loss_conf_op * ( self.pos_holder + self.neg_holder )
+    loss_conf_op = loss_conf_op * ( self.pos_holder + self.neg_holder )
         
-        loss_conf_op = tf.reduce_sum( loss_conf_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( ( self.pos_holder + self.neg_holder ), reduction_indices = 1) )
+    loss_conf_op = tf.reduce_sum( loss_conf_op, reduction_indices = 1 ) / ( 1e-5 + tf.reduce_sum( ( self.pos_holder + self.neg_holder ), reduction_indices = 1) )
 
-        #---------------------------------------------------------------------------
-        # 合計誤差 L
-        #---------------------------------------------------------------------------
-        self._loss_op = tf.reduce_sum( loss_conf_op + loss_loc_op )
+    #---------------------------------------------------------------------------
+    # 合計誤差 L
+    #---------------------------------------------------------------------------
+    self._loss_op = tf.reduce_sum( loss_conf_op + loss_loc_op )
 
-        return self._loss_op
-
+    return self._loss_op
 ```
 
 - SSD の損失関数 `self._loss_op` は、位置特定誤差 `loss_loc_op` と確信度誤差 `loss_conf_op` の重み付き和であり、<br>
@@ -944,9 +911,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
     以下の式で与えられる。<br>
     ![image](https://user-images.githubusercontent.com/25688193/40358172-605e3548-5df9-11e8-8f75-4cdedb9cc931.png)<br>
     ```python
-    [SingleShotMultiBoxDetector.py]
-    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
     def loss(...):
         ...
         #---------------------------------------------------------------------------
@@ -959,9 +924,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
     以下の式で与えられる。<br>
     ![image](https://user-images.githubusercontent.com/25688193/40358451-424b88b6-5dfa-11e8-935e-a36eaba9d4b1.png)<br>
     ```python
-    [SingleShotMultiBoxDetector.py]
-    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
     def loss(...):
         ...
         #---------------------------------------------------------------------------
@@ -976,9 +939,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
     - ここで、Smooth L1 損失関数は、このメソッド `loss(...)` 内で以下のように定義されている。
     ```python
-    [SingleShotMultiBoxDetector.py]
-    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
     def loss(...):
         def smooth_L1( x ):
             """
@@ -1003,9 +964,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
     以下の式で与えられる。<br>
     ![image](https://user-images.githubusercontent.com/25688193/40358707-238920e0-5dfb-11e8-9a83-84808c19a875.png)<br>
     ```python
-    [SingleShotMultiBoxDetector.py]
-    class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
     def loss(...):
         ...
         #---------------------------------------------------------------------------
@@ -1056,52 +1015,176 @@ def main():
 ```
 
 ```python
-[SingleShotMultiBoxDetector.py]
-class SingleShotMultiBoxDetector( NeuralNetworkBase ):
-    ...
-    def fit( self, X_train, y_train ):
+[SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+def fit( self, X_train, y_train ):
+    """
+    指定されたトレーニングデータで、モデルの fitting 処理を行う。
+    [Input]
+        X_train : list ( shape = [n_samples, (image,h,w,c)] )
+            トレーニングデータ（特徴行列）
+        
+        y_train : numpy.ndarray ( shape = [n_samples] )
+            トレーニングデータ用のクラスラベル（教師データ）のリスト
+    [Output]
+        self : 自身のオブジェクト
+    """
+    def generate_minibatch( X, y, batch_size, bSuffle = True, random_seed = 12 ):
         """
-        指定されたトレーニングデータで、モデルの fitting 処理を行う。
-        [Input]
-            X_train : list ( shape = [n_samples, (image,h,w,c)] )
-                トレーニングデータ（特徴行列）
-            
-            y_train : numpy.ndarray ( shape = [n_samples] )
-                トレーニングデータ用のクラスラベル（教師データ）のリスト
-        [Output]
-            self : 自身のオブジェクト
+        指定された（トレーニング）データから、ミニバッチ毎のデータを生成する。
+        （各 Epoch 処理毎に呼び出されることを想定している。）
         """
-        def generate_minibatch( X, y, batch_size, bSuffle = True, random_seed = 12 ):
-            """
-            指定された（トレーニング）データから、ミニバッチ毎のデータを生成する。
-            （各 Epoch 処理毎に呼び出されることを想定している。）
-            """
-            # 各 Epoch 度に shuffle し直す。
-            if( bSuffle == True ):
-                idxes = np.arange( len(y) )   # 0 ~ y.shape[0] の連番 idxes を生成
+        # 各 Epoch 度に shuffle し直す。
+        if( bSuffle == True ):
+            idxes = np.arange( len(y) )   # 0 ~ y.shape[0] の連番 idxes を生成
 
-                # メルセンヌツイスターというアルゴリズムを使った擬似乱数生成器。
-                # コンストラクタに乱数の種(シード)を設定。
-                random_state = np.random.RandomState( random_seed )
-                random_state.shuffle( idxes )
+            # メルセンヌツイスターというアルゴリズムを使った擬似乱数生成器。
+            # コンストラクタに乱数の種(シード)を設定。
+            random_state = np.random.RandomState( random_seed )
+            random_state.shuffle( idxes )
                 
-                # shuffle された連番 idxes 値のデータに置き換える。
-                X_ = [] 
-                y_ = []
-                for idx in idxes:
-                    X_.append( X[idx] )
-                    y_.append( y[idx] )
+            # shuffle された連番 idxes 値のデータに置き換える。
+            X_ = [] 
+            y_ = []
+            for idx in idxes:
+                X_.append( X[idx] )
+                y_.append( y[idx] )
 
-            # 0 ~ 行数まで batch_size 間隔でループ
-            for i in range( 0, len(X_), batch_size ):
-                # mini batch data
-                batch_X_ = X_[i:i+batch_size]
-                batch_y_ = y_[i:i+batch_size]
+        # 0 ~ 行数まで batch_size 間隔でループ
+        for i in range( 0, len(X_), batch_size ):
+            # mini batch data
+            batch_X_ = X_[i:i+batch_size]
+            batch_y_ = y_[i:i+batch_size]
 
-                # yield 文で逐次データを return（関数の処理を一旦停止し、値を返す）
-                # メモリ効率向上のための処理
-                yield ( batch_X_, batch_y_ )
+            # yield 文で逐次データを return（関数の処理を一旦停止し、値を返す）
+            # メモリ効率向上のための処理
+            yield ( batch_X_, batch_y_ )
 
+    #----------------------------------------------------------
+    # 学習開始処理
+    #----------------------------------------------------------
+    # Variable の初期化オペレーター
+    self._init_var_op = tf.global_variables_initializer()
+
+    # Session の run（初期化オペレーター）
+    self._session.run( self._init_var_op )
+
+    # ミニバッチの繰り返し回数
+    n_batches = len( X_train ) // self._batch_size       # バッチ処理の回数
+    n_minibatch_iterations = self._epochs * n_batches    # ミニバッチの総繰り返し回数
+    n_minibatch_iteration = 0                            # ミニバッチの現在の繰り返し回数
+    print( "n_batches :", n_batches )
+    print( "n_minibatch_iterations :", n_minibatch_iterations )
+
+    # （学習済みモデルの）チェックポイントファイルの作成
+    #self.save_model()
+
+    # 
+    self._matcher = BBoxMatcher( n_classes = self.n_classes, default_box_set = self._default_box_set )
+
+    #----------------------------------------------------------
+    # 学習処理
+    #----------------------------------------------------------
+    # for ループでエポック数分トレーニング
+    for epoch in range( 1, self._epochs+1 ):
+        # ミニバッチサイズ単位で for ループ
+        # エポック毎に shuffle し直す。
+        gen_minibatch = generate_minibatch( X = X_train, y = y_train , batch_size = self._batch_size, bSuffle = True, random_seed = 12 )
+
+        # n_batches = X_train.shape[0] // self._batch_size 回のループ
+        for i ,(batch_x, batch_y) in enumerate( gen_minibatch, 1 ):
+            n_minibatch_iteration += 1
+
+            # reset eval
+            positives = []      # self.pos_holder に供給するデータ : 正解ボックスとデフォルトボックスの一致
+            negatives = []      # self.neg_holder に供給するデータ : 正解ボックスとデフォルトボックスの不一致
+            ex_gt_labels = []   # self.gt_labels_holder に供給するデータ : 正解ボックスの所属クラスのラベル
+            ex_gt_boxes = []    # self.gt_boxes_holder に供給するデータ : 正解ボックス
+
+            #----------------------------------------------------------------
+            # 特徴マップに含まれる物体のクラス所属の確信度、長方形位置を取得
+            #----------------------------------------------------------------
+            f_maps, pred_confs, pred_locs = \
+            self._session.run(
+                [ self.fmaps, self.pred_confidences, self.pred_locations ], 
+                feed_dict = { self.base_vgg16.X_holder: batch_x }
+            )
+
+            # batch_size 文のループ
+            for i in range( len(batch_x) ):
+                actual_labels = []
+                actual_loc_rects = []
+
+                #--------------------------------------------------------------------
+                # 教師データの物体のクラス所属の確信度、長方形位置のフォーマットを変換
+                #--------------------------------------------------------------------
+                # 教師データから物体のクラス所属の確信度、長方形位置情報を取り出し
+                # 画像に存在する物体の数分ループ処理
+                for obj in batch_y[i]:
+                    # 長方形の位置情報を取り出し
+                    loc_rect = obj[:4]
+
+                    # 所属クラス情報を取り出し＆ argmax でクラス推定
+                    label = np.argmax( obj[4:] )
+
+                    # 位置情報のフォーマットをコンバート
+                    # [ top_left_x, top_left_y, bottom_right_x, bottom_right_y ] → [ top_left_x, top_left_y, width, height ]
+                    # [ top_left_x, top_left_y, width, height ] → [ center_x, center_y, width, height ]
+                    loc_rect = np.array( [ loc_rect[0], loc_rect[1], loc_rect[2]-loc_rect[0], loc_rect[3]-loc_rect[1] ] )
+                    loc_rect = np.array( [ loc_rect[0] - loc_rect[2] * 0.5, loc_rect[1] - loc_rect[3] * 0.5, abs(loc_rect[2]), abs(loc_rect[3]) ] )
+
+                    #
+                    actual_loc_rects.append( loc_rect )
+                    actual_labels.append( label )
+
+                #--------------------------------------------------------------------
+                # デフォルトボックスと正解ボックスのマッチング処理（マッチング戦略）
+                #--------------------------------------------------------------------
+                pos_list, neg_list, expanded_gt_labels, expanded_gt_locs = \
+                self._matcher.match( 
+                    pred_confs, pred_locs, actual_labels, actual_loc_rects
+                )
+
+                # マッチング結果を追加
+                positives.append( pos_list )
+                negatives.append( neg_list )
+                ex_gt_labels.append( expanded_gt_labels )
+                ex_gt_boxes.append( expanded_gt_locs )
+
+            #-------------------------------------------------------------------
+            # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
+            #-------------------------------------------------------------------
+            loss, _, = self._session.run(
+                           [ self._loss_op, self._train_step ],
+                           feed_dict = {
+                               self.base_vgg16.X_holder: batch_x,
+                               self.pos_holder: positives,
+                               self.neg_holder: negatives,
+                               self.gt_labels_holder: ex_gt_labels,
+                               self.gt_boxes_holder: ex_gt_boxes
+                           }
+                       )
+
+            self._losses_train.append( loss )
+
+            print( "Epoch: %d/%d | minibatch iteration: %d/%d | loss = %0.5f |" % 
+                  ( epoch, self._epochs, n_minibatch_iteration, n_minibatch_iterations, loss ) )
+
+            # モデルの保存処理を行う loop か否か
+            # % : 割り算の余りが 0 で判断
+            if ( ( (n_minibatch_iteration) % self._save_step ) == 0 ):
+                self.save_model()
+
+    # fitting 処理終了後、モデルのパラメータを保存しておく。
+    self.save_model()
+
+    return self._y_out_op
+```
+- この `fit(...)` メソッドでは、以下の処理が行われる。<br>
+    1. Variable の初期化＆セッションの run<br>
+    ```python
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+    def fit( self, X_train, y_train ):
+        ...
         #----------------------------------------------------------
         # 学習開始処理
         #----------------------------------------------------------
@@ -1110,126 +1193,43 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
         # Session の run（初期化オペレーター）
         self._session.run( self._init_var_op )
+        ...
+    ```
+    2. ミニバッチ処理<br>
+    ```python
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+    def fit( self, X_train, y_train ):
+        ...
 
-        # ミニバッチの繰り返し回数
-        n_batches = len( X_train ) // self._batch_size       # バッチ処理の回数
-        n_minibatch_iterations = self._epochs * n_batches    # ミニバッチの総繰り返し回数
-        n_minibatch_iteration = 0                            # ミニバッチの現在の繰り返し回数
-        
-        print( "n_batches :", n_batches )
-        print( "n_minibatch_iterations :", n_minibatch_iterations )
+        ...
 
-        # （学習済みモデルの）チェックポイントファイルの作成
-        #self.save_model()
+    ```
+    3. 教師データに含まれる、物体数、所属クラス、長方形位置座標の抽出とコンバート処理<br>
+    ```python
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+    def fit( self, X_train, y_train ):
+        ...
 
-        # 
-        self._matcher = BBoxMatcher( n_classes = self.n_classes, default_box_set = self._default_box_set )
+        ...
 
-        #----------------------------------------------------------
-        # 学習処理
-        #----------------------------------------------------------
-        # for ループでエポック数分トレーニング
-        for epoch in range( 1, self._epochs+1 ):
-            # ミニバッチサイズ単位で for ループ
-            # エポック毎に shuffle し直す。
-            gen_minibatch = generate_minibatch( X = X_train, y = y_train , batch_size = self._batch_size, bSuffle = True, random_seed = 12 )
+    ```
+    4. （デフォルトボックスと正解ボックスの）マッチング戦略<br>
+    ```python
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+    def fit( self, X_train, y_train ):
+        ...
 
-            # n_batches = X_train.shape[0] // self._batch_size 回のループ
-            for i ,(batch_x, batch_y) in enumerate( gen_minibatch, 1 ):
-                n_minibatch_iteration += 1
+        ...
+    ```
+    
+    5. トレーニングステップでの学習と loss 値の計算 & 取得<br>
+    ```python
+    [SingleShotMultiBoxDetector.py / class SingleShotMultiBoxDetector]
+    def fit( self, X_train, y_train ):
+        ...
 
-                # reset eval
-                positives = []      # self.pos_holder に供給するデータ : 正解ボックスとデフォルトボックスの一致
-                negatives = []      # self.neg_holder に供給するデータ : 正解ボックスとデフォルトボックスの不一致
-                ex_gt_labels = []   # self.gt_labels_holder に供給するデータ : 正解ボックスの所属クラスのラベル
-                ex_gt_boxes = []    # self.gt_boxes_holder に供給するデータ : 正解ボックス
-
-                #-------------------------------------------------------------------------------------
-                # 特徴マップに含まれる物体のクラス所属の確信度、長方形位置を取得
-                #-------------------------------------------------------------------------------------
-                f_maps, pred_confs, pred_locs = \
-                self._session.run(
-                    [ self.fmaps, self.pred_confidences, self.pred_locations ], 
-                    feed_dict = { self.base_vgg16.X_holder: batch_x }
-                )
-
-                # batch_size 文のループ
-                for i in range( len(batch_x) ):
-                    actual_labels = []
-                    actual_loc_rects = []
-
-                    #-------------------------------------------------------------------------------------
-                    # 教師データの物体のクラス所属の確信度、長方形位置のフォーマットを変換
-                    #-------------------------------------------------------------------------------------                    
-                    # 教師データから物体のクラス所属の確信度、長方形位置情報を取り出し
-                    # 画像に存在する物体の数分ループ処理
-                    for obj in batch_y[i]:
-                        # 長方形の位置情報を取り出し
-                        loc_rect = obj[:4]
-
-                        # 所属クラス情報を取り出し＆ argmax でクラス推定
-                        label = np.argmax( obj[4:] )
-
-                        # 位置情報のフォーマットをコンバート
-                        # [ top_left_x, top_left_y, bottom_right_x, bottom_right_y ] → [ top_left_x, top_left_y, width, height ]
-                        # [ top_left_x, top_left_y, width, height ] → [ center_x, center_y, width, height ]
-                        loc_rect = np.array( [ loc_rect[0], loc_rect[1], loc_rect[2]-loc_rect[0], loc_rect[3]-loc_rect[1] ] )
-                        loc_rect = np.array( [ loc_rect[0] - loc_rect[2] * 0.5, loc_rect[1] - loc_rect[3] * 0.5, abs(loc_rect[2]), abs(loc_rect[3]) ] )
-
-                        #
-                        actual_loc_rects.append( loc_rect )
-                        actual_labels.append( label )
-
-                    #-------------------------------------------------------------------------------------
-                    # デフォルトボックスと正解ボックスのマッチング処理（マッチング戦略）
-                    #-------------------------------------------------------------------------------------
-                    pos_list, neg_list, expanded_gt_labels, expanded_gt_locs = \
-                    self._matcher.match( 
-                        pred_confs, pred_locs, actual_labels, actual_loc_rects
-                    )
-
-                    # マッチング結果を追加
-                    positives.append( pos_list )
-                    negatives.append( neg_list )
-                    ex_gt_labels.append( expanded_gt_labels )
-                    ex_gt_boxes.append( expanded_gt_locs )
-
-                #-------------------------------------------------------------------------------------
-                # 設定された最適化アルゴリズム Optimizer でトレーニング処理を run
-                #-------------------------------------------------------------------------------------
-                loss, _, = self._session.run(
-                               [ self._loss_op, self._train_step ],
-                               feed_dict = {
-                                   self.base_vgg16.X_holder: batch_x,
-                                   self.pos_holder: positives,
-                                   self.neg_holder: negatives,
-                                   self.gt_labels_holder: ex_gt_labels,
-                                   self.gt_boxes_holder: ex_gt_boxes
-
-                               }
-                           )
-
-                self._losses_train.append( loss )
-
-                print( "Epoch: %d/%d | minibatch iteration: %d/%d | loss = %0.5f |" % 
-                      ( epoch, self._epochs, n_minibatch_iteration, n_minibatch_iterations, loss ) )
-
-                # モデルの保存処理を行う loop か否か
-                # % : 割り算の余りが 0 で判断
-                if ( ( (n_minibatch_iteration) % self._save_step ) == 0 ):
-                    self.save_model()
-
-        # fitting 処理終了後、モデルのパラメータを保存しておく。
-        self.save_model()
-
-        return self._y_out_op
-```
-
-- ミニバッチ処理
-- 教師データに含まれる、物体数、所属クラス、長方形位置座標の抽出とコンバート処理
-- （デフォルトボックスと正解ボックスの）マッチング戦略
-- トレーニングステップでの学習
-- loss 値の計算 & 取得
+        ...
+    ```
 
 <br>
 
