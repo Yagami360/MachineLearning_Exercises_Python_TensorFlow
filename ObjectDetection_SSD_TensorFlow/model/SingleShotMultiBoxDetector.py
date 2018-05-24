@@ -916,7 +916,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         return pred_confs, pred_locs
 
 
-    def detect_objects( self, pred_confs, pred_locs, prob_min = 0.9, overlap_threshold = 0.1 ):
+    def detect_objects( self, pred_confs, pred_locs, n_top_probs = 200, prob_min = 0.9, overlap_threshold = 0.1 ):
         """
         this method returns detected objects list (means high confidences locs and its labels)
         Args is computed Tensor.
@@ -957,7 +957,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
         # 確率値 possibilities の値が大きい上位 200 件を抽出
         # np.argpartition(...) : 値が大きい上位K件の配列インデックスを取得
-        indicies = np.argpartition( possibilities, -200 )[-200:]
+        indicies = np.argpartition( possibilities, -n_top_probs )[-n_top_probs:]
         print( "indicies :", indicies )
 
         # 配列化
@@ -970,49 +970,61 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         print( "slicer :", slicer )
 
         # DBOX の内、確率値が上位 200 件のみを抽出
-        locations, labels = pred_locs[slicer], np.argmax( pred_confs[slicer], axis = 1 )
-        labels = np.asarray(labels).reshape( len(labels), 1 )
+        locations = pred_locs[slicer]
+
+        labels = []
+        for conf in pred_confs[slicer]:
+            labels.append( np.argmax(conf) )
+        
+        labels = np.asarray( labels ).reshape( len(labels), 1 )
+        print( "labels : ", labels )
 
         #----------------------------------------------------------------------
         # DBOX の重複防止のために non-maximum suppression アルゴリズムを適用する。
         #----------------------------------------------------------------------
-        with_labels = np.concatenate( (locations, labels), axis = 1 )
-        filtered = self.non_maximum_suppression( with_labels, 0.1 )
+        filtered_locs, filtered_labels = self.non_maximum_suppression( boxes = locations, labels = labels, overlap_threshold = 0.1 )
 
-        if len( filtered ) == 0:
-            filtered = np.zeros( (4, 5) )
+        if len( filtered_locs ) == 0:
+            filtered_locs = np.zeros( (4, 4) )
+            filtered_labels = np.zeros( (4, 1) )
 
-        # 
-        #return filtered[:,:4], filtered[:,4]
-        return locations, labels
+        return filtered_locs, filtered_labels
 
 
-    def non_maximum_suppression(self, candidates, overlap_threshold ):
+    def non_maximum_suppression( self, boxes, labels, overlap_threshold ):
         """
         Non-Maximum Suppression アルゴリズム
         this is nms(non maximum_suppression) which filters predicted objects.
 
         Args:
-            predicted bounding boxes
+            boxes : ndarray
+                DBOX の座標値のリスト
+
+
         Returns:
             detected bounding boxes and its label
         """
+        #boxes = candidates[ label < self.n_classes - 1 ]    # DBOX の座標値のリスト
 
-        label = candidates[:,4]
-        boxes = candidates[ label < self.n_classes - 1 ]
-
-        if len(boxes) == 0:
+        if len( boxes ) == 0:
             return []
 
+        # initialize the list of picked indexes
         picked = []
 
+        # DBOX の座標値を抽出
         x1 = boxes[:,0]
         y1 = boxes[:,1]
         x2 = boxes[:,2] + x1
         y2 = boxes[:,3] + y1
 
+        # DBOX のエリア（）を計算
         area = (boxes[:,2]) * (boxes[:,3])
-        idxs = np.argsort(x1)
+
+        #
+        #idxs = np.argsort(x1)
+        idxs = np.argsort(y2)
+        print( "idxs :", idxs )
 
         while len(idxs) > 0:
             last = len(idxs) - 1
@@ -1042,4 +1054,4 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
             # delete suppressed indexes
             idxs = np.delete(idxs, suppress)
     
-        return boxes[picked]
+        return boxes[picked], labels[picked]

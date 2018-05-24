@@ -306,7 +306,10 @@ def main():
     #
     image = X_test[0]
     pred_confs, pred_locs = ssd.predict( image = image )
-    locs, labels = ssd.detect_objects( pred_confs, pred_locs, prob_min = 0.7, overlap_threshold = 0.1 )
+    locs, labels = ssd.detect_objects( 
+                       pred_confs, pred_locs, 
+                       n_top_probs = 200, prob_min = 0.7, overlap_threshold = 0.1 
+                   )
 
     # image のフォーマットを元の高さ、幅情報付きに戻す。
     # x = x[:, :, ::-1]
