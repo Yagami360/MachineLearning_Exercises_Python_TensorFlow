@@ -108,15 +108,20 @@ class BBoxMatcher( object ):
         Returns:
             extracted indicies of boxes (confidences).
         """
-
         loss_confs = []
 
         for pred_conf in pred_confs:
-            pred = np.exp(pred_conf) / (np.sum(np.exp(pred_conf)) + 1e-5)
-            loss_confs.append(np.amax(pred))
+            # クラスの確信度 pred_conf から、? pred を計算
+            pred = np.exp( pred_conf ) / ( np.sum(np.exp(pred_conf)) + 1e-5 )
+            
+            # ?
+            loss_confs.append( np.amax(pred) )
 
-        size = min(len(loss_confs), max_length)
-        indicies = np.argpartition(loss_confs, -size)[-size:]
+        # ?
+        size = min( len(loss_confs), max_length )
+        
+        # ?
+        indicies = np.argpartition( loss_confs, -size )[-size:]
 
         return indicies
 
@@ -160,27 +165,25 @@ class BBoxMatcher( object ):
             expanded_gt_labels: gt_label if pos else classes
             expanded_gt_locs: gt_locs if pos else [0, 0, 0, 0]
         """
-        pos = 0
-        neg = 0
-        pos_list = []
-        neg_list = []
-        expanded_gt_labels = []
-        expanded_gt_locs = []
-        
-        # マッチングした bounding box のリスト
-        bboxes_matched = []
-
-        # マッチングした bounding box のラベルのリスト
-        bboxes_label_matched = []
+        n_pos = 0                   # 正解とマッチする BBOX 数
+        n_neg = 0                   # 該当する所属クラスなしの BBOX 数
+        pos_list = []               #
+        neg_list = []               #
+        expanded_gt_labels = []     #
+        expanded_gt_locs = []       #
+        bboxes_matched = []         # マッチングした bounding box のリスト
+        bboxes_label_matched = []   # マッチングした bounding box のラベルのリスト
 
         # バウンディングボックスのリストを初期化（サイズは、一連のデフォルトボックスの合計数）
         for i in range( len(self._default_box_set._default_boxes) ):
             bboxes_matched.append( None )
 
-        # 各デフォルトボックスに対して、jaccard overlap 値を算出
+        #-------------------------------------------------------------------
+        # 各デフォルトボックスに対して、jaccard overlap 値を算出し、
+        # 正解と判定される場合に、そのバウンディングボックス作成
+        #-------------------------------------------------------------------
         for gt_label, gt_box in zip( actual_labels, actual_locs ):
-            near_jacc = 0.
-            near_index = None
+
             for i in range( len(bboxes_matched) ):
                 dbox_rect = [ 
                                 self._default_box_set._default_boxes[i]._center_x, 
@@ -193,27 +196,42 @@ class BBoxMatcher( object ):
                 
                 # jaccard overlap が 0.5 の値よりも大きいデフォルトボックスを正解ボックスと判定させ、学習させる。
                 # これにより、正解ボックスに複数に重なり合っているデフォルトボックスについて、高いスコア予想が可能になる。
-                if 0.5 <= jacc:
+                if( jacc >= 0.5 ):
                     # （正解ボックスとマッチする）バウンディングボックスを生成
                     bboxes_matched[i] = BoundingBox( label = gt_label, rect_loc = gt_box )
 
                     # マッチ数加算
-                    pos += 1
+                    n_pos += 1
+
+                    # マッチしたラベル追加
                     bboxes_label_matched.append( gt_label )
 
         
+        #-------------------------------------------------------------------
+        # 各デフォルトボックスに対して、非該当
+        # 非該当クラスなしのバウンディングボックス作成
+        #-------------------------------------------------------------------
         # ?
         neg_pos = 5
-        indicies = self.extract_highest_indicies( pred_confs, pos*neg_pos )   # shape 
+
+        # ? クラスの確信度が上位のインデックスを取得
+        indicies = self.extract_highest_indicies( pred_confs, n_pos * neg_pos )
+
         for i in indicies:
-            if neg > pos*neg_pos:
+            if( n_neg > n_pos * neg_pos ):
                     break
-            if bboxes_matched[i] is None and self._n_classes-1 != np.argmax(pred_confs[i]):
+
+            # 該当する所属クラスなしの場合
+            if( bboxes_matched[i] is None and self._n_classes-1 != np.argmax(pred_confs[i]) ):
+                # label = n_class - 1 の BBOX 作成
                 bboxes_matched[i] = BoundingBox( label = self._n_classes - 1, rect_loc= [] )
 
-                # 不一致数増加
-                neg += 1
+                # 非該当数増加
+                n_neg += 1
 
+        #-------------------------------------------------------------------
+        # 生成した各バウンディングボックスに対し、
+        #-------------------------------------------------------------------
         # バウンディングボックス数分のループ
         for box in bboxes_matched:
             # if box is None

@@ -65,10 +65,10 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
         f_maps : list<Tensor>
             特徴マップのリスト
-        pred_confidences : list<int>
-            ? 予想される特徴マップのクラス所属の確信度
-        pred_locations : list<int>
-            ? 予想される特徴マップの位置（形状のオフセット）
+        pred_confs : list<ndarray>
+            予想されるデフォルトボックスのクラス所属の確信度
+        pred_locs : list<ndarray>
+            予想されるデフォルトボックスの位置（形状のオフセット）
 
 
     [private] 変数名の前にダブルアンダースコア __ を付ける（Pythonルール）
@@ -125,8 +125,8 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
 
         #
         self.fmaps = []
-        self.pred_confidences = []
-        self.pred_locations = []
+        self.pred_confs = []
+        self.pred_locs = []
 
         #
         self._default_box_set = None
@@ -195,8 +195,8 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
             for i, fmap in enumerate( self.fmaps ):
                 print( "    fmaps[%d] : %s" % (i, fmap) )
         
-        print( "pred_confidences :", self.pred_confidences )
-        print( "pred_locations :", self.pred_locations )
+        print( "pred_confs :", self.pred_confs )
+        print( "pred_locs :", self.pred_locs )
 
         print( "_default_box_set :", self._default_box_set )
         if( self._default_box_set != None ):
@@ -569,19 +569,19 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         print( "fmap_concatenated :", fmap_concatenated )
 
         # 特徴マップが含む物体の確信度と予想位置（形状のオフセット）
-        # pred_confidences.shape = [None, 8752, 21] | 21: クラス数
-        # pred_locations.shape = [None, 8752, 4]  | 4 : (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置
-        self.pred_confidences = fmap_concatenated[ :, :, :self.n_classes ]
-        self.pred_locations = fmap_concatenated[ :, :, self.n_classes: ]
-        #print( 'confidences: ' + str( self.pred_confidences.get_shape().as_list() ) )
-        #print( 'locations: ' + str( self.pred_locations.get_shape().as_list() ) )
+        # pred_confs.shape = [None, 8752, 21] | 21: クラス数
+        # pred_locs.shape = [None, 8752, 4]  | 4 : (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置
+        self.pred_confs = fmap_concatenated[ :, :, :self.n_classes ]
+        self.pred_locs = fmap_concatenated[ :, :, self.n_classes: ]
+        #print( 'confs : ' + str( self.pred_confidences.get_shape().as_list() ) )
+        #print( 'locs : ' + str( self.pred_locations.get_shape().as_list() ) )
 
         #-----------------------------------------------------------------------------
         # model output
         #-----------------------------------------------------------------------------
         self._y_out_op = self.conv11_2_op
 
-        #return self.fmaps, self.pred_confidences, self.pred_locations
+        #return self.fmaps, self.pred_cons, self.pred_locs
         return self._y_out_op
 
 
@@ -598,7 +598,6 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         print( 'fmap shapes is ' + str(fmap_shapes) )
 
         # 各 extra feature maps に対応した、各デフォルトボックスのアスペクト比
-        #aspects = [ 1.0, 2.0, 3.0, 1.0/2.0, 1.0/3.0 ]
         aspect_set = [
                          [1.0, 1.0, 2.0, 1.0/2.0],                 # extra fmap 1
                          [1.0, 1.0, 2.0, 1.0/2.0, 3.0, 1.0/3.0],   # extra fmap 2
@@ -672,7 +671,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         # 位置特定誤差 L_loc
         # L_loc = Σ_(i∈pos) Σ_(m) { x_ij^k * smoothL1( predbox_i^m - gtbox_j^m ) }
         #---------------------------------------------------------------------------
-        smoothL1_op = smooth_L1( x = ( self.gt_boxes_holder - self.pred_locations ) )
+        smoothL1_op = smooth_L1( x = ( self.gt_boxes_holder - self.pred_locs ) )
         # ?
         loss_loc_op = tf.reduce_sum( smoothL1_op, reduction_indices = 2 ) * self.pos_holder
         
@@ -685,7 +684,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         #---------------------------------------------------------------------------
         # ?
         loss_conf_op = tf.nn.sparse_softmax_cross_entropy_with_logits( 
-                           logits = self.pred_confidences, 
+                           logits = self.pred_confs, 
                            labels = self.gt_labels_holder 
                        )
 
@@ -788,10 +787,14 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         # 学習処理
         #----------------------------------------------------------
         # for ループでエポック数分トレーニング
-        for epoch in range( 1, self._epochs+1 ):
+        for epoch in range( 1, self._epochs + 1 ):
             # ミニバッチサイズ単位で for ループ
             # エポック毎に shuffle し直す。
-            gen_minibatch = generate_minibatch( X = X_train, y = y_train , batch_size = self._batch_size, bSuffle = True, random_seed = 12 )
+            gen_minibatch = generate_minibatch( 
+                                X = X_train, y = y_train , 
+                                batch_size = self._batch_size, 
+                                bSuffle = True, random_seed = 12 
+                            )
 
             # n_batches = X_train.shape[0] // self._batch_size 回のループ
             for i ,(batch_x, batch_y) in enumerate( gen_minibatch, 1 ):
@@ -804,11 +807,11 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
                 ex_gt_boxes = []    # self.gt_boxes_holder に供給するデータ : 正解ボックス
 
                 #-------------------------------------------------------------------------------------
-                # 特徴マップに含まれる物体のクラス所属の確信度、長方形位置を取得
+                # デフォルトボックスの物体のクラス所属の確信度、長方形位置を取得
                 #-------------------------------------------------------------------------------------
                 f_maps, pred_confs, pred_locs = \
                 self._session.run(
-                    [ self.fmaps, self.pred_confidences, self.pred_locations ], 
+                    [ self.fmaps, self.pred_confs, self.pred_locs ], 
                     feed_dict = { self.base_vgg16.X_holder: batch_x }
                 )
 
@@ -816,7 +819,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
                 #print( "pred_confs :", pred_confs )
                 #print( "pred_locs :", pred_locs )
 
-                # batch_size 文のループ
+                # ? batch_size 文のループ
                 for i in range( len(batch_x) ):
                     actual_labels = []
                     actual_loc_rects = []
@@ -829,6 +832,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
                     for obj in batch_y[i]:
                         # 長方形の位置情報を取り出し
                         loc_rect = obj[:4]
+                        #print( "loc_rect : ", loc_rect )
 
                         # 所属クラス情報を取り出し＆ argmax でクラス推定
                         label = np.argmax( obj[4:] )
@@ -836,8 +840,15 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
                         # 位置情報のフォーマットをコンバート
                         # [ top_left_x, top_left_y, bottom_right_x, bottom_right_y ] → [ top_left_x, top_left_y, width, height ]
                         # [ top_left_x, top_left_y, width, height ] → [ center_x, center_y, width, height ]
-                        loc_rect = np.array( [ loc_rect[0], loc_rect[1], loc_rect[2]-loc_rect[0], loc_rect[3]-loc_rect[1] ] )
-                        loc_rect = np.array( [ loc_rect[0] - loc_rect[2] * 0.5, loc_rect[1] - loc_rect[3] * 0.5, abs(loc_rect[2]), abs(loc_rect[3]) ] )
+                        width = loc_rect[2] - loc_rect[0]
+                        height = loc_rect[3] - loc_rect[1]
+                        loc_rect = np.array( [ loc_rect[0], loc_rect[1], width, height ] )
+                        #print( "loc_rect : ", loc_rect )
+
+                        center_x = ( 2 * loc_rect[0] + loc_rect[2] ) * 0.5
+                        center_y = ( 2 * loc_rect[1] + loc_rect[3] ) * 0.5
+                        loc_rect = np.array( [ center_x, center_y, abs(loc_rect[2]), abs(loc_rect[3]) ] )
+                        #print( "loc_rect : ", loc_rect )
 
                         #
                         actual_loc_rects.append( loc_rect )
@@ -903,7 +914,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         """
         feature_maps, pred_confs, pred_locs = \
         self._session.run( 
-            [ self.fmaps, self.pred_confidences, self.pred_locations ], 
+            [ self.fmaps, self.pred_confs, self.pred_locs ], 
             feed_dict = { self.base_vgg16.X_holder: [image] }   # [] でくくって、shape を [300,300,3] → [,300,300,3] に reshape
         )
 

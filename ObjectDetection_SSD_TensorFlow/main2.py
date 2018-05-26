@@ -263,7 +263,7 @@ def main():
     #     session = tf.Session( graph = graph )  
     #     session.run(…)
     #======================================================================
-    #ssd.fit( X_train, y_train )
+    ssd.fit( X_train, y_train )
     #ssd.print( "after fitting" )
 
     ssd.load_model()
