@@ -200,7 +200,7 @@ class BBoxMatcher( object ):
                     # （正解ボックスとマッチする）バウンディングボックスを生成
                     bboxes_matched[i] = BoundingBox( label = gt_label, rect_loc = gt_box )
 
-                    # マッチ数加算
+                    # （正解ボックスとマッチする BBOX の）マッチ数加算
                     n_pos += 1
 
                     # マッチしたラベル追加
@@ -218,7 +218,7 @@ class BBoxMatcher( object ):
         indicies = self.extract_highest_indicies( pred_confs, n_pos * neg_pos )
 
         for i in indicies:
-            if( n_neg > n_pos * neg_pos ):
+            if( n_neg > n_pos * neg_pos ):  # ?
                     break
 
             # 該当する所属クラスなしの場合
@@ -226,36 +226,37 @@ class BBoxMatcher( object ):
                 # label = n_class - 1 の BBOX 作成
                 bboxes_matched[i] = BoundingBox( label = self._n_classes - 1, rect_loc= [] )
 
-                # 非該当数増加
+                # 該当するクラスなしのバウンディングボックス数増加
                 n_neg += 1
 
         #-------------------------------------------------------------------
-        # 生成した各バウンディングボックスに対し、
+        # 生成した各バウンディングボックスに対し、正負 [positive or negative] 判定
         #-------------------------------------------------------------------
         # バウンディングボックス数分のループ
         for box in bboxes_matched:
             # if box is None
-            # => Neither positive nor negative
+            # => Neither positive nor negative 
+            # ポジティブでもネガティブでもない
             if box is None:
-                pos_list.append(0)
-                neg_list.append(0)
-                expanded_gt_labels.append( self._n_classes - 1 )
-                expanded_gt_locs.append( [0] * 4 )
+                pos_list.append(0)  # 0 : ポジティブでない判定
+                neg_list.append(0)  # 0 : ネガティブでない判定
+                expanded_gt_labels.append( self._n_classes - 1 )    # 該当する所属クラスなし
+                expanded_gt_locs.append( [0] * 4 )                  # (0,0,0,0) 座標で埋め込む
 
             # if box's loc is empty
             # => Negative
             elif 0 == len( box._rect_loc ):
                 pos_list.append(0)
-                neg_list.append(1)
+                neg_list.append(1)  # 1 : ネガティブであると判定
                 expanded_gt_labels.append( self._n_classes - 1 )
                 expanded_gt_locs.append( [0] * 4 )
 
             # if box's loc is specified
             # => Positive
             else:
-                pos_list.append(1)
+                pos_list.append(1)  # 1 : ポジティブであると判定
                 neg_list.append(0)
-                expanded_gt_labels.append( box._label)
+                expanded_gt_labels.append( box._label )
                 expanded_gt_locs.append( box._rect_loc )
 
 

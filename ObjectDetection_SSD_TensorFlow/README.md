@@ -48,10 +48,40 @@
     この内、長方形の左上と右下座標である (xmin, ymin, xmax, ymax) の 4 次元の情報で物体を囲む矩形の位置を表し、<br>
     残りの 20 次元で物体のクラスラベルを表す。<br>
 
-<!--
+|label index|object name|
+|---|---|
+|0|'aeroplane'|
+|1|'bicycle'|
+|2|'bird'|
+|3|'boat'|
+|4|'bottle'|
+|5|'bus'|
+|6|'car'|
+|7|'cat'|
+|8|'chair'|
+|9|'cow'|
+|10|'diningtable'|
+|11|'dog'|
+|12|'horse'|
+|13|'motorbike'|
+|14|'person'|
+|15|'pottedplant'|
+|16|'sheep'|
+|17|'sofa'|
+|18|'train'|
+|19|'tvmonitor|
+|20|Unknown|
+
+- [Microsoft COCO](http://mscoco.org/explore/)
+    - 80種類のカテゴリーからなる物体検出用のデータセット
+
+‘person‘, ‘bicycle‘, ‘car‘, ‘motorcycle‘, ‘airplane‘, ‘bus‘, ‘train‘, ‘truck’, ‘boat‘, ‘traffic light’, ‘fire hydrant’, ‘stop sign’, ‘parking meter’, ‘bench’, ‘bird‘, ‘cat‘, ‘dog‘, ‘horse‘, ‘sheep‘, ‘cow‘, ‘elephant’, ‘bear’, ‘zebra’, ‘giraffe’, ‘backpack’, ‘umbrella’, ‘handbag’, ‘tie’, ‘suitcase’, ‘frisbee’, ‘skis’, ‘snowboard’, ‘sports ball’, ‘kite’, ‘baseball bat’, ‘baseball glove’, ‘skateboard’, ‘surfboard’, ‘tennis racket’, ‘bottle‘, ‘wine glass’, ‘cup’, ‘fork’, ‘knife’, ‘spoon’, ‘bowl’, ‘banana’, ‘apple’, ‘sandwich’, ‘orange’, ‘broccoli’, ‘carrot’, ‘hot dog’, ‘pizza’, ‘donut’, ‘cake’, ‘chair‘, ‘couch‘, ‘potted plant‘, ‘bed’, ‘dining table‘, ‘toilet’, ‘tv‘, ‘laptop’, ‘mouse’, ‘remote’, ‘keyboard’, ‘cell phone’, ‘microwave’, ‘oven’, ‘toaster’, ‘sink’, ‘refrigerator’, ‘book’, ‘clock’, ‘vase’, ‘scissors’, ‘teddy bear’, ‘hair drier’, ‘toothbrush’
+
+- MS COCO API : 
+
 - Open Images Dataset V4
     - https://storage.googleapis.com/openimages/web/download.html
--->
+
 
 ---
 
@@ -1163,7 +1193,7 @@ def predict( self, image ):
 
 ```
 
-- クラス所属の確信度の上位 `n_top_prob` 個（引数で与えられる）を抽出する。<br>
+- クラス所属の確信度の上位 `n_top_prob` 個（引数で与えられる）を抽出する。（top-k filtering アルゴリズム）<br>
 - 推論されたデータに対し、バウンディングボックスの重複防止のために non-maximum suppression アルゴリズムを適用する。<br>
 
 <br>
@@ -1366,3 +1396,36 @@ pt2 : (273,1209)
 
 
 ```
+
+```python
+[180526_epoch8batch495 / 000488.jpg]
+
+pred_confs : shape = (1, 8752, 21)
+[0][0] 
+array([ 0.37168849, -1.54700267, -1.19724   , -1.16353285, -1.97406149,       -1.3798728 , -1.25823641, -1.56293559, -0.76379716, -0.7348628 ,       -2.67191076, -1.48244298, -1.40735316, -1.22580874, -1.11963832,       -1.09645462, -1.23183715, -2.18374658, -1.98043728, -1.62870884,        
+1.4447335 ], dtype=float32)
+[0][8751]
+
+
+hist : [536, 60, 420, 662, 108, 165, 685, 71, 244, 164, 49, 153, 44, 88, 2282, 172, 269, 84, 93, 145, 2258]
+
+
+    array([201, 205, 209, 213, 197, 193, 217, 173, 221, 189, 225, 229, 233,       237, 185, 241, 181, 245, 169, 249, 177], dtype=int64)
+
+y2 : shape = (n_class)
+    array([ 7.2680769 ,  7.42006707,  7.5573051 ,  7.64983058,  7.12237597,
+        6.96000552,  7.67807817,  5.90138412,  7.66387224,  6.75598383,
+        7.62829614,  7.58795476,  7.53211498,  7.45248079,  6.52060533,
+        7.34095216,  6.29373741,  7.10960817,  5.58761716,  6.55509424,
+        6.09716964])
+idxs : 
+    [18  7 20 16 14 19  9  5 17  4  0 15  1 13 12  2 11 10  3  8  6]
+
+
+label : 20.0
+loc : [ 0.01285222  0.95629692  0.10695443  4.3835454 ]
+pt1 : (6,358)
+pt2 : (53,1643)
+
+```
+

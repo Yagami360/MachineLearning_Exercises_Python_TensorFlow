@@ -1010,7 +1010,7 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         Args:
             boxes : ndarray
                 DBOX の座標値のリスト
-
+                [左上座標の x, 左上座標の y , 高さ, 幅]
 
         Returns:
             detected bounding boxes and its label
@@ -1029,10 +1029,12 @@ class SingleShotMultiBoxDetector( NeuralNetworkBase ):
         x2 = boxes[:,2] + x1
         y2 = boxes[:,3] + y1
 
-        # DBOX のエリア（）を計算
+        # DBOX の面積（幅×高さ）を計算
         area = (boxes[:,2]) * (boxes[:,3])
 
-        #
+        # y2 座標のソート後のインデックス
+        # We apply np.argsort  to grab the indexes of the sorted coordinates of the bottom-right y-coordinate of the bounding boxes.
+        # It is absolutely critical that we sort according to the bottom-right corner as we’ll need to compute the overlap ratio of other bounding boxes later in this function.
         #idxs = np.argsort(x1)
         idxs = np.argsort(y2)
         print( "idxs :", idxs )
