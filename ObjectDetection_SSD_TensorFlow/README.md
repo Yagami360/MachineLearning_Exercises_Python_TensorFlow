@@ -17,6 +17,7 @@
 1. [使用するデータセット](#ID_2)
 1. [コード説明＆実行結果](#ID_3)
     1. [TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装 : `main2.py`](#ID_3-2)
+        1. [実行環境](#ID_3-2-0)
         1. [コードの内容説明](#ID_3-2-2)
             1. [Poscal VOC2007 データセットにある、画像、物体情報の読み込み＆抽出](#ID_3-2-2-1)
             1. [SSD モデルの各種パラメーターの設定](#ID_3-2-2-2)
@@ -94,6 +95,16 @@
 ## TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装 : `main2.py`
 TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装。<br>
 ChainerCV や OpenCV 等にある実装済み or 学習済み SSD モジュールのような高レベル API 使用せずに、TensorFlow で実装している。<br>
+
+<a id="ID_3-2-0"></a>
+
+### **☆ 実行環境**
+
+- Windows 10
+- Python 3.6
+- Anaconda 5.0.1
+- tensorflow 1.4.0
+- OpenCV 3.3.1
 
 <!--
 <a id="ID_3-2-1"></a>
