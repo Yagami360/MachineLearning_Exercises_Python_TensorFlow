@@ -17,7 +17,7 @@
 1. [使用するデータセット](#ID_2)
 1. [コード説明＆実行結果](#ID_3)
     1. [TensorFlow を用いた SSD [Single Shot muitibox Detector] の実装 : `main2.py`](#ID_3-2)
-        1. [実行環境](#ID_3-2-0)
+        1. [主な実行環境](#ID_3-2-0)
         1. [コードの内容説明](#ID_3-2-2)
             1. [Poscal VOC2007 データセットにある、画像、物体情報の読み込み＆抽出](#ID_3-2-2-1)
             1. [SSD モデルの各種パラメーターの設定](#ID_3-2-2-2)
@@ -98,7 +98,7 @@ ChainerCV や OpenCV 等にある実装済み or 学習済み SSD モジュー�
 
 <a id="ID_3-2-0"></a>
 
-### **☆ 実行環境**
+### **☆ 主な実行環境**
 
 - Windows 10
 - Python 3.6
@@ -1205,7 +1205,11 @@ def predict( self, image ):
 ```
 
 - クラス所属の確信度の上位 `n_top_prob` 個（引数で与えられる）を抽出する。（top-k filtering アルゴリズム）<br>
+
 - 推論されたデータに対し、バウンディングボックスの重複防止のために non-maximum suppression アルゴリズムを適用する。<br>
+
+    ![image](https://user-images.githubusercontent.com/25688193/40741748-2c50bcaa-6487-11e8-803a-aa06e40ab72c.png)<br>
+
 
 <br>
 
@@ -1224,8 +1228,15 @@ def predict( self, image ):
 
 |パラメータ名|値（実行条件１）|
 |---|---|
-|xxx|xxx|
-|xxx|xxx|
+|エポック数 `n_epoches`|**200**|
+|イテレーション回数 `n_minibatch_iterations`|495×200|
+|ミニバッチサイズ `n_batches`|10|
+|最適化アルゴリズム|Adam|
+|学習率 `learning_rate`|0.0001|
+|減衰項１ `beta1`|0.9|
+|減衰項２ `beta2`|0.999|
+|特徴マップ|[4,6,6,6,6]|
+|スレッショルド値|0.3|
 
 <br>
 
