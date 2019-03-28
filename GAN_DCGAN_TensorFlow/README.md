@@ -272,19 +272,8 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
             # Generator : 入力データは, ノイズデータ
             self._G_y_out_op = self.generator( input = input_noize_tsr, reuse = False )
         ```
-    - 次に、Descriminator 側のモデルを構築する。
+    - 次に、Generator 側のモデルを構築する。<br>
     この処理は、`DeepConvolutionalGAN.generator(...)` で行う。
-        - まず、Generator からの出力 `self._G_y_out_op`、及ぶ、学習用画像データを Descriminator に入力する。
-        ```python
-        [DeepConvolutionalGAN.py]
-        def model( self ):
-            ...
-            # Descriminator : 入力データは, Generator の出力
-            self._D_y_out_op1 = self.discriminator( input = self._G_y_out_op, reuse = False )
-        
-            # Descriminator : 入力データは, 画像データ
-            self._D_y_out_op2 = self.discriminator( input = self._image_holder, reuse = True )
-        ```
         - `DeepConvolutionalGAN.generator(...)` 内部では、まず、引数 `input` で指定された、入力ノイズデータを deconv 層へ入力するために、データの形状を reshape する。
         ```python
         [DeepConvolutionalGAN.py]
@@ -403,7 +392,18 @@ epoch 数 : 7300 程度から突如、手書き数字ライクな画像が生成
         ```
     - 次に、Descriminator 側のモデルを構築する。
     この処理は、`DeepConvolutionalGAN.discriminator(...)` で行う。
-        - まず、引数 `input` で指定された、Generator からの出力（フェイク画像データ）、或いは、学習用画像データに対し、Descriminator の特徴マップ数 `self._n_D_deconv_featuresMap` に応じた、逆畳み込み層 deconv を構築する。
+        - まず、Generator からの出力 `self._G_y_out_op`、及び、学習用画像データを Descriminator に入力する。
+        ```python
+        [DeepConvolutionalGAN.py]
+        def model( self ):
+            ...
+            # Descriminator : 入力データは, Generator の出力
+            self._D_y_out_op1 = self.discriminator( input = self._G_y_out_op, reuse = False )
+        
+            # Descriminator : 入力データは, 画像データ
+            self._D_y_out_op2 = self.discriminator( input = self._image_holder, reuse = True )
+        ```
+        - 次に、引数 `input` で指定された、Generator からの出力（フェイク画像データ）、或いは、学習用画像データに対し、Descriminator の特徴マップ数 `self._n_D_deconv_featuresMap` に応じた、畳み込み層 conv を構築する。
         ```python
         [DeepConvolutionalGAN.py]
         def discriminator( self, input, reuse = False ):
